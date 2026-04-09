@@ -2436,9 +2436,24 @@ th {
     transform: translateY(0);
   }
 
-  .status-action-grid,
-  .status-overview-grid {
+  .status-action-grid {
     grid-template-columns: 1fr;
+  }
+
+  .status-overview-grid {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 0.5rem;
+    padding-bottom: 0.35rem;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .status-node {
+    flex: 0 0 auto;
+    min-width: 138px;
+    scroll-snap-align: start;
   }
 
   .modal-content {
@@ -2624,7 +2639,7 @@ th {
   }
 
   .progress-summary-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .chat-composer .actions-inline {

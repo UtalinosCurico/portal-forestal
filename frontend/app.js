@@ -12,6 +12,7 @@ const state = {
   user: null,
   currentView: "dashboard",
   alertsPoller: null,
+  sessionPoller: null,
   lastAlertsCount: 0,
   notifications: [],
   notificationsLoadedAt: 0,
@@ -407,6 +408,7 @@ async function apiRequest(path, options = {}, requiresAuth = true) {
     if (response.status === 401 && isCurrentAuthenticatedRequest && forceLogoutOn401) {
       stopRealtimeAlerts();
       stopAlertsPolling();
+      stopSessionPolling();
       clearSession();
       updateAlertsBadge(0);
       closeAlertsModal();
@@ -708,6 +710,62 @@ function startAlertsPolling() {
       // Ignorar errores de polling.
     });
   }, 45000);
+}
+
+function stopSessionPolling() {
+  if (state.sessionPoller) {
+    window.clearInterval(state.sessionPoller);
+    state.sessionPoller = null;
+  }
+}
+
+async function checkSessionProfile() {
+  if (!state.token || document.hidden) {
+    return;
+  }
+
+  const payload = await apiRequest("/api/auth/me");
+  const freshUser = payload?.user;
+  if (!freshUser) {
+    return;
+  }
+
+  const currentRole = getUserRole();
+  const currentEquipoId = state.user?.equipo_id ?? null;
+  const freshRole = freshUser.role || freshUser.rol || null;
+  const freshEquipoId = freshUser.equipo_id ?? null;
+
+  const roleChanged = currentRole !== freshRole;
+  const equipoChanged = String(currentEquipoId) !== String(freshEquipoId);
+
+  if (!roleChanged && !equipoChanged) {
+    return;
+  }
+
+  state.user = { ...state.user, ...freshUser };
+  saveSession();
+  updateUserBadge();
+  updateNavByRole();
+
+  const msg = roleChanged
+    ? `Tu rol fue actualizado a ${freshRole}. La vista se recargo.`
+    : "Tu equipo fue actualizado. La vista se recargo.";
+  showToast(msg);
+
+  await loadView(state.currentView, { force: true });
+}
+
+function startSessionPolling() {
+  stopSessionPolling();
+  if (!state.token) {
+    return;
+  }
+
+  state.sessionPoller = window.setInterval(() => {
+    checkSessionProfile().catch(() => {
+      // Ignorar errores de polling de sesion.
+    });
+  }, 60000);
 }
 
 function handleVisibilityChange() {
@@ -1041,6 +1099,7 @@ async function handleLoginSubmit(event) {
     updateUserBadge();
     updateNavByRole();
     startAlertsPolling();
+    startSessionPolling();
     setAuthenticatedUI(true);
     showToast("Sesion iniciada");
     loginForm.reset();
@@ -1066,6 +1125,7 @@ async function handleLoginSubmit(event) {
 function logout() {
   stopRealtimeAlerts();
   stopAlertsPolling();
+  stopSessionPolling();
   clearSession();
   state.rememberSession = false;
   localStorage.setItem(SESSION_REMEMBER_KEY, "0");
@@ -1231,6 +1291,7 @@ async function bootstrap() {
   updateUserBadge();
   updateNavByRole();
   startAlertsPolling();
+  startSessionPolling();
   setAuthenticatedUI(true);
   await loadView(getDefaultView());
   prefetchAllowedViews();
