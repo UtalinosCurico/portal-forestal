@@ -11,9 +11,6 @@
         <button id="solicitudes-open-create-modal" class="action-btn" type="button">
           Nueva solicitud
         </button>
-        <button id="solicitudes-open-pending-items" class="action-btn secondary" type="button">
-          Lista de pendientes
-        </button>
         <button id="solicitudes-toggle-filters" class="action-btn secondary" type="button">
           Mostrar filtros
         </button>
@@ -57,23 +54,29 @@
     </div>
   </section>
 
-  <section class="card full solicitudes-focus-card">
-    <div class="solicitudes-focus-layout">
-      <div class="solicitudes-focus-copy">
-        <span id="solicitudes-role-pill" class="mini-chip active">Prioridad actual</span>
-        <h4 id="solicitudes-focus-title">Accion recomendada</h4>
-        <p id="solicitudes-focus-text" class="muted-text">
-          La bandeja muestra la siguiente accion recomendada segun tu perfil.
-        </p>
+  <section class="card full pending-inline-card" id="solicitudes-inline-pending-card">
+    <div class="section-head compact-head">
+      <div class="pending-inline-title-wrap">
+        <h4>Pendientes de compra</h4>
+        <span id="inline-pending-count" class="mini-chip active">Cargando...</span>
       </div>
-      <div class="solicitudes-focus-actions">
-        <button id="solicitudes-focus-primary" class="action-btn large-action-btn" type="button">
-          Abrir pendientes
-        </button>
-        <button id="solicitudes-focus-secondary" class="action-btn secondary" type="button">
-          Ver en despacho
+      <div class="actions-inline">
+        <div class="search-box">
+          <label class="sr-only" for="inline-pending-search">Buscar producto pendiente</label>
+          <input
+            id="inline-pending-search"
+            type="search"
+            placeholder="Buscar producto, equipo o #ID"
+            class="inline-pending-search-input"
+          />
+        </div>
+        <button id="inline-pending-refresh-btn" class="action-btn secondary" type="button">
+          Actualizar
         </button>
       </div>
+    </div>
+    <div id="inline-pending-list" class="inline-pending-list">
+      <div class="history-empty">Cargando items...</div>
     </div>
   </section>
 
@@ -498,38 +501,4 @@
     </button>
   </div>
 
-  <!-- Modal: Lista de pendientes / items pendientes -->
-  <div id="solicitudes-pending-items-modal" class="modal hidden">
-    <div class="modal-backdrop" data-close="true"></div>
-    <section class="modal-content pending-items-sheet">
-      <header class="modal-header">
-        <div>
-          <h4>Lista de pendientes</h4>
-          <p class="muted-text">Todos los productos sin gestionar en solicitudes activas.</p>
-        </div>
-        <button id="pending-items-close-btn" class="icon-btn" type="button">x</button>
-      </header>
-
-      <div class="section-head compact-head">
-        <span id="pending-items-count" class="mini-chip active">Cargando...</span>
-        <button id="pending-items-refresh-btn" class="action-btn secondary" type="button">
-          Actualizar
-        </button>
-      </div>
-
-      <div class="pending-items-search-wrap">
-        <label class="sr-only" for="pending-items-search">Buscar producto pendiente</label>
-        <input
-          id="pending-items-search"
-          type="search"
-          placeholder="Buscar por producto, equipo, solicitante o #ID"
-          class="pending-items-search-input"
-        />
-      </div>
-
-      <div id="pending-items-list" class="pending-items-list">
-        <div class="history-empty">Cargando items...</div>
-      </div>
-    </section>
-  </div>
 </div>

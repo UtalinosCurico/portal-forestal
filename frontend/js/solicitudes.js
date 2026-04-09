@@ -942,13 +942,10 @@ export async function initSolicitudesView(context) {
   const itemManagementCommentField = document.getElementById("solicitud-item-management-comment-field");
   const itemManagementCommentInput = document.getElementById("solicitud-item-management-comment-input");
 
-  const pendingItemsModal = document.getElementById("solicitudes-pending-items-modal");
-  const pendingItemsOpenBtn = document.getElementById("solicitudes-open-pending-items");
-  const pendingItemsCloseBtn = document.getElementById("pending-items-close-btn");
-  const pendingItemsRefreshBtn = document.getElementById("pending-items-refresh-btn");
-  const pendingItemsSearch = document.getElementById("pending-items-search");
-  const pendingItemsList = document.getElementById("pending-items-list");
-  const pendingItemsCount = document.getElementById("pending-items-count");
+  const inlinePendingList = document.getElementById("inline-pending-list");
+  const inlinePendingCount = document.getElementById("inline-pending-count");
+  const inlinePendingSearch = document.getElementById("inline-pending-search");
+  const inlinePendingRefreshBtn = document.getElementById("inline-pending-refresh-btn");
 
   const filters = {
     estado: "",
@@ -975,33 +972,24 @@ export async function initSolicitudesView(context) {
   let chatUnreadCount = 0;
   let pendingItemsCache = [];
 
-  // ── Pending items modal ──────────────────────────────────────────
-
-  function openPendingItemsModal() {
-    pendingItemsModal.classList.remove("hidden");
-    pendingItemsSearch.value = "";
-    loadAndRenderPendingItems();
-  }
-
-  function closePendingItemsModal() {
-    pendingItemsModal.classList.add("hidden");
-  }
+  // ── Pending items inline ─────────────────────────────────────────
 
   async function loadAndRenderPendingItems() {
-    pendingItemsCount.textContent = "Cargando...";
-    pendingItemsList.innerHTML = "<div class='history-empty'>Cargando items...</div>";
+    if (inlinePendingCount) inlinePendingCount.textContent = "Cargando...";
+    if (inlinePendingList) inlinePendingList.innerHTML = "<div class='history-empty'>Cargando items...</div>";
     try {
       const payload = await context.apiRequest("/api/solicitudes/items/pendientes");
       pendingItemsCache = Array.isArray(payload?.data) ? payload.data : [];
     } catch (err) {
-      pendingItemsList.innerHTML = "<div class='history-empty'>Error al cargar los items.</div>";
-      pendingItemsCount.textContent = "Error";
+      if (inlinePendingList) inlinePendingList.innerHTML = "<div class='history-empty'>Error al cargar los items.</div>";
+      if (inlinePendingCount) inlinePendingCount.textContent = "Error";
       return;
     }
-    renderPendingItems(pendingItemsSearch.value.trim());
+    renderPendingItems(inlinePendingSearch?.value.trim() ?? "");
   }
 
   function renderPendingItems(query = "") {
+    if (!inlinePendingList) return;
     const q = query.toLowerCase();
     const items = q
       ? pendingItemsCache.filter(
@@ -1014,66 +1002,59 @@ export async function initSolicitudesView(context) {
         )
       : pendingItemsCache;
 
-    pendingItemsCount.textContent =
-      `${items.length} producto${items.length !== 1 ? "s" : ""} pendiente${items.length !== 1 ? "s" : ""}`;
+    if (inlinePendingCount) {
+      inlinePendingCount.textContent =
+        `${items.length} producto${items.length !== 1 ? "s" : ""} pendiente${items.length !== 1 ? "s" : ""}`;
+    }
 
     if (!items.length) {
-      pendingItemsList.innerHTML = `
+      inlinePendingList.innerHTML = `
         <div class="pending-items-empty">
-          <strong>${q ? "Sin resultados" : "Sin productos pendientes"}</strong>
-          ${q ? "Prueba con otro termino de busqueda." : "Todos los productos estan gestionados o no hay solicitudes activas."}
+          <strong>${q ? "Sin resultados" : "Todo gestionado"}</strong>
+          ${q ? "Prueba con otro termino." : "No hay productos pendientes en solicitudes activas."}
         </div>`;
       return;
     }
 
-    // Agrupar por solicitud_id
+    // Tabla compacta por solicitud
     const groups = new Map();
     for (const item of items) {
       if (!groups.has(item.solicitud_id)) groups.set(item.solicitud_id, []);
       groups.get(item.solicitud_id).push(item);
     }
 
-    const formatDate = (iso) => {
-      if (!iso) return "";
-      return new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "2-digit", year: "2-digit" });
-    };
-
     const statusLabel = { PENDIENTE: "Pendiente", EN_REVISION: "En gestion", APROBADO: "Aprobada", EN_DESPACHO: "En despacho" };
 
-    let html = "";
+    let html = `<div class="inline-pending-table">`;
     let groupIndex = 0;
     for (const [solicitudId, groupItems] of groups) {
-      const delay = Math.min(groupIndex * 0.06, 0.4);
+      const delay = Math.min(groupIndex * 0.05, 0.3);
       const first = groupItems[0];
       const estado = statusLabel[first.solicitud_estado] || first.solicitud_estado || "";
       html += `
-        <article class="pending-group" style="animation-delay:${delay}s">
-          <div class="pending-group-header">
-            <div class="pending-group-meta">
-              <span class="pending-group-title">Solicitud #${solicitudId} &mdash; ${first.solicitud_equipo || "Sin equipo"}</span>
-              <span class="pending-group-sub">Solicitado por ${first.solicitante_nombre || "?"} &bull; ${formatDate(first.solicitud_created_at)} &bull; ${estado}</span>
-            </div>
-            <button class="pending-group-open-btn" type="button" data-open-solicitud="${solicitudId}">
-              Ver solicitud
-            </button>
+        <div class="ipt-group" style="animation-delay:${delay}s">
+          <div class="ipt-group-head">
+            <span class="ipt-group-id">#${solicitudId}</span>
+            <span class="ipt-group-equipo">${first.solicitud_equipo || "Sin equipo"}</span>
+            <span class="ipt-group-quien">${first.solicitante_nombre || "?"}</span>
+            <span class="mini-chip">${estado}</span>
+            <button class="ipt-open-btn" type="button" data-open-solicitud="${solicitudId}">Ver</button>
           </div>`;
       for (const item of groupItems) {
-        const detail = [
-          item.codigo_referencia ? `Ref: ${item.codigo_referencia}` : "",
-          item.usuario_final ? `Para: ${item.usuario_final}` : "",
-          item.comentario || "",
-        ].filter(Boolean).join(" · ");
+        const ref = item.codigo_referencia ? `<span class="ipt-ref">${item.codigo_referencia}</span>` : "";
+        const nota = item.comentario ? `<span class="ipt-nota">${item.comentario}</span>` : "";
         html += `
-          <div class="pending-item-row">
-            <span class="pending-item-name">${item.nombre_item || "Sin nombre"}</span>
-            ${detail ? `<span class="pending-item-detail">${detail}</span>` : ""}
-            <span class="pending-item-qty">${item.cantidad ?? ""} ${item.unidad_medida || ""}</span>
+          <div class="ipt-item">
+            <span class="ipt-name">${item.nombre_item || "Sin nombre"}</span>
+            ${ref}${nota}
+            <span class="ipt-qty">${item.cantidad ?? ""} <small>${item.unidad_medida || ""}</small></span>
           </div>`;
       }
-      html += `</article>`;
+      html += `</div>`;
       groupIndex++;
     }
-    pendingItemsList.innerHTML = html;
+    html += `</div>`;
+    inlinePendingList.innerHTML = html;
   }
 
   // ────────────────────────────────────────────────────────────────
@@ -1547,7 +1528,7 @@ export async function initSolicitudesView(context) {
     realtimeRefreshTimer = window.setTimeout(async () => {
       try {
         const shouldPreserveChat = chatDrawer.classList.contains("open");
-        await loadSolicitudes({ showLoading: false });
+        await Promise.all([loadSolicitudes({ showLoading: false }), loadAndRenderPendingItems()]);
 
         const referenceId = Number(notification.referencia_id || 0);
         if (currentSolicitud && (!referenceId || Number(currentSolicitud.id) === referenceId)) {
@@ -2393,20 +2374,16 @@ export async function initSolicitudesView(context) {
   };
   window.addEventListener("fmn:notification", window.__fmnSolicitudesRealtimeHandler);
 
-  // Pending items modal events
-  pendingItemsOpenBtn?.addEventListener("click", openPendingItemsModal);
-  pendingItemsCloseBtn?.addEventListener("click", closePendingItemsModal);
-  pendingItemsRefreshBtn?.addEventListener("click", loadAndRenderPendingItems);
-  pendingItemsModal?.querySelector(".modal-backdrop")?.addEventListener("click", closePendingItemsModal);
-  pendingItemsSearch?.addEventListener("input", () => {
-    renderPendingItems(pendingItemsSearch.value.trim());
+  // Pending items inline events
+  inlinePendingRefreshBtn?.addEventListener("click", loadAndRenderPendingItems);
+  inlinePendingSearch?.addEventListener("input", () => {
+    renderPendingItems(inlinePendingSearch.value.trim());
   });
-  pendingItemsList?.addEventListener("click", async (event) => {
+  inlinePendingList?.addEventListener("click", async (event) => {
     const btn = event.target.closest("[data-open-solicitud]");
     if (!btn) return;
     const solicitudId = Number(btn.dataset.openSolicitud);
     if (!solicitudId) return;
-    closePendingItemsModal();
     try {
       activeDetailTab = "items";
       lastNonChatDetailTab = "items";
@@ -2423,6 +2400,6 @@ export async function initSolicitudesView(context) {
   await loadEquiposIfNeeded();
   configureRoleActions();
   resetCreateSolicitudForm();
-  await loadSolicitudes();
+  await Promise.all([loadSolicitudes(), loadAndRenderPendingItems()]);
 }
 
