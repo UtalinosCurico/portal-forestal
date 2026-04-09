@@ -1041,11 +1041,13 @@ export async function initSolicitudesView(context) {
     const statusLabel = { PENDIENTE: "Pendiente", EN_REVISION: "En gestion", APROBADO: "Aprobada", EN_DESPACHO: "En despacho" };
 
     let html = "";
+    let groupIndex = 0;
     for (const [solicitudId, groupItems] of groups) {
+      const delay = Math.min(groupIndex * 0.06, 0.4);
       const first = groupItems[0];
       const estado = statusLabel[first.solicitud_estado] || first.solicitud_estado || "";
       html += `
-        <article class="pending-group">
+        <article class="pending-group" style="animation-delay:${delay}s">
           <div class="pending-group-header">
             <div class="pending-group-meta">
               <span class="pending-group-title">Solicitud #${solicitudId} &mdash; ${first.solicitud_equipo || "Sin equipo"}</span>
@@ -1069,6 +1071,7 @@ export async function initSolicitudesView(context) {
           </div>`;
       }
       html += `</article>`;
+      groupIndex++;
     }
     pendingItemsList.innerHTML = html;
   }

@@ -30,6 +30,7 @@ body {
   min-height: 100%;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -214,7 +215,7 @@ button {
   color: #fff;
   background: var(--forest-600);
   cursor: pointer;
-  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.18s cubic-bezier(0.34, 1.3, 0.64, 1), background 0.15s ease, box-shadow 0.18s ease;
 }
 
 button:hover {
@@ -315,7 +316,7 @@ button:disabled:hover {
   border-radius: 12px;
   font-size: 1rem;
   letter-spacing: 0.01em;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.2s cubic-bezier(0.34, 1.3, 0.64, 1), box-shadow 0.18s ease;
 }
 
 .nav-item:hover {
@@ -514,7 +515,13 @@ button:disabled:hover {
   content-visibility: auto;
   contain-intrinsic-size: 1px 320px;
   box-shadow: var(--shadow-card);
+  animation: slide-up-fade 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
+
+.view-grid > .card:nth-child(2) { animation-delay: 0.05s; }
+.view-grid > .card:nth-child(3) { animation-delay: 0.1s; }
+.view-grid > .card:nth-child(4) { animation-delay: 0.14s; }
+.view-grid > .card:nth-child(5) { animation-delay: 0.18s; }
 
 .card h4 {
   margin: 0 0 0.55rem;
@@ -1203,7 +1210,8 @@ th {
   position: absolute;
   inset: 0;
   background: rgba(12, 27, 20, 0.45);
-  backdrop-filter: blur(1px);
+  backdrop-filter: blur(2px);
+  animation: modal-backdrop-in 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .modal-content {
@@ -1216,6 +1224,7 @@ th {
   border-radius: 14px;
   box-shadow: 0 18px 40px rgba(11, 36, 25, 0.25);
   padding: 0.9rem;
+  animation: modal-content-in 0.25s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
 }
 
 .modal-compact {
@@ -1680,7 +1689,7 @@ th {
   background: rgba(10, 25, 18, 0.42);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .chat-drawer-scrim.open {
@@ -1713,7 +1722,7 @@ th {
   box-shadow: -12px 0 32px rgba(11, 36, 25, 0.12);
   padding: 0.95rem;
   transform: translateX(110%);
-  transition: transform 0.2s ease;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 4;
   display: grid;
   grid-template-rows: auto 1fr auto;
@@ -2046,6 +2055,7 @@ th {
   border: 1px solid var(--line);
   border-radius: 12px;
   overflow: hidden;
+  animation: slide-up-fade 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .pending-group-header {
@@ -2193,9 +2203,11 @@ th {
   z-index: 1200;
   color: #fff;
   background: var(--forest-800);
-  border-radius: 10px;
-  padding: 0.72rem 0.95rem;
-  box-shadow: var(--shadow);
+  border-radius: 12px;
+  padding: 0.78rem 1.05rem;
+  box-shadow: 0 8px 24px rgba(8, 28, 18, 0.28);
+  animation: toast-in 0.28s cubic-bezier(0.34, 1.2, 0.64, 1) forwards;
+  font-size: 0.97rem;
 }
 
 .toast.error {
@@ -2217,6 +2229,26 @@ th {
   100% {
     background-position: -200% 0;
   }
+}
+
+@keyframes modal-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes modal-content-in {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+@keyframes slide-up-fade {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0);    }
 }
 
 @media (max-width: 1100px) {
@@ -2286,7 +2318,7 @@ th {
     top: 0;
     width: min(286px, 80vw);
     transform: translateX(-100%);
-    transition: transform 0.2s ease;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 30;
   }
 
