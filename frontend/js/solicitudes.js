@@ -963,6 +963,8 @@ export async function initSolicitudesView(context) {
   let activeDetailTab = "items";
   let lastNonChatDetailTab = "items";
   let chatHistoryEntryActive = false;
+  let lastSeenMessageCount = 0;
+  let chatUnreadCount = 0;
 
   function isPhoneLayout() {
     return window.matchMedia("(max-width: 680px)").matches;
@@ -971,6 +973,20 @@ export async function initSolicitudesView(context) {
   function syncDetailTabButtons() {
     detailTabButtons.forEach((button) => {
       button.classList.toggle("active", button.dataset.detailTab === activeDetailTab);
+    });
+  }
+
+  function updateChatBadge(count) {
+    chatUnreadCount = Math.max(0, count);
+    const label = chatUnreadCount > 0 ? ` (${chatUnreadCount})` : "";
+    const isChatOpen = chatDrawer?.classList.contains("open");
+    const shouldShow = chatUnreadCount > 0 && !isChatOpen;
+    [openChatBtn, openChatBtnSecondary].forEach((btn) => {
+      if (!btn) return;
+      btn.dataset.chatUnread = shouldShow ? String(chatUnreadCount) : "";
+      btn.classList.toggle("has-chat-unread", shouldShow);
+      const baseLabelPrimary = btn === openChatBtn ? "Abrir chat" : "Abrir chat lateral";
+      btn.textContent = baseLabelPrimary + (shouldShow ? label : "");
     });
   }
 
@@ -1026,6 +1042,8 @@ export async function initSolicitudesView(context) {
     detailModal.classList.add("chat-open");
     chatScrim.classList.add("open");
     chatDrawer.classList.add("open");
+    lastSeenMessageCount = currentSolicitud?.mensajes?.length ?? 0;
+    updateChatBadge(0);
   }
 
   function clearChatHistoryState() {
@@ -1460,6 +1478,14 @@ export async function initSolicitudesView(context) {
     chatSubtitle.textContent = `Solicitud #${solicitud.id} - ${messages.length} mensaje(s)`;
     fillContactOptions(solicitud.contactos || []);
     resetMessageComposer();
+
+    const isChatOpen = chatDrawer?.classList.contains("open");
+    if (!isChatOpen && messages.length > lastSeenMessageCount) {
+      updateChatBadge(messages.length - lastSeenMessageCount);
+    } else if (isChatOpen) {
+      lastSeenMessageCount = messages.length;
+      updateChatBadge(0);
+    }
   }
 
   function fillDetailModal(solicitud, options = {}) {
@@ -1551,6 +1577,8 @@ export async function initSolicitudesView(context) {
     deleteBtn.classList.add("hidden");
     confirmBox.classList.add("hidden");
     closeChatDrawer({ syncTab: false });
+    lastSeenMessageCount = 0;
+    updateChatBadge(0);
     applyDetailTabLayout();
   }
 

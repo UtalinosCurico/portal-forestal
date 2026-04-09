@@ -1469,6 +1469,23 @@ th {
   font-size: 0.83rem;
 }
 
+.has-chat-unread {
+  position: relative;
+}
+
+.has-chat-unread::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--forest-600);
+  border: 2px solid var(--surface);
+  pointer-events: none;
+}
+
 .inline-tab-link {
   background: none;
   border: none;

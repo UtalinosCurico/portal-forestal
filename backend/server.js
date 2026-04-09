@@ -1,4 +1,5 @@
 const path = require("path");
+const fs = require("fs");
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -52,9 +53,20 @@ function createApp() {
 
   // Frontend estático.
   app.use(express.static(FRONTEND_DIR));
-  app.get("/web", (req, res) => {
-    res.sendFile(path.join(FRONTEND_DIR, "index.html"));
-  });
+
+  function serveIndexWithVersion(req, res) {
+    const sha = (process.env.VERCEL_GIT_COMMIT_SHA || "").slice(0, 8);
+    const version = sha || new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    try {
+      const html = fs.readFileSync(path.join(FRONTEND_DIR, "index.html"), "utf8")
+        .replaceAll("__APP_VER__", version);
+      res.type("html").send(html);
+    } catch {
+      res.sendFile(path.join(FRONTEND_DIR, "index.html"));
+    }
+  }
+
+  app.get("/web", serveIndexWithVersion);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

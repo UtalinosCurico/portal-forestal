@@ -1,4 +1,4 @@
-const ASSET_VERSION = "20260409-roles-teams-v1";
+const ASSET_VERSION = window.__APP_VERSION__ || "dev";
 const CHILE_TIME_ZONE = "America/Santiago";
 const CHILE_LOCALE = "es-CL";
 const SESSION_KEY = "fmn_auth_session";
