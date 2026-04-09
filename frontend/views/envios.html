@@ -1,0 +1,171 @@
+<div class="view-grid">
+  <section class="card full">
+    <div class="section-head">
+      <h4>Tracking de envios</h4>
+      <div class="actions-inline">
+        <button id="envios-refresh-btn" class="action-btn" type="button">Recargar</button>
+        <button id="envios-open-create-modal" class="action-btn" type="button">Nuevo envio</button>
+      </div>
+    </div>
+    <p class="muted-text">
+      Sigue lo que va en camino, revisa el tracking y confirma la recepcion en faena cuando
+      corresponda.
+    </p>
+  </section>
+
+  <section class="card full">
+    <div class="section-head">
+      <h4>Filtros simples</h4>
+      <div class="actions-inline">
+        <button id="envios-filter-apply" class="action-btn" type="button">Aplicar</button>
+        <button id="envios-filter-clear" class="action-btn secondary" type="button">Limpiar</button>
+      </div>
+    </div>
+
+    <form id="envios-filter-form" class="form-grid cols-4">
+      <div>
+        <label for="envios-filter-search">Buscar</label>
+        <input id="envios-filter-search" name="q" placeholder="Repuesto o codigo" />
+      </div>
+      <div>
+        <label for="envios-filter-estado">Estado visual</label>
+        <select id="envios-filter-estado" name="estado_visual">
+          <option value="">Todos</option>
+          <option value="PREPARADO">Preparado</option>
+          <option value="ENVIADO">Enviado</option>
+          <option value="RECIBIDO">Recibido</option>
+        </select>
+      </div>
+      <div>
+        <label for="envios-filter-fecha-desde">Fecha desde</label>
+        <input id="envios-filter-fecha-desde" name="fechaDesde" type="date" />
+      </div>
+      <div>
+        <label for="envios-filter-fecha-hasta">Fecha hasta</label>
+        <input id="envios-filter-fecha-hasta" name="fechaHasta" type="date" />
+      </div>
+      <div id="envios-filter-equipo-field">
+        <label for="envios-filter-equipo">Equipo</label>
+        <select id="envios-filter-equipo" name="equipoId"></select>
+      </div>
+    </form>
+  </section>
+
+  <section class="card full">
+    <div class="section-head">
+      <h4>Configurar lista</h4>
+      <button id="envios-config-apply" class="action-btn" type="button">Guardar configuracion</button>
+    </div>
+
+    <form id="envios-config-form" class="form-grid cols-4">
+      <div>
+        <label for="envios-config-limit">Cantidad por pagina</label>
+        <select id="envios-config-limit" name="limit">
+          <option value="10">10</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </div>
+      <div>
+        <label for="envios-config-order">Orden</label>
+        <select id="envios-config-order" name="order">
+          <option value="desc">Mas recientes</option>
+          <option value="asc">Mas antiguos</option>
+        </select>
+      </div>
+      <div class="align-end">
+        <label class="toggle-label">
+          <input id="envios-config-show-comment" name="showComment" type="checkbox" />
+          Mostrar comentario
+        </label>
+      </div>
+      <div class="align-end">
+        <label class="toggle-label">
+          <input id="envios-config-show-solicitante" name="showSolicitante" type="checkbox" />
+          Mostrar solicitado por
+        </label>
+      </div>
+    </form>
+  </section>
+
+  <section class="card full">
+    <div class="table-wrap">
+      <table>
+        <thead id="envios-table-head"></thead>
+        <tbody id="envios-table-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div id="envios-create-modal" class="modal hidden">
+    <div class="modal-backdrop" data-close="true"></div>
+    <section class="modal-content">
+      <header class="modal-header">
+        <h4>Registrar nuevo envio</h4>
+        <button id="envios-create-close" class="icon-btn" type="button">x</button>
+      </header>
+
+      <form id="envios-create-form" class="form-grid cols-2">
+        <div>
+          <label for="envio-repuesto-id">Repuesto</label>
+          <select id="envio-repuesto-id" name="repuesto_id" required></select>
+        </div>
+        <div>
+          <label for="envio-equipo-id">Equipo destino</label>
+          <select id="envio-equipo-id" name="equipo_destino_id" required></select>
+        </div>
+        <div>
+          <label for="envio-cantidad">Cantidad</label>
+          <input id="envio-cantidad" name="cantidad" type="number" min="1" required />
+        </div>
+        <div>
+          <label for="envio-estado-visual">Estado visual inicial</label>
+          <select id="envio-estado-visual" name="estado_visual">
+            <option value="PREPARADO">Preparado</option>
+            <option value="ENVIADO">Enviado</option>
+            <option value="RECIBIDO">Recibido</option>
+          </select>
+        </div>
+        <div class="full">
+          <label for="envio-comentario">Comentario</label>
+          <textarea id="envio-comentario" name="comentario" rows="3"></textarea>
+        </div>
+        <div class="full actions-inline">
+          <button class="action-btn" type="submit">Registrar envio</button>
+          <button id="envios-create-cancel" class="action-btn secondary" type="button">Cancelar</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div id="envios-track-modal" class="modal hidden">
+    <div class="modal-backdrop" data-close="true"></div>
+    <section class="modal-content">
+      <header class="modal-header">
+        <h4>Actualizar tracking</h4>
+        <button id="envios-track-close" class="icon-btn" type="button">x</button>
+      </header>
+
+      <form id="envios-track-form" class="form-grid cols-2">
+        <input id="envios-track-id" type="hidden" />
+        <div>
+          <label for="envios-track-status">Estado visual</label>
+          <select id="envios-track-status" required>
+            <option value="PREPARADO">Preparado</option>
+            <option value="ENVIADO">Enviado</option>
+            <option value="RECIBIDO">Recibido</option>
+          </select>
+        </div>
+        <div class="full">
+          <label for="envios-track-comment">Comentario</label>
+          <textarea id="envios-track-comment" rows="3"></textarea>
+        </div>
+        <div class="full actions-inline">
+          <button class="action-btn" type="submit">Guardar tracking</button>
+          <button id="envios-track-cancel" class="action-btn secondary" type="button">Cancelar</button>
+        </div>
+      </form>
+    </section>
+  </div>
+</div>

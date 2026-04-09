@@ -1,0 +1,120 @@
+<div class="view-grid">
+  <section class="card hero-card full dashboard-hero-card">
+    <div class="section-head">
+      <div>
+        <h4>Resumen diario</h4>
+        <p class="muted-text">
+          Revisa solicitudes activas, novedades y seguimiento del periodo seleccionado.
+        </p>
+      </div>
+      <div class="actions-inline wrap-actions">
+        <span id="dashboard-last-update" class="dashboard-last-update">Sin actualizar</span>
+        <button id="dashboard-refresh-btn" class="action-btn secondary" type="button">
+          Actualizar
+        </button>
+      </div>
+    </div>
+    <div id="dashboard-filter-summary" class="dashboard-filter-summary"></div>
+  </section>
+
+  <section class="card full">
+    <div class="section-head">
+      <h4>Filtros</h4>
+      <div class="actions-inline wrap-actions">
+        <button id="dashboard-filter-btn" class="action-btn" type="button">Aplicar</button>
+        <button id="dashboard-clear-btn" class="action-btn secondary" type="button">Limpiar</button>
+        <button id="dashboard-export-btn" class="action-btn" type="button">Exportar Excel</button>
+      </div>
+    </div>
+
+    <form id="dashboard-filter-form" class="form-grid cols-3">
+      <div>
+        <label for="dashboard-fecha-desde">Fecha desde</label>
+        <input id="dashboard-fecha-desde" name="fechaDesde" type="date" />
+      </div>
+      <div>
+        <label for="dashboard-fecha-hasta">Fecha hasta</label>
+        <input id="dashboard-fecha-hasta" name="fechaHasta" type="date" />
+      </div>
+      <div id="dashboard-equipo-field">
+        <label for="dashboard-equipo-id">Equipo</label>
+        <select id="dashboard-equipo-id" name="equipoId"></select>
+      </div>
+    </form>
+  </section>
+
+  <section id="dashboard-alerts-card" class="card full">
+    <div class="section-head compact-head">
+      <div>
+        <h4>Novedades recientes</h4>
+        <p class="muted-text">Solicitudes, mensajes y cambios recientes</p>
+      </div>
+    </div>
+    <div id="dashboard-alerts-list" class="alert-feed"></div>
+  </section>
+
+  <article id="dashboard-kpi-solicitudes" class="card kpi-card">
+    <h4 id="metric-solicitudes-title">Solicitudes pendientes</h4>
+    <div id="metric-solicitudes-pendientes" class="kpi-value">0</div>
+    <p id="metric-solicitudes-caption">Pendiente + En gestion</p>
+  </article>
+
+  <article id="dashboard-kpi-despachos" class="card kpi-card">
+    <h4 id="metric-despachos-title">Confirmaciones pendientes</h4>
+    <div id="metric-despachos-pendientes" class="kpi-value">0</div>
+    <p id="metric-despachos-caption">Solicitudes en despacho por confirmar</p>
+  </article>
+
+  <article class="card kpi-card">
+    <h4>Movimientos visibles</h4>
+    <div id="metric-dashboard-visible" class="kpi-value">0</div>
+    <p>Ultimas solicitudes mostradas en esta vista</p>
+  </article>
+
+  <section class="card chart-card">
+    <h4>Solicitudes por estado</h4>
+    <div class="chart-wrap">
+      <canvas id="chart-solicitudes-estado"></canvas>
+    </div>
+  </section>
+
+  <section class="card chart-card">
+    <h4>Solicitudes por equipo</h4>
+    <div class="chart-wrap">
+      <canvas id="chart-solicitudes-equipo"></canvas>
+    </div>
+  </section>
+
+  <section class="card chart-card full">
+    <h4>Solicitudes en el tiempo</h4>
+    <div class="chart-wrap">
+      <canvas id="chart-solicitudes-tiempo"></canvas>
+    </div>
+  </section>
+
+  <section class="card full">
+    <div class="section-head compact-head">
+      <div>
+        <h4>Ultimas solicitudes y estado actual</h4>
+        <p class="muted-text">Resumen de solicitudes revisadas en este periodo</p>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Equipo</th>
+            <th>Repuesto</th>
+            <th>Cantidad</th>
+            <th>Estado</th>
+            <th>Fecha creacion</th>
+            <th>Fecha despacho</th>
+            <th>Fecha entrega</th>
+          </tr>
+        </thead>
+        <tbody id="dashboard-envios-body"></tbody>
+      </table>
+    </div>
+  </section>
+</div>

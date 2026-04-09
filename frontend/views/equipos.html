@@ -1,0 +1,95 @@
+﻿<div class="view-grid">
+  <section class="card" id="equipos-admin-section">
+    <h4>Administrar equipos</h4>
+    <form id="equipos-create-form" class="form-grid cols-2">
+      <div>
+        <label for="equipo-nombre">Nuevo equipo</label>
+        <input id="equipo-nombre" name="nombre_equipo" placeholder="Ej: Maule Norte 4" />
+      </div>
+      <div class="full">
+        <button class="action-btn" type="submit">Crear equipo</button>
+      </div>
+    </form>
+
+    <form id="equipos-update-form" class="form-grid cols-2">
+      <div>
+        <label for="equipo-id-edit">ID equipo</label>
+        <input id="equipo-id-edit" name="id" type="number" min="1" />
+      </div>
+      <div>
+        <label for="equipo-nombre-edit">Nuevo nombre</label>
+        <input id="equipo-nombre-edit" name="nombre_equipo" />
+      </div>
+      <div class="full">
+        <button class="action-btn" type="submit">Actualizar equipo</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card full">
+    <h4>Equipos operativos</h4>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Equipo</th>
+          </tr>
+        </thead>
+        <tbody id="equipos-table-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card" id="equipo-stock-edit-section">
+    <h4>Ajustar stock del equipo</h4>
+    <p class="muted-text">Usa el popup para ajustar rapido el stock de tu team.</p>
+    <button id="equipo-open-stock-modal" class="action-btn" type="button">Editar stock (modal)</button>
+  </section>
+
+  <section class="card full">
+    <h4>Stock por equipo (separado por team)</h4>
+    <div id="equipo-stock-groups" class="team-groups"></div>
+  </section>
+
+  <div id="equipo-stock-modal" class="modal hidden">
+    <div class="modal-backdrop" data-close="true"></div>
+    <section class="modal-content">
+      <header class="modal-header">
+        <h4>Ajustar stock del equipo</h4>
+        <button id="equipo-stock-close" class="icon-btn" type="button">×</button>
+      </header>
+
+      <form id="equipo-stock-edit-form" class="form-grid cols-3">
+        <div class="full">
+          <label for="equipo-stock-select">Seleccionar repuesto del equipo</label>
+          <select id="equipo-stock-select" required></select>
+        </div>
+        <div>
+          <label for="equipo-stock-team">Equipo</label>
+          <input id="equipo-stock-team" type="text" readonly />
+        </div>
+        <div>
+          <label for="equipo-stock-code">Codigo</label>
+          <input id="equipo-stock-code" type="text" readonly />
+        </div>
+        <div>
+          <label for="equipo-stock-name">Repuesto</label>
+          <input id="equipo-stock-name" type="text" readonly />
+        </div>
+        <div>
+          <label for="equipo-stock-current">Stock actual</label>
+          <input id="equipo-stock-current" type="number" readonly />
+        </div>
+        <div>
+          <label for="equipo-stock-next">Nuevo stock</label>
+          <input id="equipo-stock-next" type="number" min="0" required />
+        </div>
+        <div class="full actions-inline">
+          <button class="action-btn" type="submit">Guardar ajuste</button>
+          <button id="equipo-stock-cancel" class="action-btn secondary" type="button">Cerrar</button>
+        </div>
+      </form>
+    </section>
+  </div>
+</div>

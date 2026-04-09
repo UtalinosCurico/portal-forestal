@@ -1,0 +1,260 @@
+<div class="view-grid">
+  <section id="usuarios-storage-warning" class="card full storage-warning hidden">
+    <h4>Proteccion de persistencia activa</h4>
+    <p id="usuarios-storage-warning-text" class="muted-text">
+      Este entorno esta en modo lectura para usuarios hasta que exista una base persistente.
+    </p>
+  </section>
+
+  <section class="card full" id="usuarios-create-section">
+    <div class="section-head compact-head">
+      <div>
+        <h4>Alta de usuarios</h4>
+        <p class="muted-text">
+          La creacion queda en popup para no recargar la pantalla ni mezclarla con el listado.
+        </p>
+      </div>
+      <div class="actions-inline wrap-actions">
+        <button id="usuarios-open-create-modal" class="action-btn" type="button">Nuevo usuario</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card full">
+    <div class="section-head users-toolbar">
+      <div>
+        <h4>Usuarios del sistema</h4>
+        <p id="usuarios-filter-summary" class="muted-text">Cargando usuarios...</p>
+      </div>
+      <div class="actions-inline wrap-actions users-toolbar-actions">
+        <input
+          id="usuarios-search-input"
+          class="search-box"
+          type="search"
+          placeholder="Buscar por nombre, email, rol o team"
+          autocomplete="off"
+        />
+        <select id="usuarios-role-filter" class="users-role-filter">
+          <option value="">Todos los roles</option>
+          <option value="ADMIN">ADMIN</option>
+          <option value="SUPERVISOR">SUPERVISOR</option>
+          <option value="JEFE_FAENA">JEFE_FAENA</option>
+          <option value="MECANICO">MECANICO</option>
+          <option value="OPERADOR">OPERADOR</option>
+        </select>
+        <div id="usuarios-filter-group" class="filter-chip-group" role="tablist" aria-label="Filtros de usuarios">
+          <button class="filter-chip active" type="button" data-estado="activos">Activos</button>
+          <button class="filter-chip" type="button" data-estado="inactivos">Inactivos</button>
+          <button class="filter-chip" type="button" data-estado="archivados">Archivados</button>
+          <button class="filter-chip" type="button" data-estado="todos">Todos</button>
+        </div>
+        <button id="usuarios-refresh-btn" class="action-btn" type="button">Recargar</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Email</th>
+            <th>Rol</th>
+            <th>Team</th>
+            <th>Estado</th>
+            <th>Fecha creacion</th>
+            <th>Accion</th>
+          </tr>
+        </thead>
+        <tbody id="usuarios-table-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div id="usuarios-edit-modal" class="modal hidden">
+    <div class="modal-backdrop" data-close="true"></div>
+    <section class="modal-content modal-compact">
+      <header class="modal-header">
+        <div>
+          <h4>Editar usuario</h4>
+          <p id="usuarios-edit-caption" class="muted-text">Actualiza datos operativos y team.</p>
+        </div>
+        <button id="edit-user-close" class="icon-btn" type="button">x</button>
+      </header>
+
+      <form id="usuarios-edit-form" class="form-grid cols-2" autocomplete="off">
+        <input id="edit-user-id" name="id" type="hidden" />
+        <div>
+          <label for="edit-user-nombre">Nombre</label>
+          <input id="edit-user-nombre" name="nombre" required autocomplete="off" />
+        </div>
+        <div>
+          <label for="edit-user-email">Email</label>
+          <input
+            id="edit-user-email"
+            name="user_email"
+            type="email"
+            required
+            autocomplete="off"
+            autocapitalize="none"
+            spellcheck="false"
+          />
+        </div>
+        <div id="edit-user-password-group">
+          <label for="edit-user-password">Nueva contrasena (opcional)</label>
+          <input id="edit-user-password" name="user_password" type="password" autocomplete="new-password" />
+        </div>
+        <div id="edit-user-rol-group">
+          <label for="edit-user-rol">Rol</label>
+          <select id="edit-user-rol" name="rol" required>
+            <option value="ADMIN">ADMIN</option>
+            <option value="SUPERVISOR">SUPERVISOR</option>
+            <option value="JEFE_FAENA">JEFE_FAENA</option>
+            <option value="MECANICO">MECANICO</option>
+            <option value="OPERADOR">OPERADOR</option>
+          </select>
+        </div>
+        <div>
+          <label for="edit-user-equipo">Team</label>
+          <select id="edit-user-equipo" name="equipo_id"></select>
+          <p id="edit-user-equipo-help" class="form-hint"></p>
+        </div>
+        <div class="align-end">
+          <label class="toggle-label toggle-card" for="edit-user-activo">
+            <input id="edit-user-activo" name="activo" type="checkbox" checked />
+            <span>
+              <strong>Usuario activo</strong>
+              <small>Si lo desactivas deja de iniciar sesion, pero sigue visible.</small>
+            </span>
+          </label>
+        </div>
+        <div class="full actions-inline wrap-actions">
+          <button class="action-btn" type="submit">Guardar cambios</button>
+          <button id="edit-user-cancel" class="action-btn secondary" type="button">Cancelar</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div id="usuarios-create-modal" class="modal hidden">
+    <div class="modal-backdrop" data-close="true"></div>
+    <section class="modal-content">
+      <header class="modal-header">
+        <div>
+          <h4>Crear usuario</h4>
+          <p class="muted-text">
+            ADMIN y SUPERVISOR pueden crear cuentas nuevas. Los roles de faena deben quedar asignados
+            a un team.
+          </p>
+        </div>
+        <button id="usuarios-create-close" class="icon-btn" type="button">x</button>
+      </header>
+
+      <form id="usuarios-create-form" class="form-grid cols-3" autocomplete="off">
+        <input type="text" name="fake_username" class="hidden" autocomplete="username" tabindex="-1" />
+        <input type="password" name="fake_password" class="hidden" autocomplete="new-password" tabindex="-1" />
+
+        <div>
+          <label for="user-nombre">Nombre</label>
+          <input id="user-nombre" name="nombre" required autocomplete="off" />
+        </div>
+        <div>
+          <label for="user-email">Email</label>
+          <input
+            id="user-email"
+            name="user_email"
+            type="email"
+            required
+            autocomplete="off"
+            autocapitalize="none"
+            spellcheck="false"
+          />
+        </div>
+        <div>
+          <label for="user-password">Contrasena</label>
+          <input
+            id="user-password"
+            name="user_password"
+            type="password"
+            required
+            autocomplete="new-password"
+          />
+        </div>
+        <div>
+          <label for="user-rol">Rol</label>
+          <select id="user-rol" name="rol" required>
+            <option value="ADMIN">ADMIN</option>
+            <option value="SUPERVISOR">SUPERVISOR</option>
+            <option value="JEFE_FAENA">JEFE_FAENA</option>
+            <option value="MECANICO">MECANICO</option>
+            <option value="OPERADOR">OPERADOR</option>
+          </select>
+        </div>
+        <div>
+          <label for="user-equipo">Team</label>
+          <select id="user-equipo" name="equipo_id"></select>
+          <p id="user-equipo-help" class="form-hint"></p>
+        </div>
+        <div class="align-end">
+          <label class="toggle-label toggle-card" for="user-activo">
+            <input id="user-activo" name="activo" type="checkbox" checked />
+            <span>
+              <strong>Usuario activo</strong>
+              <small>Si se crea activo puede iniciar sesion de inmediato.</small>
+            </span>
+          </label>
+        </div>
+        <div class="full actions-inline wrap-actions">
+          <button class="action-btn" type="submit">Crear usuario</button>
+          <button id="usuarios-create-reset" class="action-btn secondary" type="button">Limpiar</button>
+          <button id="usuarios-create-cancel" class="action-btn secondary" type="button">Cancelar</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div id="usuarios-password-modal" class="modal hidden">
+    <div class="modal-backdrop" data-close="true"></div>
+    <section class="modal-content modal-compact">
+      <header class="modal-header">
+        <div>
+          <h4>Restablecer contrasena</h4>
+          <p id="usuarios-password-caption" class="muted-text">Define una nueva contrasena temporal.</p>
+        </div>
+        <button id="password-user-close" class="icon-btn" type="button">x</button>
+      </header>
+
+      <form id="usuarios-password-form" class="form-grid cols-2" autocomplete="off">
+        <input id="password-user-id" name="id" type="hidden" />
+        <div class="full">
+          <label for="password-user-name">Usuario</label>
+          <input id="password-user-name" type="text" disabled />
+        </div>
+        <div>
+          <label for="password-user-value">Nueva contrasena</label>
+          <input
+            id="password-user-value"
+            name="password"
+            type="password"
+            required
+            autocomplete="new-password"
+          />
+        </div>
+        <div>
+          <label for="password-user-confirm">Confirmar contrasena</label>
+          <input
+            id="password-user-confirm"
+            name="password_confirm"
+            type="password"
+            required
+            autocomplete="new-password"
+          />
+        </div>
+        <div class="full actions-inline wrap-actions">
+          <button class="action-btn" type="submit">Guardar nueva contrasena</button>
+          <button id="password-user-cancel" class="action-btn secondary" type="button">Cancelar</button>
+        </div>
+      </form>
+    </section>
+  </div>
+</div>

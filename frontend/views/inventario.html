@@ -1,0 +1,112 @@
+﻿<div class="view-grid">
+  <section class="card" id="inventario-create-section">
+    <h4>Crear item de inventario</h4>
+    <form id="inventario-create-form" class="form-grid cols-3">
+      <div>
+        <label for="inv-codigo">Codigo</label>
+        <input id="inv-codigo" name="codigo" required />
+      </div>
+      <div>
+        <label for="inv-nombre">Nombre</label>
+        <input id="inv-nombre" name="nombre" required />
+      </div>
+      <div>
+        <label for="inv-unidad">Unidad</label>
+        <input id="inv-unidad" name="unidad_medida" value="unidad" />
+      </div>
+      <div>
+        <label for="inv-stock-central">Stock central</label>
+        <input id="inv-stock-central" name="stock_central" type="number" min="0" value="0" />
+      </div>
+      <div>
+        <label for="inv-stock-faena">Stock faena</label>
+        <input id="inv-stock-faena" name="stock_faena" type="number" min="0" value="0" />
+      </div>
+      <div>
+        <label for="inv-critical-level">Nivel critico</label>
+        <input id="inv-critical-level" name="critical_level" type="number" min="0" value="5" />
+      </div>
+      <div class="full">
+        <button class="action-btn" type="submit">Crear item</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card" id="inventario-update-section">
+    <h4>Edicion de repuestos</h4>
+    <p class="muted-text">Usa un popup guiado para editar o eliminar un item sin salir del listado.</p>
+    <button id="inventario-open-edit-modal" class="action-btn" type="button">Editar repuesto (modal)</button>
+  </section>
+
+  <section class="card full" id="inventario-global-list-section">
+    <div class="section-head">
+      <h4>Inventario global</h4>
+      <button id="inventario-refresh-btn" class="action-btn" type="button">Recargar</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead id="inventario-table-head"></thead>
+        <tbody id="inventario-table-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card full" id="inventario-team-stock-section">
+    <h4>Stock en faena por equipo (separado por team)</h4>
+    <div id="inventario-team-stock-groups" class="team-groups"></div>
+  </section>
+
+  <div id="inventario-edit-modal" class="modal hidden">
+    <div class="modal-backdrop" data-close="true"></div>
+    <section class="modal-content">
+      <header class="modal-header">
+        <h4>Editar inventario</h4>
+        <button id="inventario-edit-close" class="icon-btn" type="button">×</button>
+      </header>
+
+      <form id="inventario-edit-form" class="form-grid cols-3">
+        <div class="full">
+          <label for="inventario-edit-select">Seleccionar item</label>
+          <select id="inventario-edit-select" required></select>
+        </div>
+        <div>
+          <label for="inventario-edit-codigo">Codigo</label>
+          <input id="inventario-edit-codigo" type="text" required />
+        </div>
+        <div>
+          <label for="inventario-edit-nombre">Nombre</label>
+          <input id="inventario-edit-nombre" type="text" required />
+        </div>
+        <div>
+          <label for="inventario-edit-unidad">Unidad</label>
+          <input id="inventario-edit-unidad" type="text" required />
+        </div>
+        <div>
+          <label for="inventario-edit-central">Stock central</label>
+          <input id="inventario-edit-central" type="number" min="0" required />
+        </div>
+        <div>
+          <label for="inventario-edit-faena">Stock faena total</label>
+          <input id="inventario-edit-faena" type="number" min="0" required />
+        </div>
+        <div>
+          <label for="inventario-edit-critical">Nivel critico</label>
+          <input id="inventario-edit-critical" type="number" min="0" required />
+        </div>
+        <div class="full actions-inline">
+          <button class="action-btn" type="submit">Guardar cambios</button>
+          <button
+            id="inventario-delete-selected-btn"
+            class="action-btn secondary"
+            type="button"
+          >
+            Eliminar item seleccionado
+          </button>
+          <button id="inventario-edit-cancel" class="action-btn secondary" type="button">
+            Cerrar
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+</div>

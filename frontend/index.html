@@ -1,0 +1,133 @@
+﻿<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#123126" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Portal FMN" />
+    <title>Portal FMN | Solicitudes</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="icon" type="image/png" href="/assets/fmn-icon-192.png" />
+    <link rel="apple-touch-icon" href="/assets/fmn-icon-180.png" />
+    <link rel="manifest" href="/manifest.webmanifest?v=20260409-roles-teams-v1" />
+    <link rel="stylesheet" href="/style.css?v=20260409-roles-teams-v1" />
+  </head>
+  <body>
+    <section id="login-screen" class="login-screen">
+      <div class="login-card">
+        <img src="/assets/fmn-icon-512.png" alt="Portal FMN" class="brand-logo login-logo" />
+        <h1>Portal FMN</h1>
+        <p>Gestion y seguimiento de solicitudes operativas.</p>
+
+        <form id="login-form">
+          <label for="email">Email</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            autocomplete="username"
+            autocapitalize="none"
+            spellcheck="false"
+          />
+
+          <label for="password">Contrasena</label>
+          <div class="password-field">
+            <input id="password" name="password" type="password" required />
+            <button id="toggle-password-btn" class="field-toggle-btn" type="button">
+              Mostrar
+            </button>
+          </div>
+
+          <label class="toggle-label toggle-card login-toggle-card" for="remember-session">
+            <input id="remember-session" name="remember_session" type="checkbox" />
+            <span>
+              <strong>Mantener sesion iniciada</strong>
+              <small>Guarda la sesion en este dispositivo hasta cerrar sesion manualmente.</small>
+            </span>
+          </label>
+
+          <button type="submit">Ingresar</button>
+          <p id="login-error" class="text-error hidden"></p>
+          <small class="login-help">
+            Si un usuario olvida su contrasena, un ADMIN o SUPERVISOR puede restablecerla desde el
+            modulo Usuarios.
+          </small>
+          <small class="login-version">Version 08.04.26</small>
+        </form>
+      </div>
+    </section>
+
+    <div id="portal-screen" class="portal-layout hidden">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <img src="/assets/fmn-icon-512.png" alt="Portal FMN" class="brand-logo sidebar-logo" />
+          <h2>Portal FMN</h2>
+          <p id="user-badge">-</p>
+        </div>
+
+        <nav class="sidebar-nav" id="sidebar-nav">
+          <button class="nav-item active" data-view="dashboard">Dashboard</button>
+          <button class="nav-item" data-view="solicitudes">Solicitudes</button>
+          <button class="nav-item" data-view="usuarios">Usuarios</button>
+          <button class="nav-item" data-view="powerbi">Power BI</button>
+        </nav>
+
+        <button id="help-btn" class="help-btn" type="button">Como usar</button>
+        <button id="logout-btn" class="logout-btn">Cerrar sesion</button>
+      </aside>
+      <button id="sidebar-overlay" class="sidebar-overlay hidden" type="button" aria-label="Cerrar menu"></button>
+
+      <main class="main-content">
+        <header class="topbar">
+          <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menu">☰</button>
+          <div class="topbar-main">
+            <div class="topbar-heading">
+              <h3 id="page-title">Dashboard</h3>
+              <p id="page-subtitle">Solicitudes operativas y seguimiento</p>
+            </div>
+            <div class="topbar-actions">
+              <button id="install-app-btn" class="topbar-action hidden" type="button">
+                Instalar app
+              </button>
+              <button id="alerts-btn" class="topbar-action topbar-alert-btn" type="button" aria-label="Alertas">
+                <span class="topbar-action-icon" aria-hidden="true">🔔</span>
+                <span class="topbar-action-label">Alertas</span>
+                <span id="alerts-badge" class="alert-badge hidden">0</span>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <section id="view-container" class="view-container"></section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <div id="alerts-modal" class="modal hidden">
+      <div class="modal-backdrop" data-close="true"></div>
+      <section class="modal-content modal-compact alerts-modal-sheet">
+        <header class="modal-header">
+          <span class="alerts-modal-handle" aria-hidden="true"></span>
+          <div>
+            <h4>Alertas y novedades</h4>
+            <p class="muted-text">Mensajes y cambios recientes del portal.</p>
+          </div>
+          <button id="alerts-close-btn" class="icon-btn" type="button">x</button>
+        </header>
+        <div class="section-head compact-head">
+          <span id="alerts-status" class="mini-chip active">Sin cargar</span>
+          <button id="alerts-refresh-btn" class="action-btn secondary" type="button">
+            Actualizar
+          </button>
+        </div>
+        <div id="alerts-list" class="alert-feed"></div>
+      </section>
+    </div>
+
+    <script type="module" src="/app.js?v=20260409-roles-teams-v1"></script>
+  </body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "name": "Portal Forestal Maule Norte",
+  "short_name": "Portal FMN",
+  "description": "Solicitudes operativas, seguimiento y trazabilidad para equipos forestales.",
+  "start_url": "/web",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f0f5f2",
+  "theme_color": "#123126",
+  "icons": [
+    {
+      "src": "/assets/fmn-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/fmn-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

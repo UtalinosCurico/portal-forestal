@@ -1,0 +1,33 @@
+# Dependencias
+node_modules/
+backend/node_modules/
+
+# Variables de entorno y credenciales — NUNCA subir al repo
+.env
+.env.*
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Vercel
+.vercel/
+
+# Bases de datos locales
+*.db
+*.sqlite
+*.sqlite3
+tmp/
+
+# Backups locales
+backups/
+
+# Cobertura de tests
+backend/.nyc_output
+backend/coverage
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Claude Code (memoria local del asistente)
+.claude/
