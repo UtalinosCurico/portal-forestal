@@ -2163,10 +2163,9 @@ async function listPendingItems(actor) {
       s.equipo_id,
       s.estado AS solicitud_estado,
       s.created_at AS solicitud_created_at,
-      su.nombre AS solicitante_nombre
+      s.solicitante_id
     FROM solicitud_items si
     INNER JOIN solicitudes s ON s.id = si.solicitud_id
-    INNER JOIN usuarios su ON su.id = s.solicitante_id
     WHERE si.estado_item = ${push(SOLICITUD_ITEM_STATUS.POR_GESTIONAR)}
       AND s.estado NOT IN ('ENTREGADO', 'RECHAZADO')
   `;
@@ -2177,13 +2176,14 @@ async function listPendingItems(actor) {
   query += ` ORDER BY s.id ASC, si.id ASC`;
 
   const pg = getOperationalPool();
-  const { rows } = await pg.query(query, params);
+  const [{ rows }, usersMap] = await Promise.all([pg.query(query, params), loadUsersMap()]);
   return rows.map((row) => ({
     ...row,
     item_id: Number(row.item_id),
     solicitud_id: Number(row.solicitud_id),
     cantidad: Number(row.cantidad),
     equipo_id: row.equipo_id != null ? Number(row.equipo_id) : null,
+    solicitante_nombre: usersMap.get(Number(row.solicitante_id))?.nombre || "Usuario",
   }));
 }
 
