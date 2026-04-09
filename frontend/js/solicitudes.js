@@ -467,6 +467,7 @@ function renderSummary(rows) {
     }
   }
 
+  document.getElementById("summary-total").textContent = String(rows.length);
   document.getElementById("summary-pendientes").textContent = String(summary.pendientes);
   document.getElementById("summary-revision").textContent = String(summary.revision);
   document.getElementById("summary-despacho").textContent = String(summary.despacho);
@@ -853,11 +854,6 @@ export async function initSolicitudesView(context) {
   const tableBody = document.getElementById("solicitudes-table-body");
   const mobileList = document.getElementById("solicitudes-mobile-list");
   const quickFilters = document.getElementById("solicitudes-quick-filters");
-  const rolePill = document.getElementById("solicitudes-role-pill");
-  const focusTitle = document.getElementById("solicitudes-focus-title");
-  const focusText = document.getElementById("solicitudes-focus-text");
-  const focusPrimaryBtn = document.getElementById("solicitudes-focus-primary");
-  const focusSecondaryBtn = document.getElementById("solicitudes-focus-secondary");
   const mobilePrimaryBtn = document.getElementById("solicitudes-mobile-primary");
   const mobileSecondaryBtn = document.getElementById("solicitudes-mobile-secondary");
 
@@ -1409,10 +1405,11 @@ export async function initSolicitudesView(context) {
   }
 
   function syncQuickFilterUI() {
-    quickFilters.querySelectorAll(".filter-chip").forEach((button) => {
+    quickFilters.querySelectorAll("[data-quick-filter]").forEach((button) => {
       const target = button.dataset.quickFilter;
       const selected = target === "ALL" ? !filters.estado : filters.estado === target;
       button.classList.toggle("active", selected);
+      button.setAttribute("aria-pressed", selected ? "true" : "false");
     });
   }
 
@@ -1421,7 +1418,7 @@ export async function initSolicitudesView(context) {
     targetSection?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  async function applyQuickFilter(status, successMessage = "Filtro rapido aplicado") {
+  async function applyQuickFilter(status, successMessage = "") {
     filters.estado = status || "";
     const selectEstado = filterForm.querySelector("[name='estado']");
     if (selectEstado) {
@@ -1429,25 +1426,15 @@ export async function initSolicitudesView(context) {
     }
     await loadSolicitudes();
     scrollToBandeja();
-    context.showToast(successMessage);
+    if (successMessage) {
+      context.showToast(successMessage);
+    }
   }
 
   function configureRoleActions() {
     const config = ROLE_ACTIONS[role] || ROLE_ACTIONS.OPERADOR;
 
-    if (rolePill) {
-      rolePill.textContent = config.pill;
-    }
-    if (focusTitle) {
-      focusTitle.textContent = config.title;
-    }
-    if (focusText) {
-      focusText.textContent = config.text;
-    }
-
     [
-      [focusPrimaryBtn, config.primary],
-      [focusSecondaryBtn, config.secondary],
       [mobilePrimaryBtn, config.primary],
       [mobileSecondaryBtn, config.secondary],
     ].forEach(([button, actionConfig]) => {
@@ -2282,7 +2269,7 @@ export async function initSolicitudesView(context) {
   });
 
   quickFilters.addEventListener("click", async (event) => {
-    const button = event.target.closest(".filter-chip");
+    const button = event.target.closest("[data-quick-filter]");
     if (!button) {
       return;
     }
@@ -2314,7 +2301,7 @@ export async function initSolicitudesView(context) {
     }, 120);
   });
 
-  [focusPrimaryBtn, focusSecondaryBtn, mobilePrimaryBtn, mobileSecondaryBtn]
+  [mobilePrimaryBtn, mobileSecondaryBtn]
     .filter(Boolean)
     .forEach((button) => {
       button.addEventListener("click", async () => {
@@ -2402,4 +2389,3 @@ export async function initSolicitudesView(context) {
   resetCreateSolicitudForm();
   await Promise.all([loadSolicitudes(), loadAndRenderPendingItems()]);
 }
-

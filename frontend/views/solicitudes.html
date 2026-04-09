@@ -20,38 +20,29 @@
       </div>
     </div>
 
-    <div class="quick-strip">
-      <article class="quick-tile">
+    <div class="quick-strip" id="solicitudes-quick-filters" aria-label="Filtros rapidos de solicitudes">
+      <button class="quick-tile active" data-quick-filter="ALL" type="button">
+        <span class="quick-label">Todas</span>
+        <strong id="summary-total" class="quick-value">0</strong>
+      </button>
+      <button class="quick-tile" data-quick-filter="PENDIENTE" type="button">
         <span class="quick-label">Pendientes</span>
         <strong id="summary-pendientes" class="quick-value">0</strong>
-      </article>
-      <article class="quick-tile">
+      </button>
+      <button class="quick-tile" data-quick-filter="EN_REVISION" type="button">
         <span class="quick-label">En gestion</span>
         <strong id="summary-revision" class="quick-value">0</strong>
-      </article>
-      <article class="quick-tile">
+      </button>
+      <button class="quick-tile" data-quick-filter="EN_DESPACHO" type="button">
         <span class="quick-label">En despacho</span>
         <strong id="summary-despacho" class="quick-value">0</strong>
-      </article>
-      <article class="quick-tile">
+      </button>
+      <button class="quick-tile" data-quick-filter="ENTREGADO" type="button">
         <span class="quick-label">Entregadas</span>
         <strong id="summary-entregadas" class="quick-value">0</strong>
-      </article>
+      </button>
     </div>
-
-    <div class="solicitudes-quick-actions">
-      <div>
-        <strong class="quick-actions-title">Filtros rapidos</strong>
-        <p class="muted-text">Toca una opcion y la bandeja se ajusta al instante.</p>
-      </div>
-      <div id="solicitudes-quick-filters" class="filter-chip-group">
-        <button class="filter-chip active" data-quick-filter="ALL" type="button">Todas</button>
-        <button class="filter-chip" data-quick-filter="PENDIENTE" type="button">Pendientes</button>
-        <button class="filter-chip" data-quick-filter="EN_REVISION" type="button">En gestion</button>
-        <button class="filter-chip" data-quick-filter="EN_DESPACHO" type="button">En despacho</button>
-        <button class="filter-chip" data-quick-filter="ENTREGADO" type="button">Entregadas</button>
-      </div>
-    </div>
+    <p class="quick-strip-hint muted-text">Toca una tarjeta para filtrar la bandeja sin abrir mas opciones.</p>
   </section>
 
   <section class="card full pending-inline-card" id="solicitudes-inline-pending-card">
