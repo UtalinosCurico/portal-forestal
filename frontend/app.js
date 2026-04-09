@@ -187,6 +187,54 @@ function isUrgentNotification(notification) {
   return ["SOLICITUD_NUEVA", "SOLICITUD_ESTADO"].includes(type);
 }
 
+function playNotificationSound() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+
+    function chime(freq, startTime, duration, volume = 0.22) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      // Segundo oscilador para suavizar el timbre (armónico)
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+
+      osc.connect(gain);
+      osc2.connect(gain2);
+      gain.connect(ctx.destination);
+      gain2.connect(ctx.destination);
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, startTime);
+      osc2.type = "sine";
+      osc2.frequency.setValueAtTime(freq * 2, startTime); // octava superior, suave
+
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(volume, startTime + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+      gain2.gain.setValueAtTime(0, startTime);
+      gain2.gain.linearRampToValueAtTime(volume * 0.18, startTime + 0.015);
+      gain2.gain.exponentialRampToValueAtTime(0.001, startTime + duration * 0.7);
+
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+      osc2.start(startTime);
+      osc2.stop(startTime + duration * 0.7);
+    }
+
+    const now = ctx.currentTime;
+    // Dos notas descendentes suaves, estilo chime de iPhone
+    chime(1318.5, now, 0.28);          // Mi6
+    chime(1046.5, now + 0.2, 0.38);   // Do6
+
+    setTimeout(() => ctx.close().catch(() => {}), 900);
+  } catch (_) {
+    // silencioso si el navegador bloquea audio
+  }
+}
+
 function showToast(message, isError = false) {
   toast.textContent = message;
   toast.classList.remove("hidden");
@@ -607,6 +655,7 @@ async function checkAlerts(showToastOnNew = false) {
   const unreadCount = (payload.data || []).length;
 
   if (showToastOnNew && unreadCount > state.lastAlertsCount) {
+    playNotificationSound();
     showToast("Hay novedades nuevas en solicitudes o mensajes.");
     await loadNotifications();
   }
@@ -631,6 +680,7 @@ function handleRealtimeNotification(notification) {
 
   if (!exists && Number(notification.leida) !== 1) {
     state.lastAlertsCount += 1;
+    playNotificationSound();
   } else {
     state.lastAlertsCount = Math.max(
       state.lastAlertsCount,
