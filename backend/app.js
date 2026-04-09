@@ -1,3 +1,9 @@
+// DEPRECATED: Este entry point pertenece al stack legacy y no es el usado en producción.
+// Vercel y el entorno activo usan backend/server.js con routes/solicitudes.js y
+// services/solicitudesService.js -> solicitudesPgService.js.
+// Este archivo sigue existiendo por compatibilidad histórica; no extenderlo ni usarlo
+// como base para cambios nuevos sin revisar primero la paridad con el stack activo.
+
 const path = require("path");
 const crypto = require("crypto");
 const express = require("express");
@@ -68,4 +74,3 @@ app.use((req, res, next) => {
 app.use(errorHandler);
 
 module.exports = app;
-

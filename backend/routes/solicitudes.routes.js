@@ -1,3 +1,7 @@
+// DEPRECATED: Esta ruta pertenece al stack legacy conectado a backend/app.js.
+// El entry point productivo usa backend/routes/solicitudes.js.
+// Mantener solo por compatibilidad histórica; no agregar lógica nueva aquí.
+
 const express = require("express");
 const controller = require("../controllers/solicitudes.controller");
 const { authenticate } = require("../middleware/auth.middleware");
@@ -15,4 +19,3 @@ router.post("/", controller.create);
 router.put("/:id", controller.update);
 
 module.exports = router;
-

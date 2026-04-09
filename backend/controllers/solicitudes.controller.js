@@ -1,3 +1,7 @@
+// DEPRECATED: Este controller pertenece al stack legacy conectado a backend/app.js
+// y usa solicitud.service.js, que trabaja con status-flow.js (valores lowercase).
+// Producción usa routes/solicitudes.js y solicitudesService.js con estados UPPERCASE.
+
 const solicitudService = require("../services/solicitud.service");
 
 async function list(req, res, next) {
@@ -52,4 +56,3 @@ module.exports = {
   update,
   historial,
 };
-
