@@ -2015,6 +2015,40 @@ async function deleteSolicitud(actor, solicitudId) {
   };
 }
 
+async function listPendingItems(actor) {
+  const role = actor.rol || actor.role;
+  const params = [SOLICITUD_ITEM_STATUS.POR_GESTIONAR];
+  let query = `
+    SELECT
+      si.id AS item_id,
+      si.solicitud_id,
+      si.nombre_item,
+      si.cantidad,
+      si.unidad_medida,
+      si.codigo_referencia,
+      si.comentario,
+      si.usuario_final,
+      s.repuesto AS solicitud_resumen,
+      s.equipo AS solicitud_equipo,
+      s.equipo_id,
+      s.estado AS solicitud_estado,
+      s.created_at AS solicitud_created_at,
+      su.nombre AS solicitante_nombre
+    FROM solicitud_items si
+    INNER JOIN solicitudes s ON s.id = si.solicitud_id
+    INNER JOIN usuarios su ON su.id = s.solicitante_id
+    WHERE si.estado_item = ?
+      AND s.estado NOT IN ('ENTREGADO', 'RECHAZADO')
+  `;
+  if (!isGlobalRole(role)) {
+    requireTeamAssigned(actor);
+    query += ` AND s.equipo_id = ?`;
+    params.push(Number(actor.equipo_id));
+  }
+  query += ` ORDER BY s.id ASC, si.id ASC`;
+  return all(query, params);
+}
+
 module.exports = {
   listSolicitudes: (...args) =>
     isOperationalPgEnabled() ? pgService.listSolicitudes(...args) : listSolicitudes(...args),
@@ -2048,5 +2082,7 @@ module.exports = {
       : removeSolicitudMessageImage(...args),
   deleteSolicitud: (...args) =>
     isOperationalPgEnabled() ? pgService.deleteSolicitud(...args) : deleteSolicitud(...args),
+  listPendingItems: (...args) =>
+    isOperationalPgEnabled() ? pgService.listPendingItems(...args) : listPendingItems(...args),
 };
 

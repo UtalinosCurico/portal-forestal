@@ -2015,6 +2015,127 @@ th {
   background: #dfece5;
 }
 
+/* ── Pending items modal ───────────────────────── */
+.pending-items-sheet {
+  width: min(680px, calc(100vw - 1.5rem));
+  max-height: calc(100dvh - 2rem);
+  display: flex;
+  flex-direction: column;
+  padding: 1.1rem;
+  gap: 0;
+}
+
+.pending-items-search-wrap {
+  margin: 0.6rem 0 0.9rem;
+}
+
+.pending-items-search-input {
+  font-size: 1rem;
+}
+
+.pending-items-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+}
+
+.pending-group {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.pending-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--surface-soft);
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+.pending-group-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.pending-group-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--forest-800);
+}
+
+.pending-group-sub {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.pending-group-open-btn {
+  width: auto;
+  min-height: 36px;
+  padding: 0.42rem 0.85rem;
+  font-size: 0.88rem;
+  border-radius: 9px;
+  background: var(--forest-600);
+  flex-shrink: 0;
+}
+
+.pending-item-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.4rem 0.75rem;
+  align-items: start;
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.pending-item-row:last-child {
+  border-bottom: none;
+}
+
+.pending-item-name {
+  font-weight: 600;
+  font-size: 0.97rem;
+  color: var(--text);
+  grid-column: 1;
+}
+
+.pending-item-detail {
+  font-size: 0.82rem;
+  color: var(--muted);
+  grid-column: 1;
+}
+
+.pending-item-qty {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--forest-700);
+  text-align: right;
+  grid-row: 1 / 3;
+  grid-column: 2;
+  align-self: center;
+  white-space: nowrap;
+}
+
+.pending-items-empty {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--muted);
+}
+
+.pending-items-empty strong {
+  display: block;
+  font-size: 1.05rem;
+  color: var(--text);
+  margin-bottom: 0.35rem;
+}
+
 .stock-badge {
   display: inline-flex;
   align-items: center;

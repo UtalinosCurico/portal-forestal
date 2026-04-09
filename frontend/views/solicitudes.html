@@ -11,6 +11,9 @@
         <button id="solicitudes-open-create-modal" class="action-btn" type="button">
           Nueva solicitud
         </button>
+        <button id="solicitudes-open-pending-items" class="action-btn secondary" type="button">
+          Lista de compra
+        </button>
         <button id="solicitudes-toggle-filters" class="action-btn secondary" type="button">
           Mostrar filtros
         </button>
@@ -493,5 +496,40 @@
     <button id="solicitudes-mobile-secondary" class="action-btn secondary" type="button">
       Ver pendientes
     </button>
+  </div>
+
+  <!-- Modal: Lista de compra / items pendientes -->
+  <div id="solicitudes-pending-items-modal" class="modal hidden">
+    <div class="modal-backdrop" data-close="true"></div>
+    <section class="modal-content pending-items-sheet">
+      <header class="modal-header">
+        <div>
+          <h4>Lista de compra</h4>
+          <p class="muted-text">Todos los productos sin gestionar en solicitudes activas.</p>
+        </div>
+        <button id="pending-items-close-btn" class="icon-btn" type="button">x</button>
+      </header>
+
+      <div class="section-head compact-head">
+        <span id="pending-items-count" class="mini-chip active">Cargando...</span>
+        <button id="pending-items-refresh-btn" class="action-btn secondary" type="button">
+          Actualizar
+        </button>
+      </div>
+
+      <div class="pending-items-search-wrap">
+        <label class="sr-only" for="pending-items-search">Buscar producto pendiente</label>
+        <input
+          id="pending-items-search"
+          type="search"
+          placeholder="Buscar por producto, equipo, solicitante o #ID"
+          class="pending-items-search-input"
+        />
+      </div>
+
+      <div id="pending-items-list" class="pending-items-list">
+        <div class="history-empty">Cargando items...</div>
+      </div>
+    </section>
   </div>
 </div>

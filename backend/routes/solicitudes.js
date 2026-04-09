@@ -22,6 +22,15 @@ router.get(
 );
 
 router.get(
+  "/items/pendientes",
+  authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.JEFE_FAENA, ROLES.MECANICO, ROLES.OPERADOR),
+  asyncHandler(async (req, res) => {
+    const data = await solicitudesService.listPendingItems(req.user);
+    res.json({ status: "ok", data });
+  })
+);
+
+router.get(
   "/:id",
   authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.JEFE_FAENA, ROLES.MECANICO, ROLES.OPERADOR),
   asyncHandler(async (req, res) => {

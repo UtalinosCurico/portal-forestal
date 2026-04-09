@@ -942,6 +942,14 @@ export async function initSolicitudesView(context) {
   const itemManagementCommentField = document.getElementById("solicitud-item-management-comment-field");
   const itemManagementCommentInput = document.getElementById("solicitud-item-management-comment-input");
 
+  const pendingItemsModal = document.getElementById("solicitudes-pending-items-modal");
+  const pendingItemsOpenBtn = document.getElementById("solicitudes-open-pending-items");
+  const pendingItemsCloseBtn = document.getElementById("pending-items-close-btn");
+  const pendingItemsRefreshBtn = document.getElementById("pending-items-refresh-btn");
+  const pendingItemsSearch = document.getElementById("pending-items-search");
+  const pendingItemsList = document.getElementById("pending-items-list");
+  const pendingItemsCount = document.getElementById("pending-items-count");
+
   const filters = {
     estado: "",
     fechaDesde: "",
@@ -965,6 +973,107 @@ export async function initSolicitudesView(context) {
   let chatHistoryEntryActive = false;
   let lastSeenMessageCount = 0;
   let chatUnreadCount = 0;
+  let pendingItemsCache = [];
+
+  // ── Pending items modal ──────────────────────────────────────────
+
+  function openPendingItemsModal() {
+    pendingItemsModal.classList.remove("hidden");
+    pendingItemsSearch.value = "";
+    loadAndRenderPendingItems();
+  }
+
+  function closePendingItemsModal() {
+    pendingItemsModal.classList.add("hidden");
+  }
+
+  async function loadAndRenderPendingItems() {
+    pendingItemsCount.textContent = "Cargando...";
+    pendingItemsList.innerHTML = "<div class='history-empty'>Cargando items...</div>";
+    try {
+      const payload = await context.apiRequest("/api/solicitudes/items/pendientes");
+      pendingItemsCache = Array.isArray(payload?.data) ? payload.data : [];
+    } catch (err) {
+      pendingItemsList.innerHTML = "<div class='history-empty'>Error al cargar los items.</div>";
+      pendingItemsCount.textContent = "Error";
+      return;
+    }
+    renderPendingItems(pendingItemsSearch.value.trim());
+  }
+
+  function renderPendingItems(query = "") {
+    const q = query.toLowerCase();
+    const items = q
+      ? pendingItemsCache.filter(
+          (it) =>
+            (it.nombre_item || "").toLowerCase().includes(q) ||
+            String(it.solicitud_id).includes(q) ||
+            (it.solicitud_equipo || "").toLowerCase().includes(q) ||
+            (it.solicitante_nombre || "").toLowerCase().includes(q) ||
+            (it.codigo_referencia || "").toLowerCase().includes(q)
+        )
+      : pendingItemsCache;
+
+    pendingItemsCount.textContent =
+      `${items.length} producto${items.length !== 1 ? "s" : ""} pendiente${items.length !== 1 ? "s" : ""}`;
+
+    if (!items.length) {
+      pendingItemsList.innerHTML = `
+        <div class="pending-items-empty">
+          <strong>${q ? "Sin resultados" : "Sin productos pendientes"}</strong>
+          ${q ? "Prueba con otro termino de busqueda." : "Todos los productos estan gestionados o no hay solicitudes activas."}
+        </div>`;
+      return;
+    }
+
+    // Agrupar por solicitud_id
+    const groups = new Map();
+    for (const item of items) {
+      if (!groups.has(item.solicitud_id)) groups.set(item.solicitud_id, []);
+      groups.get(item.solicitud_id).push(item);
+    }
+
+    const formatDate = (iso) => {
+      if (!iso) return "";
+      return new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "2-digit", year: "2-digit" });
+    };
+
+    const statusLabel = { PENDIENTE: "Pendiente", EN_REVISION: "En gestion", APROBADO: "Aprobada", EN_DESPACHO: "En despacho" };
+
+    let html = "";
+    for (const [solicitudId, groupItems] of groups) {
+      const first = groupItems[0];
+      const estado = statusLabel[first.solicitud_estado] || first.solicitud_estado || "";
+      html += `
+        <article class="pending-group">
+          <div class="pending-group-header">
+            <div class="pending-group-meta">
+              <span class="pending-group-title">Solicitud #${solicitudId} &mdash; ${first.solicitud_equipo || "Sin equipo"}</span>
+              <span class="pending-group-sub">Solicitado por ${first.solicitante_nombre || "?"} &bull; ${formatDate(first.solicitud_created_at)} &bull; ${estado}</span>
+            </div>
+            <button class="pending-group-open-btn" type="button" data-open-solicitud="${solicitudId}">
+              Ver solicitud
+            </button>
+          </div>`;
+      for (const item of groupItems) {
+        const detail = [
+          item.codigo_referencia ? `Ref: ${item.codigo_referencia}` : "",
+          item.usuario_final ? `Para: ${item.usuario_final}` : "",
+          item.comentario || "",
+        ].filter(Boolean).join(" · ");
+        html += `
+          <div class="pending-item-row">
+            <span class="pending-item-name">${item.nombre_item || "Sin nombre"}</span>
+            ${detail ? `<span class="pending-item-detail">${detail}</span>` : ""}
+            <span class="pending-item-qty">${item.cantidad ?? ""} ${item.unidad_medida || ""}</span>
+          </div>`;
+      }
+      html += `</article>`;
+    }
+    pendingItemsList.innerHTML = html;
+  }
+
+  // ────────────────────────────────────────────────────────────────
 
   function isPhoneLayout() {
     return window.matchMedia("(max-width: 680px)").matches;
@@ -2280,6 +2389,33 @@ export async function initSolicitudesView(context) {
     refreshSolicitudesFromRealtime(event.detail);
   };
   window.addEventListener("fmn:notification", window.__fmnSolicitudesRealtimeHandler);
+
+  // Pending items modal events
+  pendingItemsOpenBtn?.addEventListener("click", openPendingItemsModal);
+  pendingItemsCloseBtn?.addEventListener("click", closePendingItemsModal);
+  pendingItemsRefreshBtn?.addEventListener("click", loadAndRenderPendingItems);
+  pendingItemsModal?.querySelector(".modal-backdrop")?.addEventListener("click", closePendingItemsModal);
+  pendingItemsSearch?.addEventListener("input", () => {
+    renderPendingItems(pendingItemsSearch.value.trim());
+  });
+  pendingItemsList?.addEventListener("click", async (event) => {
+    const btn = event.target.closest("[data-open-solicitud]");
+    if (!btn) return;
+    const solicitudId = Number(btn.dataset.openSolicitud);
+    if (!solicitudId) return;
+    closePendingItemsModal();
+    try {
+      activeDetailTab = "items";
+      lastNonChatDetailTab = "items";
+      applyDetailTabLayout();
+      showDetailLoading(solicitudId);
+      openModal(detailModal);
+      await loadSolicitudDetail(solicitudId);
+    } catch (err) {
+      closeModal(detailModal);
+      context.showToast(err.message, true);
+    }
+  });
 
   await loadEquiposIfNeeded();
   configureRoleActions();
