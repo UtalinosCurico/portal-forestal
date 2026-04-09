@@ -160,6 +160,7 @@ function formatHistoryActionLabel(action) {
     ITEM_CREADO: "Producto agregado",
     ITEM_ACTUALIZADO: "Producto actualizado",
     ITEM_ELIMINADO: "Producto eliminado",
+    ESTADO_ITEM_REVERTIDO: "Producto revertido",
     MENSAJE_ENVIADO: "Mensaje enviado",
   };
 
@@ -227,7 +228,15 @@ function summarizeItemStatuses(items = []) {
 
 function renderProgressSummary(items = []) {
   const summary = summarizeItemStatuses(items);
+  const total = summary.total || 1;
+  const pct = Math.round((summary.entregados / total) * 100);
   return `
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" style="width: ${pct}%"></div>
+      </div>
+      <span class="progress-bar-label">${summary.entregados} de ${summary.total} entregado${summary.entregados !== 1 ? "s" : ""}</span>
+    </div>
     <div class="progress-summary-card">
       <span class="progress-summary-label">Productos</span>
       <strong>${summary.total}</strong>
@@ -235,10 +244,6 @@ function renderProgressSummary(items = []) {
     <div class="progress-summary-card">
       <span class="progress-summary-label">Por gestionar</span>
       <strong>${summary.porGestionar}</strong>
-    </div>
-    <div class="progress-summary-card">
-      <span class="progress-summary-label">Gestionados</span>
-      <strong>${summary.gestionados}</strong>
     </div>
     <div class="progress-summary-card">
       <span class="progress-summary-label">Enviados</span>
@@ -284,13 +289,13 @@ function renderDeliveryAssistant(solicitud, options = {}) {
     if (!allShipped) {
       actions.push(`
         <button class="action-btn secondary" data-bulk-status="EN_DESPACHO" type="button">
-          Despachar toda la solicitud
+          Despachar todo (${pendingDispatch} ${pendingDispatch === 1 ? "producto" : "productos"})
         </button>
       `);
     }
     actions.push(`
       <button class="action-btn" data-bulk-status="ENTREGADO" type="button">
-        Entregar toda la solicitud
+        Entregar todo (${pendingDelivery} ${pendingDelivery === 1 ? "producto" : "productos"})
       </button>
     `);
   }
@@ -300,12 +305,17 @@ function renderDeliveryAssistant(solicitud, options = {}) {
       "Puedes confirmar toda la recepcion de una vez o revisar el detalle de cada producto antes de cerrar.";
   }
 
+  const itemsHint = !allDelivered
+    ? `<p class="muted-text delivery-hint">Para gestionar uno a uno, ve a la pestana <button class="inline-tab-link" data-switch-tab="items" type="button">Productos</button>.</p>`
+    : "";
+
   return `
     <div class="delivery-assistant-copy">
       <h5>${title}</h5>
       <p class="muted-text">${text}</p>
     </div>
     ${actions.length ? `<div class="actions-inline wrap-actions">${actions.join("")}</div>` : ""}
+    ${itemsHint}
   `;
 }
 
@@ -1606,14 +1616,6 @@ export async function initSolicitudesView(context) {
       return;
     }
 
-    const warning = buildBulkStatusWarning(currentSolicitud, targetStatus);
-    if (warning) {
-      const confirmed = window.confirm(warning);
-      if (!confirmed) {
-        return;
-      }
-    }
-
     await context.apiRequest(`/api/solicitudes/${currentSolicitud.id}`, {
       method: "PUT",
       body: {
@@ -1942,15 +1944,74 @@ export async function initSolicitudesView(context) {
   });
 
   deliveryAssistant.addEventListener("click", async (event) => {
+    // Navegar a la pestaña de productos (enlace "uno a uno")
+    const switchTab = event.target.closest("[data-switch-tab]");
+    if (switchTab) {
+      setDetailTab(switchTab.dataset.switchTab);
+      return;
+    }
+
+    // Cancelar confirmación inline
+    if (event.target.closest("[data-bulk-cancel]")) {
+      deliveryAssistant.querySelector(".bulk-confirm-panel")?.remove();
+      return;
+    }
+
+    // Confirmar acción masiva desde el panel inline
+    const confirmTarget = event.target.closest("[data-bulk-confirm]");
+    if (confirmTarget) {
+      const targetStatus = confirmTarget.dataset.bulkConfirm;
+      confirmTarget.closest(".bulk-confirm-panel")?.remove();
+      try {
+        await executeBulkSolicitudStatus(targetStatus);
+      } catch (error) {
+        context.showToast(error.message, true);
+      }
+      return;
+    }
+
+    // Clic en botón de acción masiva: mostrar panel de confirmación inline
     const button = event.target.closest("[data-bulk-status]");
     if (!button || !canManage) {
       return;
     }
 
-    try {
-      await executeBulkSolicitudStatus(button.dataset.bulkStatus);
-    } catch (error) {
-      context.showToast(error.message, true);
+    // Toggle: si ya hay panel visible, cerrarlo
+    const existing = deliveryAssistant.querySelector(".bulk-confirm-panel");
+    if (existing) {
+      existing.remove();
+      return;
+    }
+
+    const targetStatus = button.dataset.bulkStatus;
+    const warning = buildBulkStatusWarning(currentSolicitud, targetStatus);
+    if (!warning) {
+      try {
+        await executeBulkSolicitudStatus(targetStatus);
+      } catch (error) {
+        context.showToast(error.message, true);
+      }
+      return;
+    }
+
+    const panelTitle =
+      targetStatus === "ENTREGADO" ? "Confirmar entrega completa" : "Confirmar despacho completo";
+
+    const panel = document.createElement("div");
+    panel.className = "bulk-confirm-panel confirm-box";
+    panel.innerHTML = `
+      <strong>${panelTitle}</strong>
+      <p>${warning}</p>
+      <div class="actions-inline">
+        <button class="action-btn" data-bulk-confirm="${targetStatus}" type="button">Confirmar</button>
+        <button class="action-btn secondary" data-bulk-cancel type="button">Cancelar</button>
+      </div>
+    `;
+    const actionsRow = button.closest(".actions-inline");
+    if (actionsRow) {
+      actionsRow.insertAdjacentElement("afterend", panel);
+    } else {
+      deliveryAssistant.appendChild(panel);
     }
   });
 

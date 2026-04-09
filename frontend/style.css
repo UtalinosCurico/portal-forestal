@@ -1464,6 +1464,58 @@ th {
   margin-bottom: 0.75rem;
 }
 
+.delivery-hint {
+  margin: 0.6rem 0 0;
+  font-size: 0.83rem;
+}
+
+.inline-tab-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--forest-700, #1a6b44);
+  font-weight: 600;
+  font-size: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.inline-tab-link:hover {
+  color: var(--forest-900, #0e3d26);
+}
+
+.progress-bar-wrap {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 0.25rem;
+}
+
+.progress-bar-track {
+  flex: 1;
+  height: 8px;
+  background: #e2ece7;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--forest-700, #1a6b44);
+  border-radius: 99px;
+  transition: width 0.3s ease;
+  min-width: 4px;
+}
+
+.progress-bar-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+  font-weight: 600;
+}
+
 .process-comment-card {
   margin: 1rem 0;
   border: 1px solid var(--line);
