@@ -1,20 +1,23 @@
 ﻿:root {
-  --forest-950: #0c2218;
-  --forest-900: #123126;
-  --forest-800: #1d4534;
-  --forest-700: #286349;
-  --forest-600: #2f7d5a;
-  --forest-200: #d4e8dc;
-  --bg: #f0f5f2;
+  --forest-950: #091a11;
+  --forest-900: #102c1e;
+  --forest-800: #1a4232;
+  --forest-700: #246050;
+  --forest-600: #2d7a57;
+  --forest-200: #cce4d7;
+  --bg: #eaf2ed;
   --surface: #ffffff;
-  --surface-soft: #f7fbf9;
-  --line: #d9e5de;
-  --text: #183126;
-  --muted: #5e766a;
+  --surface-soft: #f4f9f6;
+  --line: #d3e2da;
+  --text: #142619;
+  --muted: #546b5e;
   --danger: #9f2e2e;
   --warning: #a06b16;
-  --ok: #1f7b4a;
-  --shadow: 0 10px 24px rgba(11, 36, 25, 0.12);
+  --ok: #1a7545;
+  --shadow: 0 8px 28px rgba(8, 28, 18, 0.13), 0 2px 6px rgba(8, 28, 18, 0.06);
+  --shadow-card: 0 4px 14px rgba(8, 28, 18, 0.08);
+  --radius-card: 16px;
+  --radius-btn: 12px;
 }
 
 * {
@@ -31,13 +34,15 @@ body {
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 15.5px;
   color: var(--text);
-  background: radial-gradient(circle at top right, #f7fcf8 0%, var(--bg) 55%, #e8f0eb 100%);
-  line-height: 1.45;
+  background: var(--bg);
+  line-height: 1.5;
 }
 
 html.platform-windows {
-  --shadow: 0 6px 14px rgba(11, 36, 25, 0.08);
+  --shadow: 0 4px 12px rgba(8, 28, 18, 0.09);
+  --shadow-card: 0 2px 8px rgba(8, 28, 18, 0.07);
 }
 
 html.platform-windows .login-card,
@@ -97,16 +102,21 @@ input[type="checkbox"] {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: 1rem;
+  padding: 1.5rem;
+  background:
+    radial-gradient(ellipse 80% 55% at 12% 88%, rgba(10, 40, 26, 0.7) 0%, transparent 55%),
+    radial-gradient(ellipse 65% 48% at 88% 14%, rgba(36, 90, 66, 0.55) 0%, transparent 52%),
+    radial-gradient(ellipse 55% 45% at 52% 52%, rgba(45, 122, 87, 0.12) 0%, transparent 58%),
+    linear-gradient(158deg, #091a11 0%, #132d1f 28%, #1a4232 60%, #0c2218 100%);
 }
 
 .login-card {
-  width: min(430px, 100%);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 1.25rem;
-  box-shadow: var(--shadow);
+  width: min(440px, 100%);
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 22px;
+  padding: 2.25rem 2rem 2rem;
+  box-shadow: 0 28px 72px rgba(0, 0, 0, 0.38), 0 6px 20px rgba(0, 0, 0, 0.18);
 }
 
 .brand-logo {
@@ -115,23 +125,34 @@ input[type="checkbox"] {
 }
 
 .login-logo {
-  width: 88px;
-  height: 88px;
-  margin: 0 auto 0.75rem;
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 1rem;
+  filter: drop-shadow(0 4px 18px rgba(45, 122, 87, 0.5));
 }
 
 .login-card h1 {
   margin: 0;
+  font-size: 1.65rem;
+  color: var(--forest-900);
 }
 
 .login-card p {
-  margin: 0.4rem 0 1rem;
+  margin: 0.45rem 0 1.25rem;
   color: var(--muted);
+  font-size: 1rem;
 }
 
 .login-card form {
   display: grid;
-  gap: 0.65rem;
+  gap: 0.75rem;
+}
+
+.login-card label {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--forest-800);
+  letter-spacing: 0.01em;
 }
 
 .password-field {
@@ -145,30 +166,34 @@ input[type="checkbox"] {
 .field-toggle-btn {
   position: absolute;
   top: 50%;
-  right: 0.4rem;
+  right: 0.45rem;
   transform: translateY(-50%);
-  min-width: 84px;
-  min-height: 40px;
-  padding: 0.45rem 0.7rem;
+  min-width: 86px;
+  min-height: 42px;
+  padding: 0.5rem 0.75rem;
   border-radius: 10px;
-  background: #eef4f0;
+  background: #e8f2ec;
   color: var(--forest-800);
-  border: 1px solid #d7e4dc;
+  border: 1px solid #cdddd4;
   box-shadow: none;
+  font-size: 0.93rem;
 }
 
 .field-toggle-btn:hover {
-  background: #e2ece6;
+  background: #dceae2;
+  transform: translateY(-50%);
 }
 
 input,
 select,
 textarea {
   width: 100%;
-  border: 1px solid #bfd2c7;
-  border-radius: 10px;
-  padding: 0.78rem 0.78rem;
+  border: 1.5px solid #b8ccbf;
+  border-radius: 11px;
+  padding: 0.9rem 0.9rem;
   background: #fff;
+  font-size: 1rem;
+  color: var(--text);
 }
 
 input:focus,
@@ -176,37 +201,43 @@ select:focus,
 textarea:focus {
   border-color: var(--forest-600);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(47, 125, 90, 0.15);
+  box-shadow: 0 0 0 3.5px rgba(45, 122, 87, 0.18);
 }
 
 button {
   border: none;
   border-radius: 12px;
-  padding: 0.76rem 0.95rem;
+  min-height: 50px;
+  padding: 0.8rem 1.05rem;
   font-weight: 600;
+  font-size: 1rem;
   color: #fff;
   background: var(--forest-600);
   cursor: pointer;
-  transition: transform 0.15s ease, background 0.15s ease;
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
 button:hover {
   background: var(--forest-700);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(9, 26, 17, 0.2);
 }
 
 button:active {
   transform: translateY(0);
+  box-shadow: none;
 }
 
 button:disabled {
-  opacity: 0.7;
+  opacity: 0.65;
   cursor: wait;
   transform: none;
+  box-shadow: none;
 }
 
 button:disabled:hover {
   transform: none;
+  box-shadow: none;
 }
 
 .login-help {
@@ -243,10 +274,13 @@ button:disabled:hover {
   position: sticky;
   top: 0;
   height: 100vh;
-  padding: 1rem;
-  background: linear-gradient(180deg, var(--forest-900), var(--forest-950));
+  padding: 1.25rem;
+  background:
+    radial-gradient(ellipse 110% 50% at 50% 0%, rgba(36,96,80,0.45) 0%, transparent 55%),
+    linear-gradient(175deg, var(--forest-800) 0%, var(--forest-900) 45%, var(--forest-950) 100%);
   color: #e5f4ec;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
 }
 
 .sidebar-header h2 {
@@ -260,50 +294,71 @@ button:disabled:hover {
 }
 
 .sidebar-header p {
-  margin: 0.35rem 0 0.95rem;
-  color: #b9d7c8;
-  font-size: 0.92rem;
+  margin: 0.35rem 0 1.1rem;
+  color: #aacfbc;
+  font-size: 0.9rem;
 }
 
 .sidebar-nav {
   display: grid;
-  gap: 0.45rem;
+  gap: 0.5rem;
 }
 
 .nav-item {
   width: 100%;
-  background: transparent;
-  border: 1px solid rgba(198, 226, 210, 0.25);
-  color: #e5f4ec;
+  min-height: 52px;
+  padding: 0.85rem 1rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(198, 226, 210, 0.18);
+  color: #d8eee3;
   text-align: left;
+  border-radius: 12px;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(198, 226, 210, 0.35);
+  transform: translateX(3px);
 }
 
 .nav-item.active {
-  background: rgba(70, 152, 112, 0.35);
-  border-color: rgba(198, 226, 210, 0.6);
+  background: rgba(60, 148, 104, 0.38);
+  border-color: rgba(198, 226, 210, 0.55);
+  color: #e8f6ef;
+  font-weight: 700;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
 }
 
 .logout-btn {
   margin-top: 1rem;
   width: 100%;
+  background: rgba(157, 52, 52, 0.75);
+  border: 1px solid rgba(255, 160, 160, 0.2);
+}
+
+.logout-btn:hover {
   background: #9d3434;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
 }
 
 .help-btn {
-  margin-top: 1rem;
+  margin-top: 0.65rem;
   width: 100%;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(198, 226, 210, 0.25);
-  color: #e5f4ec;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(198, 226, 210, 0.22);
+  color: #d8eee3;
 }
 
 .help-btn:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .help-btn.active {
-  background: rgba(70, 152, 112, 0.35);
-  border-color: rgba(198, 226, 210, 0.6);
+  background: rgba(60, 148, 104, 0.38);
+  border-color: rgba(198, 226, 210, 0.55);
 }
 
 .main-content {
@@ -347,7 +402,8 @@ button:disabled:hover {
   background: #ffffff;
   color: var(--forest-800);
   border: 1px solid var(--line);
-  box-shadow: 0 6px 16px rgba(11, 36, 25, 0.08);
+  box-shadow: 0 4px 12px rgba(8, 28, 18, 0.09);
+  border-radius: 12px;
 }
 
 .topbar-action-icon {
@@ -403,9 +459,9 @@ button:disabled:hover {
 .view-container {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 18px;
   box-shadow: var(--shadow);
-  padding: 0.95rem;
+  padding: 1.1rem;
 }
 
 .loading-view {
@@ -419,7 +475,7 @@ button:disabled:hover {
   position: relative;
   overflow: hidden;
   border-radius: 14px;
-  background: linear-gradient(90deg, #edf4f0 25%, #f7fbf9 50%, #edf4f0 75%);
+  background: linear-gradient(90deg, #e8f1ec 25%, #f4f9f6 50%, #e8f1ec 75%);
   background-size: 200% 100%;
   animation: pulse-slide 1.2s linear infinite;
 }
@@ -453,10 +509,11 @@ button:disabled:hover {
   grid-column: span 12;
   background: var(--surface-soft);
   border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 0.88rem;
+  border-radius: 14px;
+  padding: 1rem;
   content-visibility: auto;
   contain-intrinsic-size: 1px 320px;
+  box-shadow: var(--shadow-card);
 }
 
 .card h4 {
@@ -645,8 +702,14 @@ button:disabled:hover {
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 14px;
-  padding: 0.8rem;
-  box-shadow: 0 8px 18px rgba(11, 36, 25, 0.08);
+  padding: 0.9rem;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.quick-tile:hover {
+  box-shadow: 0 8px 22px rgba(8, 28, 18, 0.13);
+  transform: translateY(-2px);
 }
 
 .quick-label {
@@ -707,11 +770,12 @@ button:disabled:hover {
 }
 
 .action-btn.secondary {
-  background: #677a70;
+  background: #5d7167;
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
 .action-btn.secondary:hover {
-  background: #56685f;
+  background: #4e6059;
 }
 
 .form-grid {
@@ -745,28 +809,34 @@ button:disabled:hover {
 
 .toggle-card {
   width: 100%;
-  min-height: 56px;
+  min-height: 62px;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.78rem 0.85rem;
-  border: 1px solid var(--line);
+  gap: 0.85rem;
+  padding: 0.9rem 1rem;
+  border: 1.5px solid var(--line);
   border-radius: 12px;
-  background: #ffffff;
+  background: #f8fcf9;
   color: var(--text);
+  cursor: pointer;
+}
+
+.toggle-card:hover {
+  background: #f1f8f4;
+  border-color: #b8d5c4;
 }
 
 .toggle-card span {
   display: grid;
-  gap: 0.14rem;
+  gap: 0.18rem;
 }
 
 .toggle-card strong {
-  font-size: 0.92rem;
+  font-size: 0.93rem;
 }
 
 .toggle-card small {
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
 }
 
 .actions-inline {
@@ -2165,13 +2235,13 @@ th {
 
   .login-card {
     width: 100%;
-    border-radius: 22px;
-    padding: 1.05rem;
+    border-radius: 20px;
+    padding: 1.6rem 1.25rem 1.5rem;
   }
 
   .login-logo {
-    width: 76px;
-    height: 76px;
+    width: 82px;
+    height: 82px;
   }
 
   .login-card h1 {
