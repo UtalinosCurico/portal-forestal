@@ -3289,17 +3289,87 @@ th {
     max-height: 320px;
   }
 
-  /* ipt-group-head apilado en pantallas pequeñas */
+  /* ipt-group en móvil: header con info + botón en misma fila, ítems con separador */
   .ipt-group-head {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.3rem;
-    padding: 0.6rem 0.75rem;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    align-items: center;
+    gap: 0.15rem 0.5rem;
+    padding: 0.65rem 0.75rem;
+  }
+
+  .ipt-group-id {
+    grid-column: 1;
+    grid-row: 1;
+    font-size: 0.82rem;
+  }
+
+  .ipt-group-equipo {
+    grid-column: 1;
+    grid-row: 2;
+    font-size: 0.9rem;
+  }
+
+  .ipt-group-quien {
+    grid-column: 1;
+    grid-row: 3;
+    font-size: 0.78rem;
   }
 
   .ipt-open-btn {
-    align-self: flex-end;
-    margin-top: -1.8rem;
+    grid-column: 2;
+    grid-row: 1 / 4;
+    margin: 0;
+    align-self: center;
+    padding: 0.35rem 0.8rem;
+    font-size: 0.82rem;
+  }
+
+  /* ítems en móvil: apilados con separador claro */
+  .ipt-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    align-items: start;
+    gap: 0.2rem 0.4rem;
+    padding: 0.55rem 0.75rem;
+  }
+
+  .ipt-name {
+    grid-column: 1;
+    grid-row: 1;
+    font-size: 0.9rem;
+    flex: unset;
+  }
+
+  .ipt-qty {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    align-self: center;
+    margin-left: 0;
+    font-size: 0.92rem;
+  }
+
+  .ipt-ref,
+  .ipt-nota,
+  .ipt-uf {
+    grid-column: 1;
+    font-size: 0.76rem;
+  }
+
+  /* separador entre ítems más visible */
+  .ipt-item {
+    border-bottom: 1px solid #e8efe9;
+  }
+
+  .ipt-item:last-child {
+    border-bottom: none;
+  }
+
+  /* más espacio entre grupos */
+  .inline-pending-table {
+    gap: 0.75rem;
   }
 
   /* Chat burbujas no tan anchas en móvil */
