@@ -89,7 +89,10 @@ export function initAiAssistant(context) {
       appendMessage("assistant", reply);
     } catch (err) {
       removeTyping();
-      appendMessage("assistant", "Lo siento, hubo un error al conectar con el asistente. Intenta de nuevo.");
+      const msg = err?.message?.includes("ANTHROPIC_API_KEY") || err?.message?.includes("no configurado")
+        ? "PumAI no está activado aún. El administrador debe configurar la clave de API en el servidor. 🔧"
+        : "Lo siento, no pude conectarme. Intenta de nuevo en un momento. 🐾";
+      appendMessage("assistant", msg);
     } finally {
       isLoading = false;
       sendBtn.disabled = false;
