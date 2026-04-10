@@ -1196,7 +1196,7 @@ async function updateSolicitud(actor, solicitudId, payload) {
     if (!VALID_STATUS.has(estadoNuevo)) {
       throw new HttpError(400, "Estado invalido");
     }
-    if (!canTransition(estadoActual, estadoNuevo)) {
+    if (!actorIsGlobal && !canTransition(estadoActual, estadoNuevo)) {
       throw new HttpError(409, `Transicion no permitida: ${estadoActual} -> ${estadoNuevo}`);
     }
 

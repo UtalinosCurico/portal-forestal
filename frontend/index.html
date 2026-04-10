@@ -108,29 +108,69 @@
 
     <div id="toast" class="toast hidden"></div>
 
-    <!-- Asistente IA flotante -->
+    <!-- Asistente IA flotante (PumAI) -->
     <button
       id="ai-assistant-btn"
       class="ai-fab"
       type="button"
-      aria-label="Abrir asistente"
+      aria-label="Abrir PumAI"
       aria-expanded="false"
       aria-controls="ai-assistant-drawer"
     >
-      <span class="ai-fab-icon" aria-hidden="true">✦</span>
-      <span class="ai-fab-label">Ayuda IA</span>
+      <svg class="ai-fab-puma" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- Cuerpo/cabeza puma -->
+        <ellipse cx="18" cy="22" rx="9" ry="8" fill="#d4874a"/>
+        <!-- Orejas -->
+        <polygon points="10,16 7,9 14,14" fill="#d4874a"/>
+        <polygon points="26,16 29,9 22,14" fill="#d4874a"/>
+        <polygon points="10.5,15.5 8.5,10.5 13.5,14.5" fill="#f5b07a"/>
+        <polygon points="25.5,15.5 27.5,10.5 22.5,14.5" fill="#f5b07a"/>
+        <!-- Cara -->
+        <ellipse cx="18" cy="23" rx="7" ry="6" fill="#f0a060"/>
+        <!-- Hocico -->
+        <ellipse cx="18" cy="25.5" rx="3.5" ry="2.5" fill="#f5c898"/>
+        <circle cx="16.5" cy="24.5" r="1.5" fill="#222" opacity="0.85"/>
+        <circle cx="19.5" cy="24.5" r="1.5" fill="#222" opacity="0.85"/>
+        <path d="M16.5 26.5 Q18 27.5 19.5 26.5" stroke="#a0522d" stroke-width="0.8" fill="none" stroke-linecap="round"/>
+        <!-- Nariz -->
+        <ellipse cx="18" cy="25" rx="1.2" ry="0.8" fill="#b05030"/>
+        <!-- Casco de faena -->
+        <path d="M9 19 Q9 12 18 11 Q27 12 27 19 Z" fill="#f5c200"/>
+        <rect x="8" y="18.5" width="20" height="2.5" rx="1.2" fill="#e0a800"/>
+        <rect x="14" y="11.5" width="8" height="2" rx="1" fill="#e0a800"/>
+      </svg>
+      <span class="ai-fab-label">PumAI</span>
     </button>
 
-    <div id="ai-assistant-drawer" class="ai-drawer" role="dialog" aria-label="Asistente FMN" aria-modal="false">
+    <div id="ai-assistant-drawer" class="ai-drawer" role="dialog" aria-label="PumAI asistente" aria-modal="false">
       <header class="ai-drawer-head">
         <div class="ai-drawer-title-wrap">
-          <span class="ai-drawer-avatar" aria-hidden="true">✦</span>
+          <div class="ai-drawer-avatar" aria-hidden="true">
+            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+              <ellipse cx="20" cy="24" rx="10" ry="9" fill="#d4874a"/>
+              <polygon points="11,17 8,9 15,15" fill="#d4874a"/>
+              <polygon points="29,17 32,9 25,15" fill="#d4874a"/>
+              <polygon points="11.5,16.5 9,11 14.5,15.5" fill="#f5b07a"/>
+              <polygon points="28.5,16.5 31,11 25.5,15.5" fill="#f5b07a"/>
+              <ellipse cx="20" cy="25" rx="8" ry="7" fill="#f0a060"/>
+              <ellipse cx="20" cy="27.5" rx="4" ry="3" fill="#f5c898"/>
+              <circle cx="17.5" cy="26" r="1.8" fill="#222" opacity="0.85"/>
+              <circle cx="22.5" cy="26" r="1.8" fill="#222" opacity="0.85"/>
+              <circle cx="18" cy="25.6" r="0.6" fill="#fff" opacity="0.5"/>
+              <circle cx="23" cy="25.6" r="0.6" fill="#fff" opacity="0.5"/>
+              <path d="M17.5 29 Q20 30.5 22.5 29" stroke="#a0522d" stroke-width="0.9" fill="none" stroke-linecap="round"/>
+              <ellipse cx="20" cy="27" rx="1.4" ry="1" fill="#b05030"/>
+              <path d="M9.5 21 Q9.5 12.5 20 11.5 Q30.5 12.5 30.5 21 Z" fill="#f5c200"/>
+              <rect x="8.5" y="20.5" width="23" height="3" rx="1.5" fill="#e0a800"/>
+              <rect x="15" y="12" width="10" height="2.5" rx="1.2" fill="#e0a800"/>
+            </svg>
+          </div>
           <div>
-            <strong>Asistente FMN</strong>
-            <p class="ai-drawer-subtitle">Responde tus dudas del sistema</p>
+            <strong>PumAI</strong>
+            <p class="ai-drawer-subtitle">Tu asistente del Portal FMN 🐾</p>
           </div>
         </div>
-        <button id="ai-assistant-close" class="icon-btn" type="button" aria-label="Cerrar asistente">x</button>
+        <button id="ai-assistant-close" class="icon-btn" type="button" aria-label="Cerrar PumAI">x</button>
       </header>
       <div id="ai-assistant-messages" class="ai-messages" role="log" aria-live="polite"></div>
       <form id="ai-assistant-form" class="ai-composer" autocomplete="off">

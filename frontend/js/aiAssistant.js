@@ -1,7 +1,7 @@
 // ── Asistente IA flotante ────────────────────────────────────────────────────
 
 const AI_WELCOME =
-  "Hola 👋 Soy el asistente de Portal FMN. Puedo ayudarte con dudas sobre solicitudes, estados, roles y cómo usar el sistema. ¿En qué te ayudo?";
+  "¡Hola! 🐾 Soy PumAI, tu asistente del Portal FMN. Puedo ayudarte con dudas sobre solicitudes, estados, roles y cómo usar el sistema. ¿En qué te ayudo?";
 
 export function initAiAssistant(context) {
   const btn = document.getElementById("ai-assistant-btn");
