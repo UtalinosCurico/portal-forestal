@@ -2537,6 +2537,61 @@ th {
   to   { opacity: 1; transform: translateY(0);    }
 }
 
+/* ── View entry transition ──────────────────────────────────────────────────── */
+.view-container.view-entering > * {
+  animation: slide-up-fade 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* ── Button ripple ──────────────────────────────────────────────────────────── */
+.btn,
+.action-btn,
+.table-btn,
+.table-btn-state,
+.ipt-open-btn,
+.detail-tab-btn,
+.pending-collapse-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-ripple {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.38);
+  transform: translate(-50%, -50%) scale(0);
+  animation: btn-ripple-expand 0.55s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes btn-ripple-expand {
+  to {
+    transform: translate(-50%, -50%) scale(55);
+    opacity: 0;
+  }
+}
+
+/* ── Quick strip counter pop ────────────────────────────────────────────────── */
+@keyframes count-pop {
+  from { transform: scale(0.8); opacity: 0.5; }
+  to   { transform: scale(1);   opacity: 1;   }
+}
+
+.quick-value.counting {
+  animation: count-pop 0.25s cubic-bezier(0.34, 1.5, 0.64, 1) both;
+}
+
+/* ── Solicitud mobile cards stagger ─────────────────────────────────────────── */
+.solicitud-mobile-card {
+  animation: slide-up-fade 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* ── Table row enter ─────────────────────────────────────────────────────────── */
+tbody tr {
+  animation: slide-up-fade 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
 @media (max-width: 1100px) {
   .quick-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));

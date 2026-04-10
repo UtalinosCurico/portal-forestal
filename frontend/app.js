@@ -1,4 +1,19 @@
 const ASSET_VERSION = window.__APP_VERSION__ || "dev";
+
+// ── Button ripple ────────────────────────────────────────────────────────────
+document.addEventListener("pointerdown", (e) => {
+  const btn = e.target.closest(
+    ".btn, .action-btn, .table-btn, .table-btn-state, .ipt-open-btn, .detail-tab-btn, .pending-collapse-btn"
+  );
+  if (!btn || btn.disabled || btn.classList.contains("no-ripple")) return;
+  const rect = btn.getBoundingClientRect();
+  const ripple = document.createElement("span");
+  ripple.className = "btn-ripple";
+  ripple.style.left = e.clientX - rect.left + "px";
+  ripple.style.top = e.clientY - rect.top + "px";
+  btn.appendChild(ripple);
+  ripple.addEventListener("animationend", () => ripple.remove(), { once: true });
+});
 const CHILE_TIME_ZONE = "America/Santiago";
 const CHILE_LOCALE = "es-CL";
 const SESSION_KEY = "fmn_auth_session";
@@ -971,6 +986,9 @@ async function loadView(viewName, options = {}) {
   }
 
   viewContainer.innerHTML = markup;
+  viewContainer.classList.remove("view-entering");
+  void viewContainer.offsetWidth; // reflow para re-triggerear la animación
+  viewContainer.classList.add("view-entering");
   viewContainer.dataset.viewName = targetView;
   pageTitle.textContent = meta.title;
   pageSubtitle.textContent = meta.subtitle;

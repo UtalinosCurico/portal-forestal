@@ -1,3 +1,21 @@
+// ── Contador animado para quick strip ────────────────────────────────────────
+function animateCount(el, target) {
+  const from = parseInt(el.textContent) || 0;
+  if (from === target) return;
+  const dur = 500;
+  const t0 = performance.now();
+  el.classList.remove("counting");
+  void el.offsetWidth;
+  el.classList.add("counting");
+  function tick(now) {
+    const p = Math.min((now - t0) / dur, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    el.textContent = String(Math.round(from + (target - from) * ease));
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
 const STATUS_LABELS = {
   PENDIENTE: "Pendiente",
   EN_REVISION: "En gestion",
@@ -468,11 +486,11 @@ function renderSummary(rows) {
     }
   }
 
-  document.getElementById("summary-total").textContent = String(rows.length);
-  document.getElementById("summary-pendientes").textContent = String(summary.pendientes);
-  document.getElementById("summary-revision").textContent = String(summary.revision);
-  document.getElementById("summary-despacho").textContent = String(summary.despacho);
-  document.getElementById("summary-entregadas").textContent = String(summary.entregadas);
+  animateCount(document.getElementById("summary-total"), rows.length);
+  animateCount(document.getElementById("summary-pendientes"), summary.pendientes);
+  animateCount(document.getElementById("summary-revision"), summary.revision);
+  animateCount(document.getElementById("summary-despacho"), summary.despacho);
+  animateCount(document.getElementById("summary-entregadas"), summary.entregadas);
 
   const activeCount = summary.pendientes + summary.revision + summary.despacho;
   document.title = activeCount > 0
@@ -502,12 +520,13 @@ function renderRows(rows, tableBody, mobileList, formatDate, role) {
 
   tableBody.innerHTML = rows
     .map(
-      (item) => {
+      (item, i) => {
         const primaryAction = getSolicitudPrimaryAction(item, role);
         const itemStatusSnapshot = renderItemStatusSnapshot(item);
         const solicitante = item.solicitante_name || item.solicitante_nombre || item.solicitante || "-";
+        const rowDelay = Math.min(i * 0.03, 0.28);
         return `
-        <tr>
+        <tr style="animation-delay:${rowDelay}s">
           <td>${item.id}</td>
           <td>
             <strong>${item.nombre_equipo || item.equipo || "-"}</strong>
@@ -541,12 +560,13 @@ function renderRows(rows, tableBody, mobileList, formatDate, role) {
     .join("");
 
   mobileList.innerHTML = rows
-    .map((item) => {
+    .map((item, i) => {
       const primaryAction = getSolicitudPrimaryAction(item, role);
       const itemStatusSnapshot = renderItemStatusSnapshot(item);
       const solicitante = item.solicitante_name || item.solicitante_nombre || item.solicitante || "-";
+      const cardDelay = Math.min(i * 0.04, 0.32);
       return `
-        <article class="solicitud-mobile-card" data-status="${item.estado}">
+        <article class="solicitud-mobile-card" style="animation-delay:${cardDelay}s" data-status="${item.estado}">
           <div class="solicitud-mobile-top">
             <div>
               <strong>Solicitud #${item.id}</strong>
