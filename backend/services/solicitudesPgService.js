@@ -812,19 +812,27 @@ async function listSolicitudes(actor, filters = {}) {
 }
 
 async function listSolicitudesForExport(actor, filters = {}) {
-  const rows = await listSolicitudes(actor, filters);
-  return rows.map((row) => ({
+  const baseRows = await listSolicitudes(actor, filters);
+  if (!baseRows.length) return [];
+
+  const solicitudIds = baseRows.map((r) => Number(r.id));
+  const itemsMap = await getSolicitudItemsBySolicitudIds(solicitudIds);
+
+  return baseRows.map((row) => ({
     id: row.id,
     equipo: row.nombre_equipo || "Sin equipo",
-    repuesto: row.repuesto,
-    cantidad: row.cantidad,
+    repuesto: row.resumen_items || row.repuesto || "",
+    cantidad: row.total_unidades || row.cantidad || 0,
+    total_items: row.total_items || 0,
     estado: row.estado,
-    solicitante: row.solicitante_name,
+    solicitante: row.solicitante_name || "Usuario",
     created_at: row.created_at,
     reviewed_at: row.reviewed_at,
     dispatched_at: row.dispatched_at,
     received_at: row.received_at,
+    updated_at: row.updated_at,
     comentario: row.comentario,
+    items: itemsMap.get(Number(row.id)) || [],
   }));
 }
 

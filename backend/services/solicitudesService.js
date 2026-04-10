@@ -715,7 +715,7 @@ async function listSolicitudes(actor, filters = {}) {
 async function listSolicitudesForExport(actor, filters = {}) {
   const scope = buildWhereClause(actor, filters, "s");
 
-  return all(
+  const solicitudes = await all(
     `
       SELECT
         s.id,
@@ -728,6 +728,7 @@ async function listSolicitudesForExport(actor, filters = {}) {
         s.reviewed_at,
         s.dispatched_at,
         s.received_at,
+        s.updated_at,
         s.comentario
       FROM solicitudes s
       INNER JOIN usuarios su ON su.id = s.solicitante_id
@@ -737,6 +738,43 @@ async function listSolicitudesForExport(actor, filters = {}) {
     `,
     scope.params
   );
+
+  if (!solicitudes.length) return [];
+
+  const ids = solicitudes.map((r) => r.id);
+  const placeholders = ids.map(() => "?").join(",");
+  const items = await all(
+    `
+      SELECT
+        si.*,
+        u1.nombre AS encargado_nombre,
+        u2.nombre AS enviado_por_nombre,
+        u3.nombre AS recepcionado_por_nombre
+      FROM solicitud_items si
+      LEFT JOIN usuarios u1 ON u1.id = si.encargado_id
+      LEFT JOIN usuarios u2 ON u2.id = si.enviado_por_id
+      LEFT JOIN usuarios u3 ON u3.id = si.recepcionado_por_id
+      WHERE si.solicitud_id IN (${placeholders})
+      ORDER BY si.solicitud_id ASC, si.id ASC
+    `,
+    ids
+  );
+
+  const itemsMap = new Map();
+  for (const item of items) {
+    const bucket = itemsMap.get(item.solicitud_id) || [];
+    bucket.push(item);
+    itemsMap.set(item.solicitud_id, bucket);
+  }
+
+  return solicitudes.map((row) => {
+    const rowItems = itemsMap.get(row.id) || [];
+    return {
+      ...row,
+      total_items: rowItems.length || (row.repuesto ? 1 : 0),
+      items: rowItems,
+    };
+  });
 }
 
 async function resolveEquipoForCreation(actor, payload) {
