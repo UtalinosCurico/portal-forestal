@@ -44,15 +44,28 @@ const ASSET_VERSION = window.__APP_VERSION__ || "dev";
     return d + ` L${W} ${H} Z`;
   }
 
-  document.getElementById("ll-path-mtn-far").setAttribute("d",   mountainPath(260, 90,  7));
-  document.getElementById("ll-path-mtn-mid").setAttribute("d",   mountainPath(320, 65, 10));
-  document.getElementById("ll-path-trees-far").setAttribute("d", treesPath(380, 80, 20));
-  document.getElementById("ll-path-trees-near").setAttribute("d",treesPath(430, 110, 13));
+  document.getElementById("ll-path-mtn-far").setAttribute("d",    mountainPath(260, 90,  7));
+  document.getElementById("ll-path-mtn-mid").setAttribute("d",    mountainPath(320, 65, 10));
+  document.getElementById("ll-path-trees-far").setAttribute("d",  treesPath(380, 80, 20));
+  document.getElementById("ll-path-trees-near").setAttribute("d", treesPath(430, 110, 13));
 
-  // Animar por capas con delay escalonado
-  container.querySelectorAll(".login-layer").forEach((layer, i) => {
+  // Slide-in escalonado
+  const layers = container.querySelectorAll(".login-layer");
+  layers.forEach((layer, i) => {
     setTimeout(() => layer.classList.add("animate-in"), 80 + i * 220);
   });
+
+  // Arrancar parallax + bamboleo una vez que terminó el slide-in
+  const lastDelay = 80 + (layers.length - 1) * 220 + 1350; // último slide + duración transición
+  setTimeout(() => {
+    container.classList.add("droning");
+    // activar scroll en cada capa con pequeño escalonado para que no arranquen sincronizadas
+    layers.forEach((layer, i) => {
+      setTimeout(() => {
+        layer.querySelector(".ll-scroll").style.animationPlayState = "running";
+      }, i * 120);
+    });
+  }, lastDelay);
 })();
 
 // ── Button ripple ────────────────────────────────────────────────────────────
