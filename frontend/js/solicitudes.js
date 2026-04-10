@@ -472,6 +472,11 @@ function renderSummary(rows) {
   document.getElementById("summary-revision").textContent = String(summary.revision);
   document.getElementById("summary-despacho").textContent = String(summary.despacho);
   document.getElementById("summary-entregadas").textContent = String(summary.entregadas);
+
+  const activeCount = summary.pendientes + summary.revision + summary.despacho;
+  document.title = activeCount > 0
+    ? `(${activeCount}) Solicitudes — Portal FMN`
+    : "Solicitudes — Portal FMN";
 }
 
 function renderStatusSnapshot(item, formatDate) {
@@ -524,6 +529,9 @@ function renderRows(rows, tableBody, mobileList, formatDate, role) {
             <button class="table-btn ${primaryAction.emphasis ? "table-btn-emphasis" : ""}" data-action="open" data-id="${item.id}" type="button">
               ${primaryAction.label}
             </button>
+            <button class="table-btn-state" data-action="open-state" data-id="${item.id}" type="button">
+              Ver estado
+            </button>
           </td>
         </tr>
       `;
@@ -537,7 +545,7 @@ function renderRows(rows, tableBody, mobileList, formatDate, role) {
       const itemStatusSnapshot = renderItemStatusSnapshot(item);
       const solicitante = item.solicitante_name || item.solicitante_nombre || item.solicitante || "-";
       return `
-        <article class="solicitud-mobile-card">
+        <article class="solicitud-mobile-card" data-status="${item.estado}">
           <div class="solicitud-mobile-top">
             <div>
               <strong>Solicitud #${item.id}</strong>
@@ -942,6 +950,8 @@ export async function initSolicitudesView(context) {
   const inlinePendingCount = document.getElementById("inline-pending-count");
   const inlinePendingSearch = document.getElementById("inline-pending-search");
   const inlinePendingRefreshBtn = document.getElementById("inline-pending-refresh-btn");
+  const inlinePendingToggle = document.getElementById("inline-pending-toggle");
+  const inlinePendingBody = document.getElementById("inline-pending-body");
 
   const filters = {
     estado: "",
@@ -1998,15 +2008,22 @@ export async function initSolicitudesView(context) {
   });
 
   tableBody.addEventListener("click", async (event) => {
-    const button = event.target.closest("button[data-action='open']");
+    const button = event.target.closest("button[data-action]");
     if (!button) {
       return;
     }
 
+    const action = button.dataset.action;
+    const solicitudId = Number(button.dataset.id);
+
     try {
-      const solicitudId = Number(button.dataset.id);
-      activeDetailTab = "items";
-      lastNonChatDetailTab = "items";
+      if (action === "open-state") {
+        activeDetailTab = "estado";
+        lastNonChatDetailTab = "estado";
+      } else {
+        activeDetailTab = "items";
+        lastNonChatDetailTab = "items";
+      }
       applyDetailTabLayout();
       showDetailLoading(solicitudId);
       openModal(detailModal);
@@ -2352,6 +2369,11 @@ export async function initSolicitudesView(context) {
     }
   });
 
+  if (window.__fmnPendingAutoRefreshId) {
+    window.clearInterval(window.__fmnPendingAutoRefreshId);
+    window.__fmnPendingAutoRefreshId = null;
+  }
+
   if (window.__fmnSolicitudesRealtimeHandler) {
     window.removeEventListener("fmn:notification", window.__fmnSolicitudesRealtimeHandler);
   }
@@ -2362,6 +2384,14 @@ export async function initSolicitudesView(context) {
   window.addEventListener("fmn:notification", window.__fmnSolicitudesRealtimeHandler);
 
   // Pending items inline events
+  inlinePendingToggle?.addEventListener("click", () => {
+    const isCollapsed = inlinePendingBody?.classList.toggle("collapsed");
+    if (inlinePendingToggle) {
+      inlinePendingToggle.textContent = isCollapsed ? "▼" : "▲";
+      inlinePendingToggle.setAttribute("aria-expanded", isCollapsed ? "false" : "true");
+    }
+  });
+
   inlinePendingRefreshBtn?.addEventListener("click", loadAndRenderPendingItems);
   inlinePendingSearch?.addEventListener("input", () => {
     renderPendingItems(inlinePendingSearch.value.trim());
@@ -2388,4 +2418,12 @@ export async function initSolicitudesView(context) {
   configureRoleActions();
   resetCreateSolicitudForm();
   await Promise.all([loadSolicitudes(), loadAndRenderPendingItems()]);
+
+  // Auto-refresh pendientes cada 2 minutos
+  const pendingAutoRefreshId = window.setInterval(() => {
+    loadAndRenderPendingItems().catch(() => {});
+  }, 120000);
+
+  // Limpiar intervalo si la vista se destruye (navegacion)
+  window.__fmnPendingAutoRefreshId = pendingAutoRefreshId;
 }

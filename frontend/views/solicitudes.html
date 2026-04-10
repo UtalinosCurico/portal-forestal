@@ -64,10 +64,15 @@
         <button id="inline-pending-refresh-btn" class="action-btn secondary" type="button">
           Actualizar
         </button>
+        <button id="inline-pending-toggle" class="pending-collapse-btn" type="button" aria-expanded="true" aria-controls="inline-pending-body">
+          &#9650;
+        </button>
       </div>
     </div>
-    <div id="inline-pending-list" class="inline-pending-list">
-      <div class="history-empty">Cargando items...</div>
+    <div id="inline-pending-body" class="pending-inline-body">
+      <div id="inline-pending-list" class="inline-pending-list">
+        <div class="history-empty">Cargando items...</div>
+      </div>
     </div>
   </section>
 
