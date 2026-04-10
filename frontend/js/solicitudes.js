@@ -429,8 +429,9 @@ function renderMessages(messages = [], options = {}) {
            </div>`
         : "";
 
+      const isMine = Number(message.remitente_id) === Number(currentUserId);
       return `
-        <article class="chat-item">
+        <article class="chat-item ${isMine ? "chat-mine" : "chat-theirs"}">
           <div class="chat-header">
             <strong>${message.remitente_nombre || "Usuario"}</strong>
             <span>${formatDate(message.created_at)}</span>

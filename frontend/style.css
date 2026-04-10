@@ -1505,10 +1505,35 @@ th {
 }
 
 .chat-list {
-  display: grid;
-  gap: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
   margin-top: 0.8rem;
   margin-bottom: 1rem;
+}
+
+/* Burbujas de chat: mine vs theirs */
+.chat-item {
+  max-width: 82%;
+}
+
+.chat-item.chat-mine {
+  align-self: flex-end;
+  background: #e8f5ee;
+  border-color: #b8dfc8;
+}
+
+.chat-item.chat-theirs {
+  align-self: flex-start;
+  background: #ffffff;
+}
+
+.chat-item.chat-mine .chat-header {
+  flex-direction: row-reverse;
+}
+
+.chat-item.chat-mine strong {
+  color: var(--forest-700);
 }
 
 .chat-back-btn {
@@ -1693,9 +1718,10 @@ th {
 .chat-item {
   border: 1px solid var(--line);
   background: #ffffff;
-  border-radius: 12px;
-  padding: 0.75rem;
+  border-radius: 14px;
+  padding: 0.75rem 0.85rem;
   overflow: hidden;
+  word-break: break-word;
 }
 
 .chat-item p {
@@ -2168,6 +2194,10 @@ th {
 
 .inline-pending-list {
   margin-top: 0.7rem;
+  max-height: 440px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 0.15rem;
 }
 
 .inline-pending-table {
@@ -2250,8 +2280,10 @@ th {
 
 .ipt-nota {
   font-size: 0.8rem;
-  color: var(--muted);
-  font-style: italic;
+  color: #5a4500;
+  background: #fff8e1;
+  border-radius: 5px;
+  padding: 0.1rem 0.4rem;
   flex: 1 1 120px;
 }
 
@@ -3141,5 +3173,45 @@ th {
 
   .menu-toggle {
     min-height: 48px;
+  }
+
+  /* Pending section header en móvil: búsqueda y botones en columna */
+  .pending-inline-card .section-head.compact-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+  }
+
+  .pending-inline-card .actions-inline {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .pending-inline-card .inline-pending-search-input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Lista pendientes más corta en móvil */
+  .inline-pending-list {
+    max-height: 320px;
+  }
+
+  /* ipt-group-head apilado en pantallas pequeñas */
+  .ipt-group-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .ipt-open-btn {
+    align-self: flex-end;
+    margin-top: -1.8rem;
+  }
+
+  /* Chat burbujas no tan anchas en móvil */
+  .chat-item {
+    max-width: 90%;
   }
 }
