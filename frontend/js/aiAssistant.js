@@ -22,7 +22,8 @@ export function initAiAssistant(context) {
     isOpen = true;
     drawer.classList.add("open");
     btn.setAttribute("aria-expanded", "true");
-    if (!history.length) {
+    if (!messagesList.children.length) {
+      history.push({ role: "assistant", content: AI_WELCOME });
       appendMessage("assistant", AI_WELCOME);
     }
     setTimeout(() => input?.focus(), 120);
