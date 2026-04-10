@@ -129,6 +129,85 @@
         </a>
         <button id="help-btn" class="help-btn" type="button">Como usar</button>
         <button id="logout-btn" class="logout-btn">Cerrar sesion</button>
+
+        <!-- Hábitat del Puma -->
+        <button id="puma-habitat-btn" class="puma-habitat" aria-label="Abrir PumAI" title="Abrir PumAI">
+          <svg class="puma-scene" viewBox="0 0 220 80" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="ph-sky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#060e09"/>
+                <stop offset="100%" stop-color="#0e2618"/>
+              </linearGradient>
+            </defs>
+            <!-- cielo nocturno -->
+            <rect width="220" height="80" fill="url(#ph-sky)"/>
+            <!-- luna -->
+            <circle cx="192" cy="14" r="8" fill="#d8eed8" opacity="0.55"/>
+            <circle cx="196" cy="11" r="6" fill="#060e09" opacity="0.6"/>
+            <!-- estrellas -->
+            <circle cx="18"  cy="9"  r="1"   fill="#fff" opacity="0.5"/>
+            <circle cx="55"  cy="5"  r="0.8" fill="#fff" opacity="0.4"/>
+            <circle cx="95"  cy="11" r="1.2" fill="#fff" opacity="0.55"/>
+            <circle cx="140" cy="6"  r="0.9" fill="#fff" opacity="0.45"/>
+            <circle cx="170" cy="13" r="0.7" fill="#fff" opacity="0.4"/>
+            <!-- árboles lejanos -->
+            <polygon points="28,54  38,30  48,54"  fill="#0a1e10" opacity="0.9"/>
+            <polygon points="60,56  68,38  76,56"  fill="#0b2212" opacity="0.85"/>
+            <polygon points="100,53 113,28 126,53" fill="#091c0f" opacity="0.9"/>
+            <polygon points="155,55 163,38 171,55" fill="#0b2212" opacity="0.85"/>
+            <polygon points="185,54 193,33 201,54" fill="#0a1e10" opacity="0.9"/>
+            <!-- suelo -->
+            <rect x="0" y="60" width="220" height="20" fill="#091508"/>
+            <!-- hierba ondulada -->
+            <path d="M0 60 Q11 55 22 60 Q33 55 44 60 Q55 55 66 60 Q77 55 88 60 Q99 55 110 60 Q121 55 132 60 Q143 55 154 60 Q165 55 176 60 Q187 55 198 60 Q209 55 220 60" stroke="#163320" stroke-width="2.5" fill="none"/>
+            <!-- rocas -->
+            <ellipse cx="42"  cy="63" rx="9" ry="5" fill="#112210"/>
+            <ellipse cx="48"  cy="62" rx="6" ry="4" fill="#1a3020"/>
+            <ellipse cx="158" cy="64" rx="11" ry="5" fill="#112210"/>
+            <ellipse cx="165" cy="63" rx="7"  ry="4" fill="#1a3020"/>
+            <!-- arbustos -->
+            <ellipse cx="12"  cy="62" rx="13" ry="6" fill="#122b18"/>
+            <ellipse cx="108" cy="63" rx="10" ry="5" fill="#122b18"/>
+            <ellipse cx="210" cy="62" rx="12" ry="6" fill="#122b18"/>
+          </svg>
+          <!-- Puma animado -->
+          <div class="puma-runner">
+            <svg class="puma-svg" viewBox="0 0 64 34" xmlns="http://www.w3.org/2000/svg" fill="#2a6640">
+              <!-- cuerpo -->
+              <ellipse cx="36" cy="20" rx="19" ry="9"/>
+              <!-- cuello -->
+              <ellipse cx="18" cy="17" rx="8" ry="6"/>
+              <!-- cabeza -->
+              <ellipse cx="9"  cy="14" rx="9" ry="8"/>
+              <!-- hocico -->
+              <ellipse cx="3"  cy="17" rx="4" ry="3"/>
+              <!-- oreja izq -->
+              <polygon points="4,8  7,3  11,8"/>
+              <!-- oreja der -->
+              <polygon points="10,7 13,2 17,7"/>
+              <!-- ojo -->
+              <circle cx="6" cy="12" r="1.5" fill="#d4f0d4"/>
+              <!-- cola (curva hacia arriba) -->
+              <path d="M53 18 Q59 12 56 5" stroke="#2a6640" stroke-width="4" stroke-linecap="round" fill="none"/>
+              <!-- pata delantera izquierda -->
+              <g class="pleg pleg-fl">
+                <rect x="18" y="25" width="5" height="9" rx="2.5"/>
+              </g>
+              <!-- pata delantera derecha -->
+              <g class="pleg pleg-fr">
+                <rect x="25" y="25" width="5" height="9" rx="2.5"/>
+              </g>
+              <!-- pata trasera izquierda -->
+              <g class="pleg pleg-bl">
+                <rect x="39" y="25" width="5" height="9" rx="2.5"/>
+              </g>
+              <!-- pata trasera derecha -->
+              <g class="pleg pleg-br">
+                <rect x="46" y="25" width="5" height="9" rx="2.5"/>
+              </g>
+            </svg>
+          </div>
+        </button>
       </aside>
       <button id="sidebar-overlay" class="sidebar-overlay hidden" type="button" aria-label="Cerrar menu"></button>
 

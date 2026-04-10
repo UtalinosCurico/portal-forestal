@@ -353,6 +353,8 @@ button:disabled:hover {
   top: 0;
   height: 100vh;
   padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
   background:
     radial-gradient(ellipse 110% 50% at 50% 0%, rgba(36,96,80,0.45) 0%, transparent 55%),
     linear-gradient(175deg, var(--forest-800) 0%, var(--forest-900) 45%, var(--forest-950) 100%);
@@ -420,6 +422,90 @@ button:disabled:hover {
 .logout-btn:hover {
   background: #9d3434;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+/* ── Hábitat del Puma (sidebar) ──────────────────────────────────────────────── */
+.puma-habitat {
+  display: block;
+  width: calc(100% + 2.5rem);
+  margin-left: -1.25rem;
+  margin-right: -1.25rem;
+  margin-top: auto;
+  height: 80px;
+  position: relative;
+  overflow: hidden;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+  border-radius: 0 0 0 0;
+  flex-shrink: 0;
+}
+
+.puma-scene {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* puma que camina */
+.puma-runner {
+  position: absolute;
+  bottom: 14px;
+  left: 0;
+  width: 58px;
+  animation: puma-walk-x 11s linear infinite;
+  will-change: transform;
+}
+
+.puma-svg {
+  display: block;
+  width: 58px;
+  height: auto;
+  animation: puma-bob 0.45s ease-in-out infinite alternate;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+/* traslación horizontal: de derecha a izquierda */
+@keyframes puma-walk-x {
+  0%   { transform: translateX(230px) scaleX(1); }
+  48%  { transform: translateX(-70px) scaleX(1); }
+  50%  { transform: translateX(-70px) scaleX(-1); }  /* gira al llegar al borde */
+  98%  { transform: translateX(230px) scaleX(-1); }
+  100% { transform: translateX(230px) scaleX(1); }
+}
+
+/* bamboleo vertical sutil */
+@keyframes puma-bob {
+  from { transform: translateY(0px); }
+  to   { transform: translateY(-2px); }
+}
+
+/* patas: par A (delantera-izq + trasera-der) */
+.pleg-fl, .pleg-br {
+  animation: pleg-a 0.38s ease-in-out infinite alternate;
+  transform-box: fill-box;
+  transform-origin: center top;
+}
+
+/* patas: par B (delantera-der + trasera-izq) */
+.pleg-fr, .pleg-bl {
+  animation: pleg-b 0.38s ease-in-out infinite alternate;
+  transform-box: fill-box;
+  transform-origin: center top;
+}
+
+@keyframes pleg-a {
+  from { transform: rotate(-22deg); }
+  to   { transform: rotate(22deg); }
+}
+@keyframes pleg-b {
+  from { transform: rotate(22deg); }
+  to   { transform: rotate(-22deg); }
+}
+
+.puma-habitat:hover .puma-svg {
+  filter: drop-shadow(0 2px 8px rgba(80,200,120,0.5));
 }
 
 .datascope-btn {

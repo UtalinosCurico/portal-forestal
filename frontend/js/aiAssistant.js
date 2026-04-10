@@ -162,6 +162,7 @@ export function initAiAssistant(context) {
 
   // ── Events ─────────────────────────────────────────────────────────────────
   btn.addEventListener("click", () => (isOpen ? close() : open()));
+  document.getElementById("puma-habitat-btn")?.addEventListener("click", () => { if (!isOpen) open(); });
   closeBtn?.addEventListener("click", close);
 
   form?.addEventListener("submit", (e) => {
