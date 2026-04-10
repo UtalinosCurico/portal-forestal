@@ -1111,7 +1111,7 @@ async function updateSolicitud(actor, solicitudId, payload) {
     payload.cantidad !== undefined ||
     payload.nombre_item !== undefined;
 
-  if (wantsItemsUpdate && current.estado !== SOLICITUD_STATUS.PENDIENTE) {
+  if (wantsItemsUpdate && !actorIsGlobal && current.estado !== SOLICITUD_STATUS.PENDIENTE) {
     throw new HttpError(409, "Solo puedes editar el detalle base mientras la solicitud esta pendiente");
   }
 
@@ -1419,7 +1419,7 @@ async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
     params.push(value);
     return `$${params.length}`;
   };
-  const canEditBase = solicitud.estado === SOLICITUD_STATUS.PENDIENTE;
+  const canEditBase = solicitud.estado === SOLICITUD_STATUS.PENDIENTE || isGlobalRole(actorRole);
   const canManageTracking = isGlobalRole(actorRole);
 
   let estadoNuevo = currentItem.estado_item;

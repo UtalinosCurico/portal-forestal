@@ -1314,7 +1314,7 @@ export async function initSolicitudesView(context) {
   }
 
   function fillItemModal(item = null) {
-    const editableBase = Boolean(currentSolicitud && currentSolicitud.estado === "PENDIENTE");
+    const editableBase = Boolean(currentSolicitud && (currentSolicitud.estado === "PENDIENTE" || canManage));
     const canManageItem = canManage;
     const isNew = !item?.id;
 
@@ -1540,7 +1540,7 @@ export async function initSolicitudesView(context) {
   }
 
   function isDetailEditable(solicitud) {
-    return Boolean(solicitud && solicitud.estado === "PENDIENTE");
+    return Boolean(solicitud && (solicitud.estado === "PENDIENTE" || canManage));
   }
 
   function canConfirmSolicitud(solicitud) {
