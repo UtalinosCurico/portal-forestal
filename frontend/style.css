@@ -2287,6 +2287,15 @@ th {
   flex: 1 1 120px;
 }
 
+.ipt-uf {
+  font-size: 0.8rem;
+  color: #2a5c3a;
+  background: #e8f5ee;
+  border-radius: 5px;
+  padding: 0.1rem 0.4rem;
+  flex: 0 1 auto;
+}
+
 .ipt-qty {
   font-weight: 700;
   font-size: 0.97rem;

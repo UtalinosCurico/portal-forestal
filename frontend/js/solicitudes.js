@@ -1050,10 +1050,11 @@ export async function initSolicitudesView(context) {
       for (const item of groupItems) {
         const ref = item.codigo_referencia ? `<span class="ipt-ref">${item.codigo_referencia}</span>` : "";
         const nota = item.comentario ? `<span class="ipt-nota">${item.comentario}</span>` : "";
+        const uf = item.usuario_final ? `<span class="ipt-uf">👤 ${item.usuario_final}</span>` : "";
         html += `
           <div class="ipt-item">
             <span class="ipt-name">${item.nombre_item || "Sin nombre"}</span>
-            ${ref}${nota}
+            ${ref}${nota}${uf}
             <span class="ipt-qty">${item.cantidad ?? ""} <small>${item.unidad_medida || ""}</small></span>
           </div>`;
       }
