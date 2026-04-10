@@ -89,9 +89,17 @@ export function initAiAssistant(context) {
       appendMessage("assistant", reply);
     } catch (err) {
       removeTyping();
-      const msg = err?.message?.includes("ANTHROPIC_API_KEY") || err?.message?.includes("no configurado")
-        ? "PumAI no está activado aún. El administrador debe configurar la clave de API en el servidor. 🔧"
-        : "Lo siento, no pude conectarme. Intenta de nuevo en un momento. 🐾";
+      const raw = err?.message || "";
+      let msg;
+      if (raw.includes("ANTHROPIC_API_KEY") || raw.includes("no configurado")) {
+        msg = "PumAI no está activado aún. El administrador debe configurar la clave de API en el servidor. 🔧";
+      } else if (raw.includes("credit") || raw.includes("billing") || raw.includes("quota") || raw.includes("insufficient")) {
+        msg = "Sin créditos en la cuenta de IA. El administrador debe agregar saldo en console.anthropic.com. 💳";
+      } else if (raw.includes("invalid") || raw.includes("auth") || raw.includes("401")) {
+        msg = "La clave de API no es válida. El administrador debe verificarla en Vercel. 🔑";
+      } else {
+        msg = `Error: ${raw || "no pude conectarme"}. Intenta de nuevo. 🐾`;
+      }
       appendMessage("assistant", msg);
     } finally {
       isLoading = false;
