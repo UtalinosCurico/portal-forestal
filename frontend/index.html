@@ -172,38 +172,78 @@
           </svg>
           <!-- Puma animado -->
           <div class="puma-runner">
-            <svg class="puma-svg" viewBox="0 0 64 34" xmlns="http://www.w3.org/2000/svg" fill="#2a6640">
-              <!-- cuerpo -->
-              <ellipse cx="36" cy="20" rx="19" ry="9"/>
+            <svg class="puma-svg" viewBox="0 0 82 44" xmlns="http://www.w3.org/2000/svg">
+              <!-- cola larga — sale por la derecha y sube -->
+              <path d="M 64 22 C 70 20 76 17 78 11 C 80 6 76 3 73 5"
+                    stroke="#C8905A" stroke-width="5" stroke-linecap="round" fill="none"/>
+
+              <!-- grupa / cuartos traseros (más alto que los hombros) -->
+              <path d="M 46 10 C 54 8 62 11 64 17 C 67 23 63 30 56 31 C 50 32 46 30 46 10 Z"
+                    fill="#C8905A"/>
+
+              <!-- cuerpo principal -->
+              <path d="M 22 28 C 21 20 22 13 26 11 C 31 9 42 8 50 10
+                        C 54 11 56 14 55 19 C 54 24 50 28 44 29
+                        C 36 31 24 30 22 28 Z"
+                    fill="#C8905A"/>
+
+              <!-- vientre más claro -->
+              <path d="M 26 27 C 30 30 42 30 50 27 C 46 32 30 32 26 27 Z"
+                    fill="#D4A878" opacity="0.5"/>
+
               <!-- cuello -->
-              <ellipse cx="18" cy="17" rx="8" ry="6"/>
-              <!-- cabeza -->
-              <ellipse cx="9"  cy="14" rx="9" ry="8"/>
-              <!-- hocico -->
-              <ellipse cx="3"  cy="17" rx="4" ry="3"/>
-              <!-- oreja izq -->
-              <polygon points="4,8  7,3  11,8"/>
-              <!-- oreja der -->
-              <polygon points="10,7 13,2 17,7"/>
+              <path d="M 22 27 C 18 23 18 15 21 12 C 23 10 27 12 25 19 Z"
+                    fill="#C8905A"/>
+
+              <!-- cabeza — redondeada, característica puma -->
+              <path d="M 7 17 C 6 10 10 6 16 7 C 21 8 24 13 22 19
+                        C 21 23 17 25 13 23 C 9 21 7 19 7 17 Z"
+                    fill="#C8905A"/>
+
+              <!-- hocico / morro prominente -->
+              <path d="M 3 19 C 2 16 4 13 8 13 C 11 13 12 16 11 20
+                        C 10 22 6 23 3 19 Z"
+                    fill="#BA8050"/>
+
+              <!-- nariz -->
+              <ellipse cx="3.5" cy="17" rx="1.8" ry="1.2" fill="#7a4020"/>
+
+              <!-- oreja trasera -->
+              <path d="M 14 7 C 13 3 18 2 19 5 C 18 7 16 8 14 7 Z" fill="#C8905A"/>
+              <path d="M 14.5 6.5 C 14 4 17.5 3 18 5 C 17 6.5 15.5 7 14.5 6.5 Z" fill="#9a6030"/>
+
+              <!-- oreja delantera -->
+              <path d="M 9 7 C 8 3 12 2 13 5 C 12 7 10 8 9 7 Z" fill="#C8905A"/>
+              <path d="M 9.5 6.5 C 9 4 12 3 12.5 5 C 11.5 6.5 10 7 9.5 6.5 Z" fill="#9a6030"/>
+
               <!-- ojo -->
-              <circle cx="6" cy="12" r="1.5" fill="#d4f0d4"/>
-              <!-- cola (curva hacia arriba) -->
-              <path d="M53 18 Q59 12 56 5" stroke="#2a6640" stroke-width="4" stroke-linecap="round" fill="none"/>
-              <!-- pata delantera izquierda -->
+              <ellipse cx="11" cy="14" rx="2.2" ry="1.7" fill="#1a0c00"/>
+              <circle  cx="11.8" cy="13.4" r="0.8" fill="#6a4500" opacity="0.7"/>
+
+              <!-- bigotes (puntos) -->
+              <circle cx="6" cy="17" r="0.9" fill="#9a7040" opacity="0.7"/>
+              <circle cx="5" cy="19" r="0.7" fill="#9a7040" opacity="0.6"/>
+
+              <!-- PATAS — con forma de pata felina -->
+              <!-- delantera izq -->
               <g class="pleg pleg-fl">
-                <rect x="18" y="25" width="5" height="9" rx="2.5"/>
+                <path d="M 24 28 C 23 32 22 36 23 39 C 23.5 41 26 41 26.5 39 C 27 36 26 32 25 28 Z"
+                      fill="#BF8848" transform-box="fill-box" transform-origin="50% 0%"/>
               </g>
-              <!-- pata delantera derecha -->
+              <!-- delantera der -->
               <g class="pleg pleg-fr">
-                <rect x="25" y="25" width="5" height="9" rx="2.5"/>
+                <path d="M 29 29 C 28 33 28 37 29 39 C 29.5 41 32 41 32.5 39 C 33 37 32 33 31 29 Z"
+                      fill="#C8905A" transform-box="fill-box" transform-origin="50% 0%"/>
               </g>
-              <!-- pata trasera izquierda -->
+              <!-- trasera izq (rodilla doblada — típico felino) -->
               <g class="pleg pleg-bl">
-                <rect x="39" y="25" width="5" height="9" rx="2.5"/>
+                <path d="M 48 30 C 50 33 50 37 48 39 C 47 41 44 41 44.5 39 C 45.5 37 46 33 46 30 Z"
+                      fill="#BF8848" transform-box="fill-box" transform-origin="50% 0%"/>
               </g>
-              <!-- pata trasera derecha -->
+              <!-- trasera der -->
               <g class="pleg pleg-br">
-                <rect x="46" y="25" width="5" height="9" rx="2.5"/>
+                <path d="M 55 30 C 57 33 57 37 55 39 C 54 41 51 41 51.5 39 C 52.5 37 53 33 53 30 Z"
+                      fill="#C8905A" transform-box="fill-box" transform-origin="50% 0%"/>
               </g>
             </svg>
           </div>

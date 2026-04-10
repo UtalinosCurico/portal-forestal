@@ -451,19 +451,19 @@ button:disabled:hover {
 /* puma que camina */
 .puma-runner {
   position: absolute;
-  bottom: 14px;
+  bottom: 10px;
   left: 0;
-  width: 58px;
-  animation: puma-walk-x 11s linear infinite;
+  width: 72px;
+  animation: puma-walk-x 13s linear infinite;
   will-change: transform;
 }
 
 .puma-svg {
   display: block;
-  width: 58px;
+  width: 72px;
   height: auto;
-  animation: puma-bob 0.45s ease-in-out infinite alternate;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+  animation: puma-bob 0.42s ease-in-out infinite alternate;
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.6));
 }
 
 /* traslación horizontal: de derecha a izquierda */
