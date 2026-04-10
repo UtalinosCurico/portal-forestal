@@ -233,6 +233,19 @@ async function createTables() {
       FOREIGN KEY (repuesto_id) REFERENCES inventario(id)
     )
   `);
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS feedback (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tipo TEXT NOT NULL DEFAULT 'idea',
+      titulo TEXT NOT NULL,
+      descripcion TEXT NOT NULL,
+      autor_id INTEGER,
+      autor_nombre TEXT,
+      leido INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 }
 
 async function migrateUsuariosSchema() {

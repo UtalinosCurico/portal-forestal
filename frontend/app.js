@@ -138,6 +138,20 @@ const alertsRefreshBtn = document.getElementById("alerts-refresh-btn");
 const alertsList = document.getElementById("alerts-list");
 const alertsStatus = document.getElementById("alerts-status");
 
+const feedbackBtn       = document.getElementById("feedback-btn");
+const feedbackBadge     = document.getElementById("feedback-badge");
+const feedbackModal     = document.getElementById("feedback-modal");
+const feedbackCloseBtn  = document.getElementById("feedback-close-btn");
+const feedbackForm      = document.getElementById("feedback-form");
+const feedbackTitulo    = document.getElementById("feedback-titulo");
+const feedbackDesc      = document.getElementById("feedback-desc");
+const feedbackFormError = document.getElementById("feedback-form-error");
+const feedbackSubmitBtn = document.getElementById("feedback-submit-btn");
+const feedbackPanelSend = document.getElementById("feedback-panel-send");
+const feedbackPanelList = document.getElementById("feedback-panel-list");
+const feedbackList      = document.getElementById("feedback-list");
+const feedbackUnreadChip= document.getElementById("feedback-unread-chip");
+
 const VIEWS = {
   dashboard: {
     file: `/views/dashboard.html?v=${ASSET_VERSION}`,
@@ -1299,12 +1313,136 @@ async function restoreSession() {
   }
 }
 
+// ── Feedback ──────────────────────────────────────────────────────────────────
+function openFeedbackModal() {
+  feedbackModal.classList.remove("hidden");
+  feedbackTitulo?.focus();
+}
+function closeFeedbackModal() {
+  feedbackModal.classList.add("hidden");
+}
+
+async function loadFeedbackList() {
+  try {
+    const { data } = await apiRequest("/feedback");
+    const items = Array.isArray(data) ? data : [];
+    if (!items.length) {
+      feedbackList.innerHTML = "<div class='history-empty'>Sin feedback recibido todavía.</div>";
+      return;
+    }
+    const TIPO_LABEL = { idea: "💡 Idea", error: "🐛 Error" };
+    feedbackList.innerHTML = items.map((fb) => `
+      <div class="feedback-card ${fb.leido ? "leido" : ""}" data-fb-id="${fb.id}">
+        <div class="feedback-card-head">
+          <span class="feedback-card-tipo ${fb.tipo}">${TIPO_LABEL[fb.tipo] || fb.tipo}</span>
+          <span class="feedback-card-titulo">${fb.titulo}</span>
+          ${!fb.leido ? '<span class="mini-chip active" style="font-size:0.72rem">Nuevo</span>' : ""}
+        </div>
+        <p class="feedback-card-desc">${fb.descripcion}</p>
+        <div class="feedback-card-meta">
+          <span>👤 ${fb.autor_nombre || "Usuario"}</span>
+          <span>📅 ${fb.created_at ? fb.created_at.slice(0, 16).replace("T", " ") : "-"}</span>
+        </div>
+        <div class="feedback-card-actions">
+          ${!fb.leido ? `<button class="action-btn secondary" style="font-size:0.8rem;min-height:30px;padding:0.2rem 0.7rem" data-fb-mark="${fb.id}">Marcar leído</button>` : ""}
+          <button class="action-btn secondary" style="font-size:0.8rem;min-height:30px;padding:0.2rem 0.7rem;color:#c62828" data-fb-delete="${fb.id}">Eliminar</button>
+        </div>
+      </div>
+    `).join("");
+  } catch {
+    feedbackList.innerHTML = "<div class='history-empty'>Error al cargar feedback.</div>";
+  }
+}
+
+async function refreshFeedbackBadge() {
+  try {
+    const { data } = await apiRequest("/feedback/count");
+    const n = data?.unread || 0;
+    feedbackBadge?.classList.toggle("hidden", n === 0);
+    if (feedbackBadge) feedbackBadge.textContent = n;
+    if (feedbackUnreadChip) {
+      feedbackUnreadChip.classList.toggle("hidden", n === 0);
+      feedbackUnreadChip.textContent = n;
+    }
+  } catch { /* no es crítico */ }
+}
+
 function registerEvents() {
   loginForm.addEventListener("submit", handleLoginSubmit);
   logoutBtn.addEventListener("click", logout);
   helpBtn.addEventListener("click", async () => {
     await loadView("como-usar");
     closeSidebar();
+  });
+
+  // Feedback
+  feedbackBtn?.addEventListener("click", () => {
+    openFeedbackModal();
+    // si es admin, mostrar tab de lista
+    const role = state.user?.role || state.user?.rol || "";
+    const isAdmin = role === "ADMIN";
+    document.querySelectorAll(".feedback-tab.admin-only").forEach((t) => t.classList.toggle("hidden", !isAdmin));
+  });
+  feedbackCloseBtn?.addEventListener("click", closeFeedbackModal);
+  feedbackModal?.addEventListener("click", (e) => {
+    if (e.target.dataset.closeFeedback === "true") closeFeedbackModal();
+  });
+
+  // Tabs enviar / lista
+  document.getElementById("feedback-tabs")?.addEventListener("click", (e) => {
+    const tab = e.target.closest(".feedback-tab");
+    if (!tab) return;
+    document.querySelectorAll(".feedback-tab").forEach((t) => t.classList.remove("active"));
+    tab.classList.add("active");
+    const isPanelList = tab.dataset.tab === "list";
+    feedbackPanelSend?.classList.toggle("hidden", isPanelList);
+    feedbackPanelList?.classList.toggle("hidden", !isPanelList);
+    if (isPanelList) loadFeedbackList();
+  });
+
+  // Acciones en lista (marcar leído / eliminar)
+  feedbackList?.addEventListener("click", async (e) => {
+    const markBtn = e.target.closest("[data-fb-mark]");
+    const delBtn  = e.target.closest("[data-fb-delete]");
+    if (markBtn) {
+      await apiRequest(`/feedback/${markBtn.dataset.fbMark}/leido`, { method: "PATCH" });
+      loadFeedbackList();
+      refreshFeedbackBadge();
+    }
+    if (delBtn) {
+      await apiRequest(`/feedback/${delBtn.dataset.fbDelete}`, { method: "DELETE" });
+      loadFeedbackList();
+      refreshFeedbackBadge();
+    }
+  });
+
+  // Envío del formulario
+  feedbackForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    feedbackFormError?.classList.add("hidden");
+    const tipo = feedbackForm.querySelector("input[name=feedback_tipo]:checked")?.value || "idea";
+    const titulo = feedbackTitulo?.value.trim();
+    const descripcion = feedbackDesc?.value.trim();
+    if (!titulo || !descripcion) return;
+    feedbackSubmitBtn.disabled = true;
+    feedbackSubmitBtn.textContent = "Enviando...";
+    try {
+      await apiRequest("/feedback", {
+        method: "POST",
+        body: JSON.stringify({ tipo, titulo, descripcion }),
+      });
+      feedbackForm.reset();
+      closeFeedbackModal();
+      showToast("¡Feedback enviado! Gracias por tu aporte.");
+    } catch (err) {
+      if (feedbackFormError) {
+        feedbackFormError.textContent = err.message || "Error al enviar";
+        feedbackFormError.classList.remove("hidden");
+      }
+    } finally {
+      feedbackSubmitBtn.disabled = false;
+      feedbackSubmitBtn.textContent = "Enviar";
+    }
   });
 
   alertsBtn.addEventListener("click", openAlertsModal);
@@ -1433,6 +1571,9 @@ async function bootstrap() {
   updateNavByRole();
   startAlertsPolling();
   startSessionPolling();
+  // Badge de feedback solo para ADMIN
+  const _fbRole = state.user?.role || state.user?.rol || "";
+  if (_fbRole === "ADMIN") refreshFeedbackBadge().catch(() => {});
   setAuthenticatedUI(true);
   await loadView(getDefaultView());
   prefetchAllowedViews();

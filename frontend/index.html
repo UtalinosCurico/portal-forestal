@@ -144,6 +144,11 @@
               <button id="install-app-btn" class="topbar-action hidden" type="button">
                 Instalar app
               </button>
+              <button id="feedback-btn" class="topbar-action topbar-feedback-btn" type="button" aria-label="Enviar idea o reporte">
+                <span class="topbar-action-icon" aria-hidden="true">💡</span>
+                <span class="topbar-action-label">Feedback</span>
+                <span id="feedback-badge" class="alert-badge hidden">0</span>
+              </button>
               <button id="alerts-btn" class="topbar-action topbar-alert-btn" type="button" aria-label="Alertas">
                 <span class="topbar-action-icon" aria-hidden="true">🔔</span>
                 <span class="topbar-action-label">Alertas</span>
@@ -237,6 +242,53 @@
           &#9658;
         </button>
       </form>
+    </div>
+
+    <!-- Modal Feedback -->
+    <div id="feedback-modal" class="modal hidden">
+      <div class="modal-backdrop" data-close-feedback="true"></div>
+      <section class="modal-content modal-compact feedback-modal-sheet">
+        <header class="modal-header">
+          <div>
+            <h4>Enviar idea o reporte</h4>
+            <p class="muted-text">Tu opinión ayuda a mejorar el portal.</p>
+          </div>
+          <button id="feedback-close-btn" class="icon-btn" type="button">x</button>
+        </header>
+
+        <!-- Tabs enviar / ver (ADMIN) -->
+        <div id="feedback-tabs" class="feedback-tabs">
+          <button class="feedback-tab active" data-tab="send">✏️ Enviar</button>
+          <button class="feedback-tab admin-only hidden" data-tab="list">📋 Recibidos <span id="feedback-unread-chip" class="mini-chip hidden">0</span></button>
+        </div>
+
+        <!-- Panel enviar -->
+        <div id="feedback-panel-send" class="feedback-panel">
+          <form id="feedback-form">
+            <div class="feedback-tipo-row">
+              <label class="feedback-tipo-opt">
+                <input type="radio" name="feedback_tipo" value="idea" checked />
+                <span>💡 Idea / Mejora</span>
+              </label>
+              <label class="feedback-tipo-opt">
+                <input type="radio" name="feedback_tipo" value="error" />
+                <span>🐛 Reportar error</span>
+              </label>
+            </div>
+            <label class="form-label" for="feedback-titulo">Título</label>
+            <input id="feedback-titulo" class="form-input" type="text" maxlength="120" placeholder="Ej: Agregar filtro por fecha" required />
+            <label class="form-label" for="feedback-desc">Descripción</label>
+            <textarea id="feedback-desc" class="form-input feedback-textarea" maxlength="1000" rows="4" placeholder="Describe tu idea o el error con el mayor detalle posible..." required></textarea>
+            <div id="feedback-form-error" class="form-error hidden"></div>
+            <button id="feedback-submit-btn" class="btn feedback-submit-btn" type="submit">Enviar</button>
+          </form>
+        </div>
+
+        <!-- Panel lista (ADMIN) -->
+        <div id="feedback-panel-list" class="feedback-panel hidden">
+          <div id="feedback-list" class="feedback-list"></div>
+        </div>
+      </section>
     </div>
 
     <div id="alerts-modal" class="modal hidden">
