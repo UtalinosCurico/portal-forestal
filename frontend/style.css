@@ -3270,13 +3270,42 @@ th {
   font-weight: 800;
 }
 
+/* Handle de redimensionado */
+.ai-resize-handle {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 18px;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.ai-resize-handle::after {
+  content: "";
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: #cfddd5;
+  transition: background 0.15s;
+}
+
+.ai-resize-handle:hover::after {
+  background: #8ab8a0;
+}
+
 .ai-drawer {
   position: fixed;
   bottom: calc(4.4rem + env(safe-area-inset-bottom, 0px));
   right: 1rem;
   z-index: 199;
-  width: min(360px, calc(100vw - 1.5rem));
-  max-height: min(560px, calc(100dvh - 6rem));
+  width: min(420px, calc(100vw - 1.5rem));
+  height: min(640px, calc(100dvh - 6rem));
+  max-height: none;
   background: #ffffff;
   border: 1px solid var(--line);
   border-radius: 20px;
@@ -3303,7 +3332,7 @@ th {
   align-items: center;
   justify-content: space-between;
   gap: 0.7rem;
-  padding: 0.85rem 0.9rem 0.75rem;
+  padding: 1.2rem 0.9rem 0.75rem;
   border-bottom: 1px solid var(--line);
   background: linear-gradient(135deg, #f0faf4 0%, #ffffff 100%);
   flex-shrink: 0;
@@ -3345,21 +3374,43 @@ th {
   overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
-  padding: 0.85rem 0.9rem;
+  gap: 0.65rem;
+  padding: 1rem;
 }
 
 .ai-msg {
-  max-width: 86%;
-  border-radius: 14px;
-  padding: 0.6rem 0.8rem;
-  font-size: 0.92rem;
-  line-height: 1.55;
+  max-width: 88%;
+  border-radius: 16px;
+  padding: 0.75rem 1rem;
+  font-size: 0.97rem;
+  line-height: 1.6;
 }
 
 .ai-msg p {
-  margin: 0;
+  margin: 0 0 0.45rem;
   overflow-wrap: anywhere;
+}
+
+.ai-msg p:last-child {
+  margin-bottom: 0;
+}
+
+.ai-msg br {
+  display: block;
+  content: "";
+  margin-top: 0.25rem;
+}
+
+.ai-list {
+  margin: 0.4rem 0 0.1rem 0.2rem;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.ai-list li {
+  line-height: 1.5;
 }
 
 .ai-msg-theirs {
@@ -3367,6 +3418,10 @@ th {
   background: #f1f6f3;
   color: #1a2e24;
   border-bottom-left-radius: 4px;
+}
+
+.ai-msg-theirs strong {
+  color: #0f3d27;
 }
 
 .ai-msg-mine {

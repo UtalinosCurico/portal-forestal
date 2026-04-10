@@ -1,23 +1,80 @@
-// ── Asistente IA flotante ────────────────────────────────────────────────────
+// ── Asistente IA flotante (PumAI) ───────────────────────────────────────────
 
 const AI_WELCOME =
   "¡Hola! 🐾 Soy PumAI, tu asistente del Portal FMN. Puedo ayudarte con dudas sobre solicitudes, estados, roles y cómo usar el sistema. ¿En qué te ayudo?";
 
+// Convierte markdown básico a HTML seguro
+function renderMarkdown(raw) {
+  let text = String(raw ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+
+  // Negrita **texto**
+  text = text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+
+  // Saltos de línea
+  const lines = text.split("\n");
+  const result = [];
+  let inList = false;
+
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    const bulletMatch = line.match(/^[\s]*[-•]\s+(.+)/);
+    const numberedMatch = line.match(/^[\s]*\d+\.\s+(.+)/);
+
+    if (bulletMatch || numberedMatch) {
+      if (!inList) { result.push("<ul class='ai-list'>"); inList = true; }
+      result.push(`<li>${(bulletMatch || numberedMatch)[1]}</li>`);
+    } else {
+      if (inList) { result.push("</ul>"); inList = false; }
+      if (line.trim()) result.push(`<p>${line}</p>`);
+      else if (result.length) result.push("<br>");
+    }
+  }
+  if (inList) result.push("</ul>");
+  return result.join("");
+}
+
 export function initAiAssistant(context) {
-  const btn = document.getElementById("ai-assistant-btn");
-  const drawer = document.getElementById("ai-assistant-drawer");
-  const closeBtn = document.getElementById("ai-assistant-close");
-  const form = document.getElementById("ai-assistant-form");
-  const input = document.getElementById("ai-assistant-input");
+  const btn       = document.getElementById("ai-assistant-btn");
+  const drawer    = document.getElementById("ai-assistant-drawer");
+  const closeBtn  = document.getElementById("ai-assistant-close");
+  const resizeHandle = document.getElementById("ai-resize-handle");
+  const form      = document.getElementById("ai-assistant-form");
+  const input     = document.getElementById("ai-assistant-input");
   const messagesList = document.getElementById("ai-assistant-messages");
-  const sendBtn = document.getElementById("ai-assistant-send");
+  const sendBtn   = document.getElementById("ai-assistant-send");
 
   if (!btn || !drawer) return;
 
-  let history = []; // { role: "user"|"assistant", content: string }
-  let isOpen = false;
+  let history  = [];
+  let isOpen   = false;
   let isLoading = false;
 
+  // ── Resize drag ────────────────────────────────────────────────────────────
+  if (resizeHandle) {
+    let startY = 0;
+    let startH = 0;
+
+    resizeHandle.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      startY = e.clientY;
+      startH = drawer.offsetHeight;
+      resizeHandle.setPointerCapture(e.pointerId);
+    });
+
+    resizeHandle.addEventListener("pointermove", (e) => {
+      if (!e.buttons) return;
+      const delta = startY - e.clientY;
+      const newH  = Math.min(Math.max(startH + delta, 300), window.innerHeight * 0.9);
+      drawer.style.height = newH + "px";
+      drawer.style.maxHeight = "none";
+    });
+  }
+
+  // ── Open / close ───────────────────────────────────────────────────────────
   function open() {
     isOpen = true;
     drawer.classList.add("open");
@@ -35,11 +92,14 @@ export function initAiAssistant(context) {
     btn.setAttribute("aria-expanded", "false");
   }
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   function appendMessage(role, text) {
-    const isMine = role === "user";
+    const isMine  = role === "user";
     const article = document.createElement("article");
     article.className = `ai-msg ${isMine ? "ai-msg-mine" : "ai-msg-theirs"}`;
-    article.innerHTML = `<p>${escapeHtml(text)}</p>`;
+    article.innerHTML  = isMine
+      ? `<p>${text.replaceAll("&","&amp;").replaceAll("<","&lt;")}</p>`
+      : renderMarkdown(text);
     messagesList.appendChild(article);
     messagesList.scrollTop = messagesList.scrollHeight;
   }
@@ -51,21 +111,13 @@ export function initAiAssistant(context) {
     el.innerHTML = "<span></span><span></span><span></span>";
     messagesList.appendChild(el);
     messagesList.scrollTop = messagesList.scrollHeight;
-    return el;
   }
 
   function removeTyping() {
     document.getElementById("ai-typing")?.remove();
   }
 
-  function escapeHtml(str) {
-    return String(str ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;");
-  }
-
+  // ── Send ───────────────────────────────────────────────────────────────────
   async function sendMessage(text) {
     if (!text.trim() || isLoading) return;
 
@@ -76,7 +128,7 @@ export function initAiAssistant(context) {
 
     isLoading = true;
     sendBtn.disabled = true;
-    const typingEl = showTyping();
+    showTyping();
 
     try {
       const payload = await context.apiRequest("/api/ai/chat", {
@@ -108,7 +160,7 @@ export function initAiAssistant(context) {
     }
   }
 
-  // Events
+  // ── Events ─────────────────────────────────────────────────────────────────
   btn.addEventListener("click", () => (isOpen ? close() : open()));
   closeBtn?.addEventListener("click", close);
 
@@ -117,13 +169,11 @@ export function initAiAssistant(context) {
     sendMessage(input.value);
   });
 
-  // Auto-resize textarea
   input?.addEventListener("input", () => {
     input.style.height = "auto";
     input.style.height = Math.min(input.scrollHeight, 120) + "px";
   });
 
-  // Shift+Enter = nueva línea, Enter = enviar
   input?.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
