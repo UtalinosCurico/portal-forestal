@@ -1154,6 +1154,11 @@ async function handleLoginSubmit(event) {
     showToast("Sesion iniciada");
     loginForm.reset();
 
+    // Inicializar asistente IA
+    import(`/js/aiAssistant.js?v=${ASSET_VERSION}`)
+      .then(({ initAiAssistant }) => initAiAssistant(getViewContext()))
+      .catch(() => {});
+
     try {
       await loadView(getDefaultView());
       prefetchAllowedViews();
@@ -1350,6 +1355,11 @@ async function bootstrap() {
       // Ignorar error silenciosamente en bootstrap diferido.
     });
   }, 120);
+
+  // Inicializar asistente IA
+  import(`/js/aiAssistant.js?v=${ASSET_VERSION}`)
+    .then(({ initAiAssistant }) => initAiAssistant(getViewContext()))
+    .catch(() => {});
 }
 
 bootstrap();

@@ -18,6 +18,7 @@ const reportesRoutes = require("./routes/reportes");
 const powerbiRoutes = require("./routes/powerbi");
 const enviosRoutes = require("./routes/envios");
 const notificacionesRoutes = require("./routes/notificaciones");
+const aiRoutes = require("./routes/ai");
 const { notFoundHandler, errorHandler } = require("./middleware/errorHandlers");
 const { getStorageState } = require("./utils/storageMode");
 
@@ -50,6 +51,7 @@ function createApp() {
   app.use("/api/powerbi", powerbiRoutes);
   app.use("/api/envios", enviosRoutes);
   app.use("/api/notificaciones", notificacionesRoutes);
+  app.use("/api/ai", aiRoutes);
 
   // Frontend estático.
   app.use(express.static(FRONTEND_DIR));

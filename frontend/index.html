@@ -108,6 +108,45 @@
 
     <div id="toast" class="toast hidden"></div>
 
+    <!-- Asistente IA flotante -->
+    <button
+      id="ai-assistant-btn"
+      class="ai-fab"
+      type="button"
+      aria-label="Abrir asistente"
+      aria-expanded="false"
+      aria-controls="ai-assistant-drawer"
+    >
+      <span class="ai-fab-icon" aria-hidden="true">✦</span>
+      <span class="ai-fab-label">Ayuda IA</span>
+    </button>
+
+    <div id="ai-assistant-drawer" class="ai-drawer" role="dialog" aria-label="Asistente FMN" aria-modal="false">
+      <header class="ai-drawer-head">
+        <div class="ai-drawer-title-wrap">
+          <span class="ai-drawer-avatar" aria-hidden="true">✦</span>
+          <div>
+            <strong>Asistente FMN</strong>
+            <p class="ai-drawer-subtitle">Responde tus dudas del sistema</p>
+          </div>
+        </div>
+        <button id="ai-assistant-close" class="icon-btn" type="button" aria-label="Cerrar asistente">x</button>
+      </header>
+      <div id="ai-assistant-messages" class="ai-messages" role="log" aria-live="polite"></div>
+      <form id="ai-assistant-form" class="ai-composer" autocomplete="off">
+        <textarea
+          id="ai-assistant-input"
+          class="ai-input"
+          placeholder="Escribe tu pregunta..."
+          rows="1"
+          aria-label="Escribe tu pregunta al asistente"
+        ></textarea>
+        <button id="ai-assistant-send" class="ai-send-btn" type="submit" aria-label="Enviar">
+          &#9658;
+        </button>
+      </form>
+    </div>
+
     <div id="alerts-modal" class="modal hidden">
       <div class="modal-backdrop" data-close="true"></div>
       <section class="modal-content modal-compact alerts-modal-sheet">
