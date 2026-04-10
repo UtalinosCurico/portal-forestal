@@ -1,5 +1,60 @@
 const ASSET_VERSION = window.__APP_VERSION__ || "dev";
 
+// ── Login landscape ───────────────────────────────────────────────────────────
+(function initLoginLandscape() {
+  const container = document.getElementById("login-landscape");
+  if (!container) return;
+
+  const W = 1440, H = 500;
+
+  // Seeded PRNG (LCG) — siempre genera el mismo paisaje
+  let _seed = 317;
+  function rng() {
+    _seed = (_seed * 1664525 + 1013904223) & 0x7fffffff;
+    return _seed / 0x7fffffff;
+  }
+
+  // Cordillera suave con curvas bezier
+  function mountainPath(baseY, variance, segments) {
+    const step = W / segments;
+    const pts = [];
+    for (let i = 0; i <= segments; i++) {
+      pts.push({ x: i * step, y: baseY - rng() * variance });
+    }
+    let d = `M0 ${H} L0 ${pts[0].y}`;
+    for (let i = 1; i < pts.length; i++) {
+      const cpx = (pts[i - 1].x + pts[i].x) / 2;
+      d += ` C${cpx} ${pts[i - 1].y} ${cpx} ${pts[i].y} ${pts[i].x} ${pts[i].y}`;
+    }
+    return d + ` L${W} ${H} Z`;
+  }
+
+  // Silueta de pinos — triángulos irregulares a lo largo del ancho
+  function treesPath(groundY, maxH, count) {
+    const spacing = W / count;
+    let d = `M0 ${H} L0 ${groundY}`;
+    for (let i = 0; i < count; i++) {
+      const cx = spacing * i + spacing * (0.3 + rng() * 0.4);
+      const h  = maxH * (0.55 + rng() * 0.45);
+      const hw = spacing * (0.22 + rng() * 0.18);
+      d += ` L${cx - hw} ${groundY}`;
+      d += ` L${cx} ${groundY - h}`;
+      d += ` L${cx + hw} ${groundY}`;
+    }
+    return d + ` L${W} ${H} Z`;
+  }
+
+  document.getElementById("ll-path-mtn-far").setAttribute("d",   mountainPath(260, 90,  7));
+  document.getElementById("ll-path-mtn-mid").setAttribute("d",   mountainPath(320, 65, 10));
+  document.getElementById("ll-path-trees-far").setAttribute("d", treesPath(380, 80, 20));
+  document.getElementById("ll-path-trees-near").setAttribute("d",treesPath(430, 110, 13));
+
+  // Animar por capas con delay escalonado
+  container.querySelectorAll(".login-layer").forEach((layer, i) => {
+    setTimeout(() => layer.classList.add("animate-in"), 80 + i * 220);
+  });
+})();
+
 // ── Button ripple ────────────────────────────────────────────────────────────
 document.addEventListener("pointerdown", (e) => {
   const btn = e.target.closest(
