@@ -1,6 +1,13 @@
 {
-  "lastCommit": "ee255bd9d066d90ed3d2af97e1fafe320b650b48",
+  "lastCommit": "c169332e39520cee530c6e3daa7ad3b55d11afd5",
   "entries": [
+    {
+      "id": "c169332e",
+      "tipo": "fix",
+      "titulo": "Modal detalle como bottom sheet — scroll y chat corregidos",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-13T23:06:43.000Z"
+    },
     {
       "id": "ee255bd9",
       "tipo": "feature",
