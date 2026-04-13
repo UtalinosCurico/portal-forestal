@@ -1640,7 +1640,7 @@ th {
 .modal {
   position: fixed;
   inset: 0;
-  z-index: 80;
+  z-index: 300;
   display: grid;
   place-items: center;
 }
@@ -4148,13 +4148,5 @@ tbody tr {
   }
 }
 
-/* Ocultar FAB de PumAI cuando hay un modal, hoja o chat abierto (móvil) */
-@media (max-width: 900px) {
-  body:has(.modal:not(.hidden)) .ai-fab,
-  body:has(.chat-drawer.open) .ai-fab {
-    opacity: 0;
-    pointer-events: none;
-    transform: scale(0.7) translateY(8px);
-    transition: opacity 0.15s, transform 0.15s;
-  }
-}
+/* El modal (z-index: 300) queda por encima del FAB (z-index: 200),
+   así el FAB se oculta naturalmente detrás del backdrop cuando hay un modal abierto. */
