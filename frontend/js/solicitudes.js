@@ -709,6 +709,8 @@ function buildDetailItemRow(item = {}, options = {}) {
 
 function openModal(modalEl) {
   modalEl.classList.remove("hidden");
+  const content = modalEl.querySelector(".modal-content");
+  if (content) content.scrollTop = 0;
 }
 
 function closeModal(modalEl) {
@@ -1656,6 +1658,7 @@ export async function initSolicitudesView(context) {
   }
 
   function showDetailLoading(solicitudId) {
+    closeChatDrawer({ syncTab: false, syncHistory: false });
     detailTitle.textContent = `Solicitud #${solicitudId}`;
     detailBadge.innerHTML = renderStatusBadge("PENDIENTE");
     detailEquipo.value = "Cargando...";
