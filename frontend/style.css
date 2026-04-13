@@ -3595,13 +3595,28 @@ tbody tr {
   }
 
   .chat-drawer-handle {
-    display: block;
+    display: flex;
     grid-column: 1 / -1;
-    justify-self: center;
+    justify-self: stretch;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem 0;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .chat-drawer-handle::after {
+    content: "";
+    display: block;
     width: 56px;
     height: 5px;
     border-radius: 999px;
     background: #cfddd5;
+    transition: background 0.15s;
+  }
+
+  .chat-drawer-handle:active::after {
+    background: #a0b8ad;
   }
 
   .chat-back-btn {
@@ -4130,5 +4145,16 @@ tbody tr {
     width: auto;
     height: min(68dvh, calc(100vh - 8rem));
     max-height: none;
+  }
+}
+
+/* Ocultar FAB de PumAI cuando hay un modal, hoja o chat abierto (móvil) */
+@media (max-width: 900px) {
+  body:has(.modal:not(.hidden)) .ai-fab,
+  body:has(.chat-drawer.open) .ai-fab {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.7) translateY(8px);
+    transition: opacity 0.15s, transform 0.15s;
   }
 }

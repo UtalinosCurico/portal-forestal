@@ -1933,6 +1933,19 @@ export async function initSolicitudesView(context) {
   chatBackBtn.addEventListener("click", () => closeChatDrawer());
   chatCloseBtn.addEventListener("click", () => closeChatDrawer());
   chatScrim.addEventListener("click", () => closeChatDrawer());
+
+  // Handle pill en móvil — clic cierra el chat
+  chatDrawer.querySelector(".chat-drawer-handle")?.addEventListener("click", () => closeChatDrawer());
+
+  // Swipe hacia abajo en el header para cerrar (móvil)
+  let _swipeStartY = 0;
+  const chatHead = chatDrawer.querySelector(".chat-drawer-head");
+  chatHead?.addEventListener("touchstart", (e) => {
+    _swipeStartY = e.touches[0].clientY;
+  }, { passive: true });
+  chatHead?.addEventListener("touchend", (e) => {
+    if (e.changedTouches[0].clientY - _swipeStartY > 64) closeChatDrawer();
+  }, { passive: true });
   window.addEventListener("popstate", handleChatPopstate);
 
   createAddItemBtn.addEventListener("click", () => addCreateItem({}, { focus: true }));
