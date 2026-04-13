@@ -1,4 +1,215 @@
 {
-  "lastCommit": null,
-  "entries": []
+  "lastCommit": "ee255bd9d066d90ed3d2af97e1fafe320b650b48",
+  "entries": [
+    {
+      "id": "ee255bd9",
+      "tipo": "feature",
+      "titulo": "Sección Novedades + fix topbar móvil",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-13T22:38:33.000Z"
+    },
+    {
+      "id": "92d1c515",
+      "tipo": "fix",
+      "titulo": "Modal z-index sobre el FAB — popups funcionan en móvil",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-13T22:30:05.000Z"
+    },
+    {
+      "id": "c604c6fb",
+      "tipo": "fix",
+      "titulo": "Chat fácil de cerrar y FAB oculto con modales abiertos",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-13T22:19:28.000Z"
+    },
+    {
+      "id": "1faae9d9",
+      "tipo": "fix",
+      "titulo": "Chat label y estados de ítem libres",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-13T22:14:45.000Z"
+    },
+    {
+      "id": "677a75fd",
+      "tipo": "feature",
+      "titulo": "PumAI con contexto en tiempo real — clima y datos del portal",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T12:36:33.000Z"
+    },
+    {
+      "id": "c23c4b52",
+      "tipo": "feature",
+      "titulo": "Puma rediseñado — forma felina real, color café claro, bezier paths",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T12:28:26.000Z"
+    },
+    {
+      "id": "a4ce1959",
+      "tipo": "feature",
+      "titulo": "Puma habitat en sidebar — escena nocturna animada, clic abre PumAI",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T12:24:17.000Z"
+    },
+    {
+      "id": "82bf95ec",
+      "tipo": "mejora",
+      "titulo": "Feedback solo en app, sin correo — visible solo para ADMIN",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T12:18:09.000Z"
+    },
+    {
+      "id": "b8371fb2",
+      "tipo": "feature",
+      "titulo": "Feedback envía correo a diego.astete@maulenorte.cl via nodemailer",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T12:15:46.000Z"
+    },
+    {
+      "id": "9b514a32",
+      "tipo": "feature",
+      "titulo": "Feedback modal — ideas y reportes de error desde la app",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T12:13:02.000Z"
+    },
+    {
+      "id": "bde65111",
+      "tipo": "feature",
+      "titulo": "DataScope logo SVG en sidebar",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T12:06:14.000Z"
+    },
+    {
+      "id": "eb10c630",
+      "tipo": "fix",
+      "titulo": "DataScope URL corregida a app.mydatascope.com",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T12:04:35.000Z"
+    },
+    {
+      "id": "f1d7c93d",
+      "tipo": "feature",
+      "titulo": "DataScope shortcut in sidebar",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T12:02:54.000Z"
+    },
+    {
+      "id": "46113498",
+      "tipo": "feature",
+      "titulo": "Login landscape — parallax drone animation, seamless loop per layer",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T11:58:48.000Z"
+    },
+    {
+      "id": "46426a3c",
+      "tipo": "feature",
+      "titulo": "Excel export — 3 hojas, colores por estado, detalle completo de ítems",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T11:55:42.000Z"
+    },
+    {
+      "id": "79dcc1a0",
+      "tipo": "feature",
+      "titulo": "Login forest landscape animation + larger PumAI FAB",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T11:51:01.000Z"
+    },
+    {
+      "id": "6c785972",
+      "tipo": "feature",
+      "titulo": "Micro-animations — view transitions, button ripple, counter, card stagger",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T03:16:44.000Z"
+    },
+    {
+      "id": "c6a6f0bd",
+      "tipo": "fix",
+      "titulo": "Mobile pending list — grid layout, clean separators, no negative margin hacks",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T03:12:48.000Z"
+    },
+    {
+      "id": "c9addffd",
+      "tipo": "feature",
+      "titulo": "Comprehensive mobile redesign — layout, typography, quick strip, action bar",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T01:45:42.000Z"
+    },
+    {
+      "id": "36fa2b39",
+      "tipo": "feature",
+      "titulo": "ADMIN/SUPERVISOR pueden editar solicitudes en cualquier estado",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T01:33:27.000Z"
+    },
+    {
+      "id": "912bc7ab",
+      "tipo": "feature",
+      "titulo": "PumAI cajón más grande, redimensionable y mensajes con formato markdown",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T01:04:25.000Z"
+    },
+    {
+      "id": "7efc7d63",
+      "tipo": "fix",
+      "titulo": "PumAI mostrar error real de Anthropic (créditos, key inválida, etc)",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T00:58:08.000Z"
+    },
+    {
+      "id": "fcddf66d",
+      "tipo": "fix",
+      "titulo": "PumAI mensaje de error descriptivo cuando falta API key",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T00:48:50.000Z"
+    },
+    {
+      "id": "3faa0b0e",
+      "tipo": "fix",
+      "titulo": "PumAI no duplicar bienvenida al reabrir el cajón",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T00:46:35.000Z"
+    },
+    {
+      "id": "b0e03c71",
+      "tipo": "feature",
+      "titulo": "Renombrar seccion pendientes + mostrar usuario final",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T00:46:02.000Z"
+    },
+    {
+      "id": "76344d7c",
+      "tipo": "feature",
+      "titulo": "PumAI identity + libre cambio de estado para ADMIN/SUPERVISOR",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T00:44:25.000Z"
+    },
+    {
+      "id": "f14a52d1",
+      "tipo": "feature",
+      "titulo": "Asistente IA flotante con chat integrado",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T00:37:56.000Z"
+    },
+    {
+      "id": "829b6cf2",
+      "tipo": "fix",
+      "titulo": "Mobile pending scroll, chat bubbles mine/theirs, comment visibility",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T00:31:13.000Z"
+    },
+    {
+      "id": "4d6b6489",
+      "tipo": "feature",
+      "titulo": "7 UX improvements + visual redesign on solicitudes",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-10T00:21:12.000Z"
+    },
+    {
+      "id": "f65c5f53",
+      "tipo": "feature",
+      "titulo": "Simplify solicitudes quick filters and summary cards",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-09T20:56:05.000Z"
+    }
+  ]
 }
