@@ -1570,7 +1570,7 @@ export async function initSolicitudesView(context) {
   function fillContactOptions(contactos = []) {
     currentContactOptions = contactos;
     destinatarioSelect.innerHTML = [
-      "<option value=''>Avisar segun el flujo</option>",
+      "<option value=''>Seleccione a quien hablarle</option>",
       ...contactos.map(
         (contacto) =>
           `<option value="${contacto.id}">${contacto.nombre} - ${contacto.rol}${

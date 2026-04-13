@@ -30,8 +30,8 @@ const ITEM_TRANSITIONS = Object.freeze({
 });
 
 function canTransitionItemStatus(fromStatus, toStatus) {
-  const allowed = ITEM_TRANSITIONS[fromStatus];
-  return Array.isArray(allowed) && allowed.includes(toStatus);
+  // Permite pasar a cualquier estado válido distinto al actual (sin restricción jerárquica)
+  return SOLICITUD_ITEM_STATUS_LIST.includes(toStatus) && fromStatus !== toStatus;
 }
 
 // Devuelve true si la transición es una reversión (avance hacia atrás).
