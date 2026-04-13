@@ -263,6 +263,11 @@
               <button id="install-app-btn" class="topbar-action hidden" type="button">
                 Instalar app
               </button>
+              <button id="novedades-btn" class="topbar-action topbar-novedades-btn" type="button" aria-label="Novedades del portal">
+                <span class="topbar-action-icon" aria-hidden="true">🚀</span>
+                <span class="topbar-action-label">Novedades</span>
+                <span id="novedades-badge" class="alert-badge hidden">0</span>
+              </button>
               <button id="feedback-btn" class="topbar-action topbar-feedback-btn" type="button" aria-label="Enviar idea o reporte">
                 <span class="topbar-action-icon" aria-hidden="true">💡</span>
                 <span class="topbar-action-label">Feedback</span>
@@ -361,6 +366,53 @@
           &#9658;
         </button>
       </form>
+    </div>
+
+    <!-- Modal Novedades -->
+    <div id="novedades-modal" class="modal hidden">
+      <div class="modal-backdrop" data-close="true"></div>
+      <section class="modal-content modal-compact novedades-modal-sheet">
+        <header class="modal-header">
+          <div>
+            <h4>Novedades del portal</h4>
+            <p class="muted-text">Últimas actualizaciones y mejoras.</p>
+          </div>
+          <button id="novedades-close-btn" class="icon-btn" type="button">x</button>
+        </header>
+
+        <!-- Formulario publicar (solo ADMIN) -->
+        <div id="novedades-form-wrap" class="hidden">
+          <form id="novedades-form" class="novedades-form">
+            <div class="novedades-tipo-row">
+              <label class="feedback-tipo-opt">
+                <input type="radio" name="nov_tipo" value="feature" checked>
+                <span>🚀 Nueva función</span>
+              </label>
+              <label class="feedback-tipo-opt">
+                <input type="radio" name="nov_tipo" value="mejora">
+                <span>✨ Mejora</span>
+              </label>
+              <label class="feedback-tipo-opt">
+                <input type="radio" name="nov_tipo" value="fix">
+                <span>🐛 Corrección</span>
+              </label>
+            </div>
+            <input id="novedades-titulo" class="form-input" type="text" placeholder="Título de la novedad" maxlength="120" required />
+            <textarea id="novedades-desc" class="feedback-textarea" rows="3" placeholder="Describe qué cambió o se agregó…" maxlength="1000" required></textarea>
+            <div id="novedades-form-error" class="form-error-msg hidden"></div>
+            <div class="actions-inline">
+              <button type="button" id="novedades-cancel-btn" class="action-btn secondary">Cancelar</button>
+              <button type="submit" id="novedades-submit-btn" class="action-btn">Publicar</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="novedades-list" class="novedades-list"></div>
+
+        <button id="novedades-add-btn" class="action-btn admin-only hidden novedades-add-btn" type="button">
+          + Publicar novedad
+        </button>
+      </section>
     </div>
 
     <!-- Modal Feedback -->

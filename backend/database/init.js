@@ -246,6 +246,17 @@ async function createTables() {
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS novedades (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tipo TEXT NOT NULL DEFAULT 'feature',
+      titulo TEXT NOT NULL,
+      descripcion TEXT NOT NULL,
+      autor_nombre TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 }
 
 async function migrateUsuariosSchema() {

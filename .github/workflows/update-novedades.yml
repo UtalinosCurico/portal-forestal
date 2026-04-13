@@ -1,0 +1,41 @@
+name: Actualizar Novedades
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  novedades:
+    runs-on: ubuntu-latest
+    # Evitar bucle infinito con el commit automático del bot
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout con historial completo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Actualizar changelog desde commits
+        run: node scripts/update-novedades.js
+
+      - name: Commit si hay cambios
+        run: |
+          git config user.name "Portal FMN Bot"
+          git config user.email "bot@maulenorte.cl"
+          git add backend/data/changelog.json
+          if git diff --staged --quiet; then
+            echo "Sin cambios en changelog."
+          else
+            git commit -m "chore: actualizar novedades [skip ci]"
+            git push
+          fi

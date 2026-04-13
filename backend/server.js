@@ -20,6 +20,7 @@ const enviosRoutes = require("./routes/envios");
 const notificacionesRoutes = require("./routes/notificaciones");
 const aiRoutes = require("./routes/ai");
 const feedbackRoutes = require("./routes/feedback");
+const novedadesRoutes = require("./routes/novedades");
 const { notFoundHandler, errorHandler } = require("./middleware/errorHandlers");
 const { getStorageState } = require("./utils/storageMode");
 
@@ -54,6 +55,7 @@ function createApp() {
   app.use("/api/notificaciones", notificacionesRoutes);
   app.use("/api/ai", aiRoutes);
   app.use("/api/feedback", feedbackRoutes);
+  app.use("/api/novedades", novedadesRoutes);
 
   // Frontend estático.
   app.use(express.static(FRONTEND_DIR));

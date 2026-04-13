@@ -138,6 +138,20 @@ const alertsRefreshBtn = document.getElementById("alerts-refresh-btn");
 const alertsList = document.getElementById("alerts-list");
 const alertsStatus = document.getElementById("alerts-status");
 
+const novedadesBtn      = document.getElementById("novedades-btn");
+const novedadesBadge    = document.getElementById("novedades-badge");
+const novedadesModal    = document.getElementById("novedades-modal");
+const novedadesCloseBtn = document.getElementById("novedades-close-btn");
+const novedadesList     = document.getElementById("novedades-list");
+const novedadesAddBtn   = document.getElementById("novedades-add-btn");
+const novedadesFormWrap = document.getElementById("novedades-form-wrap");
+const novedadesForm     = document.getElementById("novedades-form");
+const novedadesTitulo   = document.getElementById("novedades-titulo");
+const novedadesDesc     = document.getElementById("novedades-desc");
+const novedadesFormErr  = document.getElementById("novedades-form-error");
+const novedadesSubmitBtn= document.getElementById("novedades-submit-btn");
+const novedadesCancelBtn= document.getElementById("novedades-cancel-btn");
+
 const feedbackBtn       = document.getElementById("feedback-btn");
 const feedbackBadge     = document.getElementById("feedback-badge");
 const feedbackModal     = document.getElementById("feedback-modal");
@@ -1313,6 +1327,79 @@ async function restoreSession() {
   }
 }
 
+// ── Novedades ─────────────────────────────────────────────────────────────────
+const NOVEDADES_LS_KEY = "fmn_novedades_seen_at";
+
+const NOV_TIPO_META = {
+  feature: { label: "🚀 Nueva función", cls: "feature" },
+  mejora:  { label: "✨ Mejora",        cls: "mejora"  },
+  fix:     { label: "🐛 Corrección",    cls: "fix"     },
+};
+
+function openNovedadesModal() {
+  novedadesModal.classList.remove("hidden");
+  // Mostrar botón agregar solo para ADMIN
+  const isAdmin = (state.user?.role || state.user?.rol) === "ADMIN";
+  novedadesAddBtn?.classList.toggle("hidden", !isAdmin);
+  loadNovedades();
+  // Marcar como visto
+  localStorage.setItem(NOVEDADES_LS_KEY, new Date().toISOString());
+  novedadesBadge?.classList.add("hidden");
+}
+
+function closeNovedadesModal() {
+  novedadesModal.classList.add("hidden");
+  novedadesFormWrap?.classList.add("hidden");
+  novedadesForm?.reset();
+}
+
+async function loadNovedades() {
+  if (!novedadesList) return;
+  novedadesList.innerHTML = "<div class='history-empty'>Cargando…</div>";
+  try {
+    const { data } = await apiRequest("/novedades");
+    const items = Array.isArray(data) ? data : [];
+    if (!items.length) {
+      novedadesList.innerHTML = "<div class='history-empty'>Sin novedades publicadas todavía.</div>";
+      return;
+    }
+    const isAdmin = (state.user?.role || state.user?.rol) === "ADMIN";
+    const lastSeen = localStorage.getItem(NOVEDADES_LS_KEY) || "1970-01-01T00:00:00Z";
+    novedadesList.innerHTML = items.map((n) => {
+      const meta = NOV_TIPO_META[n.tipo] || NOV_TIPO_META.feature;
+      const isNew = n.created_at > lastSeen;
+      const fecha = n.created_at ? n.created_at.slice(0, 16).replace("T", " ") : "-";
+      return `
+        <div class="novedades-card">
+          <div class="novedades-card-head">
+            <span class="novedades-card-tipo ${meta.cls}">${meta.label}</span>
+            ${isNew ? '<span class="mini-chip active" style="font-size:0.72rem">Nuevo</span>' : ""}
+            <span class="novedades-card-titulo">${n.titulo}</span>
+          </div>
+          <p class="novedades-card-desc">${n.descripcion}</p>
+          <div class="novedades-card-meta">
+            <span>👤 ${n.autor_nombre || "Admin"} · 📅 ${fecha}</span>
+            ${isAdmin ? `<button class="action-btn secondary" style="font-size:0.78rem;min-height:28px;padding:0.15rem 0.6rem;color:#c62828" data-nov-delete="${n.id}">Eliminar</button>` : ""}
+          </div>
+        </div>`;
+    }).join("");
+  } catch {
+    novedadesList.innerHTML = "<div class='history-empty'>Error al cargar novedades.</div>";
+  }
+}
+
+async function refreshNovedadesBadge() {
+  try {
+    const since = localStorage.getItem(NOVEDADES_LS_KEY) || "1970-01-01T00:00:00Z";
+    const { data } = await apiRequest(`/novedades/count?since=${encodeURIComponent(since)}`);
+    const n = data?.count || 0;
+    if (novedadesBadge) {
+      novedadesBadge.classList.toggle("hidden", n === 0);
+      novedadesBadge.textContent = n;
+    }
+  } catch { /* no crítico */ }
+}
+
 // ── Feedback ──────────────────────────────────────────────────────────────────
 function openFeedbackModal() {
   feedbackModal.classList.remove("hidden");
@@ -1373,6 +1460,62 @@ function registerEvents() {
   helpBtn.addEventListener("click", async () => {
     await loadView("como-usar");
     closeSidebar();
+  });
+
+  // Novedades
+  novedadesBtn?.addEventListener("click", openNovedadesModal);
+  novedadesCloseBtn?.addEventListener("click", closeNovedadesModal);
+  novedadesModal?.addEventListener("click", (e) => {
+    if (e.target.dataset.close === "true") closeNovedadesModal();
+  });
+
+  novedadesAddBtn?.addEventListener("click", () => {
+    novedadesFormWrap?.classList.remove("hidden");
+    novedadesAddBtn.classList.add("hidden");
+    novedadesTitulo?.focus();
+  });
+
+  novedadesCancelBtn?.addEventListener("click", () => {
+    novedadesFormWrap?.classList.add("hidden");
+    novedadesAddBtn?.classList.remove("hidden");
+    novedadesForm?.reset();
+  });
+
+  novedadesForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    novedadesFormErr?.classList.add("hidden");
+    const tipo = novedadesForm.querySelector("input[name=nov_tipo]:checked")?.value || "feature";
+    const titulo = novedadesTitulo?.value.trim();
+    const descripcion = novedadesDesc?.value.trim();
+    if (!titulo || !descripcion) return;
+    novedadesSubmitBtn.disabled = true;
+    novedadesSubmitBtn.textContent = "Publicando…";
+    try {
+      await apiRequest("/novedades", {
+        method: "POST",
+        body: JSON.stringify({ tipo, titulo, descripcion }),
+      });
+      novedadesForm.reset();
+      novedadesFormWrap?.classList.add("hidden");
+      novedadesAddBtn?.classList.remove("hidden");
+      showToast("Novedad publicada correctamente.");
+      loadNovedades();
+    } catch (err) {
+      if (novedadesFormErr) {
+        novedadesFormErr.textContent = err.message || "Error al publicar";
+        novedadesFormErr.classList.remove("hidden");
+      }
+    } finally {
+      novedadesSubmitBtn.disabled = false;
+      novedadesSubmitBtn.textContent = "Publicar";
+    }
+  });
+
+  novedadesList?.addEventListener("click", async (e) => {
+    const del = e.target.closest("[data-nov-delete]");
+    if (!del) return;
+    await apiRequest(`/novedades/${del.dataset.novDelete}`, { method: "DELETE" });
+    loadNovedades();
   });
 
   // Feedback
@@ -1571,6 +1714,8 @@ async function bootstrap() {
   updateNavByRole();
   startAlertsPolling();
   startSessionPolling();
+  // Badge de novedades para todos los roles
+  refreshNovedadesBadge().catch(() => {});
   // Badge de feedback solo para ADMIN
   const _fbRole = state.user?.role || state.user?.rol || "";
   if (_fbRole === "ADMIN") refreshFeedbackBadge().catch(() => {});
