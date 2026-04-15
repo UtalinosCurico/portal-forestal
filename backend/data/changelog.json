@@ -1,6 +1,13 @@
 {
-  "lastCommit": "c169332e39520cee530c6e3daa7ad3b55d11afd5",
+  "lastCommit": "892d404fdd6f67e4dec19a6d69f9fe18d5517e91",
   "entries": [
+    {
+      "id": "892d404f",
+      "tipo": "feature",
+      "titulo": "Mejora reintentos y manejo de errores de PumAI",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-15T14:57:44.000Z"
+    },
     {
       "id": "c169332e",
       "tipo": "fix",
