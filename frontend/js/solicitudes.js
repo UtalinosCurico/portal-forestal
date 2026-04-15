@@ -35,6 +35,7 @@ const STATUS_OPTIONS = [
 ];
 
 const ITEM_STATUS_LABELS = {
+  NO_APLICA: "N/A",
   POR_GESTIONAR: "Por gestionar",
   GESTIONADO: "Gestionado",
   ENVIADO: "Enviado",
@@ -42,11 +43,24 @@ const ITEM_STATUS_LABELS = {
 };
 
 const ITEM_STATUS_OPTIONS = [
+  { key: "NO_APLICA", label: "N/A", hint: "Sin seguimiento operativo" },
   { key: "POR_GESTIONAR", label: "Por gestionar", hint: "Aun no se toma el item" },
   { key: "GESTIONADO", label: "Gestionado", hint: "Ya esta siendo trabajado" },
   { key: "ENVIADO", label: "Enviado", hint: "Salio hacia faena" },
   { key: "ENTREGADO", label: "Entregado", hint: "Producto recibido" },
 ];
+
+function getDefaultItemStatus(status) {
+  const normalized = String(status || "").trim().toUpperCase();
+  return ITEM_STATUS_OPTIONS.some((option) => option.key === normalized) ? normalized : "NO_APLICA";
+}
+
+function renderItemStatusOptions(selectedStatus = "NO_APLICA") {
+  const normalizedStatus = getDefaultItemStatus(selectedStatus);
+  return ITEM_STATUS_OPTIONS.map(
+    (option) => `<option value="${option.key}" ${option.key === normalizedStatus ? "selected" : ""}>${option.label}</option>`
+  ).join("");
+}
 
 const ROLE_ACTIONS = {
   ADMIN: {
@@ -218,15 +232,24 @@ function renderHistory(historial = [], formatDate) {
 
 function summarizeItemStatuses(items = []) {
   const summary = {
-    total: items.length,
+    totalItems: items.length,
+    totalTrackable: 0,
     porGestionar: 0,
     gestionados: 0,
     enviados: 0,
     entregados: 0,
+    noAplica: 0,
   };
 
   items.forEach((item) => {
-    const status = String(item.estado_item || "POR_GESTIONAR");
+    const status = getDefaultItemStatus(item.estado_item || "NO_APLICA");
+    if (status === "NO_APLICA") {
+      summary.noAplica += 1;
+      return;
+    }
+
+    summary.totalTrackable += 1;
+
     if (status === "POR_GESTIONAR") {
       summary.porGestionar += 1;
     }
@@ -246,22 +269,29 @@ function summarizeItemStatuses(items = []) {
 
 function renderProgressSummary(items = []) {
   const summary = summarizeItemStatuses(items);
-  const total = summary.total || 1;
-  const pct = Math.round((summary.entregados / total) * 100);
+  const totalTrackable = summary.totalTrackable || 0;
+  const pct = totalTrackable ? Math.round((summary.entregados / totalTrackable) * 100) : 0;
+  const progressLabel = totalTrackable
+    ? `${summary.entregados} de ${summary.totalTrackable} entregado${summary.entregados !== 1 ? "s" : ""}`
+    : "Sin seguimiento operativo";
   return `
     <div class="progress-bar-wrap">
       <div class="progress-bar-track">
         <div class="progress-bar-fill" style="width: ${pct}%"></div>
       </div>
-      <span class="progress-bar-label">${summary.entregados} de ${summary.total} entregado${summary.entregados !== 1 ? "s" : ""}</span>
+      <span class="progress-bar-label">${progressLabel}</span>
     </div>
     <div class="progress-summary-card">
       <span class="progress-summary-label">Productos</span>
-      <strong>${summary.total}</strong>
+      <strong>${summary.totalItems}</strong>
     </div>
     <div class="progress-summary-card">
       <span class="progress-summary-label">Por gestionar</span>
       <strong>${summary.porGestionar}</strong>
+    </div>
+    <div class="progress-summary-card">
+      <span class="progress-summary-label">N/A</span>
+      <strong>${summary.noAplica}</strong>
     </div>
     <div class="progress-summary-card">
       <span class="progress-summary-label">Enviados</span>
@@ -276,9 +306,19 @@ function renderProgressSummary(items = []) {
 
 function renderDeliveryAssistant(solicitud, options = {}) {
   const summary = summarizeItemStatuses(solicitud?.items || []);
-  const total = Number(summary.total || 0);
-  if (!total) {
+  const totalItems = Number(summary.totalItems || 0);
+  const total = Number(summary.totalTrackable || 0);
+  if (!totalItems) {
     return "";
+  }
+
+  if (!total) {
+    return `
+      <div class="delivery-assistant-copy">
+        <h5>Seguimiento no requerido</h5>
+        <p class="muted-text">Todos los productos de esta solicitud estan marcados como N/A.</p>
+      </div>
+    `;
   }
 
   const canManage = options.canManage === true;
@@ -339,19 +379,19 @@ function renderDeliveryAssistant(solicitud, options = {}) {
 
 function buildBulkStatusWarning(solicitud, targetStatus) {
   const summary = summarizeItemStatuses(solicitud?.items || []);
-  if (!summary.total) {
+  if (!summary.totalTrackable) {
     return "";
   }
 
   if (targetStatus === "EN_DESPACHO") {
-    const remaining = Math.max(summary.total - (summary.enviados + summary.entregados), 0);
+    const remaining = Math.max(summary.totalTrackable - (summary.enviados + summary.entregados), 0);
     if (remaining > 0) {
       return `Esta accion marcara ${remaining} producto(s) pendiente(s) como enviados. Deseas continuar?`;
     }
   }
 
   if (targetStatus === "ENTREGADO") {
-    const remaining = Math.max(summary.total - summary.entregados, 0);
+    const remaining = Math.max(summary.totalTrackable - summary.entregados, 0);
     if (remaining > 0) {
       return `Esta accion marcara ${remaining} producto(s) pendiente(s) como entregados y cerrara toda la solicitud. Deseas continuar?`;
     }
@@ -410,6 +450,9 @@ function renderItemStatusSnapshot(item) {
   }
   if (summary.entregados) {
     parts.push(`${summary.entregados} entregado(s)`);
+  }
+  if (summary.noAplica) {
+    parts.push(`${summary.noAplica} N/A`);
   }
   return parts.join(" | ");
 }
@@ -626,6 +669,12 @@ function buildCreateItemRow(item = {}, options = {}) {
           <input class="solicitud-item-final-user" value="${item.usuario_final || ""}" ${
             editable ? "" : "disabled"
           } autocomplete="off" spellcheck="false" />
+        </div>
+        <div>
+          <label>Estado del producto</label>
+          <select class="solicitud-item-status" ${editable ? "" : "disabled"}>
+            ${renderItemStatusOptions(item.estado_item || item.estadoItem || "NO_APLICA")}
+          </select>
         </div>
         <div class="full">
           <label>Detalle</label>
@@ -1291,12 +1340,7 @@ export async function initSolicitudesView(context) {
   }
 
   function populateItemModalOptions(item = {}) {
-    itemStatusInput.innerHTML = ITEM_STATUS_OPTIONS.map(
-      (option) =>
-        `<option value="${option.key}" ${option.key === (item.estado_item || "POR_GESTIONAR") ? "selected" : ""}>${
-          option.label
-        }</option>`
-    ).join("");
+    itemStatusInput.innerHTML = renderItemStatusOptions(item.estado_item || "NO_APLICA");
 
     itemOwnerInput.innerHTML = [
       "<option value=''>Sin encargado</option>",
@@ -1378,6 +1422,10 @@ export async function initSolicitudesView(context) {
     itemReceiverInput.disabled = !canManageItem;
     itemManagementCommentInput.disabled = !canManageItem;
     itemDeleteBtn.classList.toggle("hidden", !(editableBase && !isNew));
+
+    if (isPhoneLayout() && chatDrawer.classList.contains("open")) {
+      closeChatDrawer({ syncTab: true, syncHistory: false });
+    }
 
     openModal(itemModal);
   }
@@ -1834,7 +1882,7 @@ export async function initSolicitudesView(context) {
     }
 
     if (currentItemEditor.canManageItem) {
-      payload.estado_item = itemStatusInput.value || "POR_GESTIONAR";
+      payload.estado_item = itemStatusInput.value || "NO_APLICA";
       payload.comentario_gestion = itemManagementCommentInput.value.trim();
       payload.encargado_id = itemOwnerInput.value ? Number(itemOwnerInput.value) : null;
       payload.enviado_por_id = itemSenderInput.value ? Number(itemSenderInput.value) : null;

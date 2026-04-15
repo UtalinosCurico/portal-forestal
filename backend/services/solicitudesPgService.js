@@ -233,11 +233,13 @@ function buildSolicitudSummary(items) {
 
 function buildItemStatusSummary(items = []) {
   const baseSummary = {
-    total: items.length,
+    total_items: items.length,
+    total: 0,
     por_gestionar: 0,
     gestionados: 0,
     enviados: 0,
     entregados: 0,
+    no_aplica: 0,
   };
 
   if (!items.length) {
@@ -246,6 +248,13 @@ function buildItemStatusSummary(items = []) {
 
   for (const item of items) {
     const status = String(item.estado_item || SOLICITUD_ITEM_STATUS.POR_GESTIONAR).toUpperCase();
+    if (status === SOLICITUD_ITEM_STATUS.NO_APLICA) {
+      baseSummary.no_aplica += 1;
+      continue;
+    }
+
+    baseSummary.total += 1;
+
     if (status === SOLICITUD_ITEM_STATUS.POR_GESTIONAR) {
       baseSummary.por_gestionar += 1;
     }
@@ -277,6 +286,9 @@ function buildItemStatusText(summary = {}) {
   }
   if (Number(summary.entregados || 0) > 0) {
     parts.push(`${summary.entregados} entregado(s)`);
+  }
+  if (Number(summary.no_aplica || 0) > 0) {
+    parts.push(`${summary.no_aplica} N/A`);
   }
 
   return parts.join(" | ");

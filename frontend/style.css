@@ -1484,6 +1484,11 @@ button:disabled:hover {
   color: #4d6359;
 }
 
+.item-status-no-aplica {
+  background: #f1f4f2;
+  color: #5d6f67;
+}
+
 .item-status-gestionado {
   background: #e6f3ec;
   color: #0e5b33;
@@ -1555,6 +1560,7 @@ button:disabled:hover {
 
 .mobile-action-bar {
   display: none;
+  transition: transform 0.22s ease, opacity 0.22s ease;
 }
 
 table {
@@ -1739,6 +1745,10 @@ th {
   z-index: 300;
   display: grid;
   place-items: center;
+}
+
+body.modal-active {
+  overflow: hidden;
 }
 
 .modal-backdrop {
@@ -3159,6 +3169,17 @@ tbody tr {
 }
 
 @media (max-width: 680px) {
+  body.modal-active .mobile-action-bar {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(calc(100% + 1rem));
+  }
+
+  .modal {
+    align-items: end;
+    padding: 0.3rem;
+  }
+
   body {
     font-size: 17px;
   }
@@ -3574,9 +3595,10 @@ tbody tr {
 
   .modal-content {
     width: calc(100vw - 0.6rem);
-    max-height: calc(100vh - 0.6rem);
-    border-radius: 18px;
+    max-height: min(88dvh, calc(100vh - 0.6rem));
+    border-radius: 20px;
     padding: 0.8rem;
+    overscroll-behavior: contain;
   }
 
   /* Modal de detalle de solicitud: bottom sheet en mobile */
@@ -3585,7 +3607,7 @@ tbody tr {
     inset: auto 0 0 0;
     width: 100%;
     max-width: none;
-    max-height: 92dvh;
+    max-height: min(92dvh, calc(100vh - 0.25rem));
     border-radius: 24px 24px 0 0;
     padding: 0 0 calc(0.8rem + env(safe-area-inset-bottom, 0px));
     animation: detail-sheet-up 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards;
@@ -3620,6 +3642,42 @@ tbody tr {
 
   #solicitudes-detail-modal .detail-layout {
     padding: 0 0.8rem 0.5rem;
+  }
+
+  #solicitud-item-modal {
+    z-index: 340;
+  }
+
+  #solicitud-item-modal .modal-content {
+    position: fixed;
+    inset: auto 0 0 0;
+    width: 100%;
+    max-width: none;
+    max-height: min(90dvh, calc(100vh - 0.25rem));
+    border-radius: 24px 24px 0 0;
+    padding: 0.35rem 0.8rem calc(0.9rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  #solicitud-item-modal .modal-content::before {
+    content: "";
+    display: block;
+    width: 48px;
+    height: 5px;
+    border-radius: 999px;
+    background: #cfddd5;
+    margin: 0.4rem auto 0.45rem;
+  }
+
+  #solicitud-item-modal .modal-header {
+    top: 0;
+    padding: 0.45rem 0 0.6rem;
+    margin-bottom: 0.2rem;
+  }
+
+  #solicitud-item-form {
+    overflow: auto;
+    max-height: calc(min(90dvh, calc(100vh - 0.25rem)) - 96px);
+    padding-bottom: 0.2rem;
   }
 
   .alerts-modal-sheet {

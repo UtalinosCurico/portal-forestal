@@ -230,15 +230,24 @@ function buildSolicitudSummary(items) {
 
 function buildItemStatusSummary(items = []) {
   const summary = {
-    total: items.length,
+    total_items: items.length,
+    total: 0,
     por_gestionar: 0,
     gestionados: 0,
     enviados: 0,
     entregados: 0,
+    no_aplica: 0,
   };
 
   for (const item of items) {
     const status = String(item.estado_item || SOLICITUD_ITEM_STATUS.POR_GESTIONAR).toUpperCase();
+    if (status === SOLICITUD_ITEM_STATUS.NO_APLICA) {
+      summary.no_aplica += 1;
+      continue;
+    }
+
+    summary.total += 1;
+
     if (status === SOLICITUD_ITEM_STATUS.POR_GESTIONAR) {
       summary.por_gestionar += 1;
     }
@@ -2123,4 +2132,3 @@ module.exports = {
   listPendingItems: (...args) =>
     isOperationalPgEnabled() ? pgService.listPendingItems(...args) : listPendingItems(...args),
 };
-

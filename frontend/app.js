@@ -293,6 +293,34 @@ function isPhoneLayout() {
   return window.matchMedia("(max-width: 680px)").matches;
 }
 
+let modalStateObserver = null;
+
+function syncGlobalModalState() {
+  const hasOpenModal = Boolean(document.querySelector(".modal:not(.hidden)"));
+  document.documentElement.classList.toggle("modal-active", hasOpenModal);
+  document.body.classList.toggle("modal-active", hasOpenModal);
+}
+
+function watchGlobalModalState() {
+  if (modalStateObserver || !document.body) {
+    syncGlobalModalState();
+    return;
+  }
+
+  modalStateObserver = new MutationObserver(() => {
+    syncGlobalModalState();
+  });
+
+  modalStateObserver.observe(document.body, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+
+  syncGlobalModalState();
+}
+
 function isUrgentNotification(notification) {
   const type = String(notification?.tipo || "").toUpperCase();
   return ["SOLICITUD_NUEVA", "SOLICITUD_ESTADO"].includes(type);
@@ -1699,6 +1727,7 @@ async function bootstrap() {
   applyPlatformHints();
   registerPWA();
   registerEvents();
+  watchGlobalModalState();
   updateDocumentTitle();
   updateInstallButtonVisibility();
 
@@ -1735,4 +1764,3 @@ async function bootstrap() {
 }
 
 bootstrap();
-
