@@ -27,6 +27,8 @@ jobs:
 
       - name: Actualizar changelog desde commits
         run: node scripts/update-novedades.js
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
 
       - name: Commit si hay cambios
         run: |
