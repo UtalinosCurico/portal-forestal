@@ -1926,9 +1926,19 @@ export async function initSolicitudesView(context) {
       context.showToast("Producto actualizado");
     }
 
+    const wasNew = currentItemEditor.isNew;
     await Promise.all([loadSolicitudes({ showLoading: false }), loadSolicitudDetail(currentSolicitud.id)]);
-    openModal(detailModal);
-    closeItemModal();
+    // loadSolicitudDetail ya cierra itemModal — solo animar si detailModal estaba oculto
+    if (detailModal.classList.contains("hidden")) {
+      openModal(detailModal);
+    }
+    // Al agregar un producto nuevo, scroll al final para que sea visible
+    if (wasNew && isPhoneLayout()) {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const layout = detailModal.querySelector(".detail-layout");
+        if (layout) layout.scrollTop = layout.scrollHeight;
+      }));
+    }
   }
 
   async function deleteSolicitudItemFromModal() {
@@ -1949,8 +1959,9 @@ export async function initSolicitudesView(context) {
     );
 
     await Promise.all([loadSolicitudes({ showLoading: false }), loadSolicitudDetail(currentSolicitud.id)]);
-    openModal(detailModal);
-    closeItemModal();
+    if (detailModal.classList.contains("hidden")) {
+      openModal(detailModal);
+    }
     context.showToast("Producto eliminado");
   }
 
