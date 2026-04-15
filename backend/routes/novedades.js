@@ -33,7 +33,12 @@ router.get(
   authorize(...ALL_ROLES),
   asyncHandler(async (req, res) => {
     const fileEntries = readChangelogEntries();
-    const dbRows = await all(`SELECT * FROM novedades ORDER BY created_at DESC`);
+    let dbRows = [];
+    try {
+      dbRows = await all(`SELECT * FROM novedades ORDER BY created_at DESC`);
+    } catch {
+      // Tabla aún no inicializada (p.ej. primer arranque) — ignorar
+    }
 
     const merged = [...fileEntries, ...dbRows].sort(
       (a, b) => (b.created_at || "").localeCompare(a.created_at || "")
@@ -50,7 +55,12 @@ router.get(
   asyncHandler(async (req, res) => {
     const since = req.query.since ? String(req.query.since).slice(0, 30) : null;
     const fileEntries = readChangelogEntries();
-    const dbRows = await all(`SELECT id, created_at FROM novedades`);
+    let dbRows = [];
+    try {
+      dbRows = await all(`SELECT id, created_at FROM novedades`);
+    } catch {
+      // Tabla aún no inicializada — ignorar
+    }
     const all_entries = [...fileEntries, ...dbRows];
 
     const count = since
