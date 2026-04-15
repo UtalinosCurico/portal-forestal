@@ -1,6 +1,13 @@
 {
-  "lastCommit": "80b4b456c4263f104b6f343467a8e9859c00f85d",
+  "lastCommit": "81138bd425813cdc1c313903fecf9de88ee6f636",
   "entries": [
+    {
+      "id": "81138bd4",
+      "tipo": "feature",
+      "titulo": "Corrige salto de scroll en modales moviles",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-15T15:22:10.000Z"
+    },
     {
       "id": "80b4b456",
       "tipo": "feature",
