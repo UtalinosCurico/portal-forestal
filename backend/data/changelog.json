@@ -1,6 +1,13 @@
 {
-  "lastCommit": "b9eb3f3eec8f31f80d56d76ea4435a9f55f6a3c2",
+  "lastCommit": "4bf9818c50255c5bf295499e1930354cf377e54f",
   "entries": [
+    {
+      "id": "4bf9818c",
+      "tipo": "fix",
+      "titulo": "Item modal no re-anima detail modal al guardar",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-15T16:34:35.000Z"
+    },
     {
       "id": "b9eb3f3e",
       "tipo": "fix",
