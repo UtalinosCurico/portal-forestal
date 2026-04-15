@@ -294,9 +294,37 @@ function isPhoneLayout() {
 }
 
 let modalStateObserver = null;
+let lockedModalScrollY = null;
+
+function lockModalScroll() {
+  if (lockedModalScrollY !== null) {
+    return;
+  }
+
+  lockedModalScrollY = window.scrollY || window.pageYOffset || 0;
+  document.documentElement.style.setProperty("--modal-lock-offset", `-${lockedModalScrollY}px`);
+}
+
+function unlockModalScroll() {
+  if (lockedModalScrollY === null) {
+    return;
+  }
+
+  const restoreY = lockedModalScrollY;
+  lockedModalScrollY = null;
+  document.documentElement.style.removeProperty("--modal-lock-offset");
+  window.scrollTo(0, restoreY);
+}
 
 function syncGlobalModalState() {
   const hasOpenModal = Boolean(document.querySelector(".modal:not(.hidden)"));
+
+  if (hasOpenModal) {
+    lockModalScroll();
+  } else {
+    unlockModalScroll();
+  }
+
   document.documentElement.classList.toggle("modal-active", hasOpenModal);
   document.body.classList.toggle("modal-active", hasOpenModal);
 }

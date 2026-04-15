@@ -1748,6 +1748,10 @@ th {
 }
 
 body.modal-active {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  top: var(--modal-lock-offset, 0px);
   overflow: hidden;
 }
 
