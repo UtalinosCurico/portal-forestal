@@ -1,6 +1,13 @@
 {
-  "lastCommit": "3b1ac27c2451bc1644becce79e1e01f076e6c1be",
+  "lastCommit": "b9eb3f3eec8f31f80d56d76ea4435a9f55f6a3c2",
   "entries": [
+    {
+      "id": "b9eb3f3e",
+      "tipo": "fix",
+      "titulo": "Breakpoint 900px — tabs y bottom sheet en tablets y landscape",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-15T16:18:08.000Z"
+    },
     {
       "id": "3b1ac27c",
       "tipo": "fix",
