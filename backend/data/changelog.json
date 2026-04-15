@@ -266,6 +266,14 @@
       "titulo": "Simplify solicitudes quick filters and summary cards",
       "autor_nombre": "UtalinosCurico",
       "created_at": "2026-04-09T20:56:05.000Z"
+    },
+    {
+      "id": "bienvenida",
+      "tipo": "feature",
+      "titulo": "Bienvenido al Portal Forestal Maule Norte",
+      "descripcion": "Acá encontrarás todas las novedades del portal: mejoras, correcciones y nuevas funciones que vamos lanzando. Cada vez que subamos un cambio importante, aparecerá aquí para que el equipo sepa qué hay de nuevo.",
+      "autor_nombre": "Equipo FMN",
+      "created_at": "2026-04-01T08:00:00.000Z"
     }
   ]
 }
