@@ -758,8 +758,7 @@ function buildDetailItemRow(item = {}, options = {}) {
 
 function openModal(modalEl) {
   modalEl.classList.remove("hidden");
-  const content = modalEl.querySelector(".modal-content");
-  if (content) content.scrollTop = 0;
+  window.requestAnimationFrame(() => resetModalViewport(modalEl));
 }
 
 function closeModal(modalEl) {
@@ -771,6 +770,20 @@ function closeOnBackdrop(modalEl) {
     if (event.target.matches(".modal-backdrop") || event.target.dataset.close === "true") {
       closeModal(modalEl);
     }
+  });
+}
+
+function resetModalViewport(modalEl) {
+  [
+    modalEl.querySelector(".modal-content"),
+    modalEl.querySelector(".detail-layout"),
+    modalEl.querySelector(".chat-drawer-list"),
+  ].forEach((node) => {
+    if (!node) {
+      return;
+    }
+    node.scrollTop = 0;
+    node.scrollLeft = 0;
   });
 }
 
@@ -1050,6 +1063,10 @@ export async function initSolicitudesView(context) {
   let chatUnreadCount = 0;
   let pendingItemsCache = [];
 
+  function resetDetailViewport() {
+    window.requestAnimationFrame(() => resetModalViewport(detailModal));
+  }
+
   // ── Pending items inline ─────────────────────────────────────────
 
   async function loadAndRenderPendingItems() {
@@ -1193,6 +1210,7 @@ export async function initSolicitudesView(context) {
       openChatDrawer({ syncTab: false });
     } else {
       closeChatDrawer({ syncTab: false });
+      resetDetailViewport();
     }
   }
 
@@ -1703,6 +1721,7 @@ export async function initSolicitudesView(context) {
     }
     closeItemModal();
     applyDetailTabLayout();
+    resetDetailViewport();
   }
 
   function showDetailLoading(solicitudId) {
@@ -1743,6 +1762,7 @@ export async function initSolicitudesView(context) {
     lastSeenMessageCount = 0;
     updateChatBadge(0);
     applyDetailTabLayout();
+    resetDetailViewport();
   }
 
   async function loadSolicitudDetail(solicitudId, options = {}) {

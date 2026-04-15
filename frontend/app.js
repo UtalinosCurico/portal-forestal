@@ -1141,6 +1141,18 @@ async function loadView(viewName, options = {}) {
   viewContainer.classList.remove("view-entering");
   void viewContainer.offsetWidth; // reflow para re-triggerear la animación
   viewContainer.classList.add("view-entering");
+  const enteredView = viewContainer.firstElementChild;
+  if (enteredView) {
+    enteredView.addEventListener(
+      "animationend",
+      (event) => {
+        if (event.target === enteredView) {
+          viewContainer.classList.remove("view-entering");
+        }
+      },
+      { once: true }
+    );
+  }
   viewContainer.dataset.viewName = targetView;
   pageTitle.textContent = meta.title;
   pageSubtitle.textContent = meta.subtitle;
