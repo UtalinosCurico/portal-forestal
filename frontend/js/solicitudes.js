@@ -1156,7 +1156,7 @@ export async function initSolicitudesView(context) {
   // ────────────────────────────────────────────────────────────────
 
   function isPhoneLayout() {
-    return window.matchMedia("(max-width: 680px)").matches;
+    return window.matchMedia("(max-width: 900px)").matches;
   }
 
   function syncDetailTabButtons() {
