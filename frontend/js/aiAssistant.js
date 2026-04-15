@@ -149,6 +149,15 @@ export function initAiAssistant(context) {
         msg = "Sin créditos en la cuenta de IA. El administrador debe agregar saldo en console.anthropic.com. 💳";
       } else if (raw.includes("invalid") || raw.includes("auth") || raw.includes("401")) {
         msg = "La clave de API no es válida. El administrador debe verificarla en Vercel. 🔑";
+      } else if (
+        raw.includes("falla temporal") ||
+        raw.includes("servicio de IA") ||
+        raw.includes("Internal server error") ||
+        raw.includes("overloaded") ||
+        raw.includes("529") ||
+        raw.includes("500")
+      ) {
+        msg = "Anthropic está con problemas momentáneos. Espera unos segundos y vuelve a intentar. 🐾";
       } else {
         msg = `Error: ${raw || "no pude conectarme"}. Intenta de nuevo. 🐾`;
       }

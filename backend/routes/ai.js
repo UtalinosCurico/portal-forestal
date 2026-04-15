@@ -2,6 +2,7 @@ const express = require("express");
 const { asyncHandler } = require("../utils/asyncHandler");
 const { authenticate } = require("../middleware/auth");
 const { HttpError } = require("../utils/httpError");
+const logger = require("../utils/logger");
 const dashboardService = require("../services/dashboardService");
 
 const router = express.Router();
@@ -49,6 +50,131 @@ Tienes acceso a datos en tiempo real del portal y al clima regional. Cuando el c
 
 const MAX_HISTORY_TURNS = 10;
 const MAX_CONTENT_LENGTH = 2000;
+const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
+const ANTHROPIC_MODEL = "claude-haiku-4-5-20251001";
+const ANTHROPIC_TIMEOUT_MS = 20000;
+const ANTHROPIC_RETRY_DELAYS_MS = [350, 900];
+const RETRYABLE_ANTHROPIC_STATUS = new Set([408, 429, 500, 502, 503, 504, 529]);
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function readJsonResponse(response) {
+  const text = await response.text();
+  if (!text) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { raw: text };
+  }
+}
+
+function shouldRetryAnthropicStatus(statusCode) {
+  return RETRYABLE_ANTHROPIC_STATUS.has(statusCode);
+}
+
+function getAnthropicRequestId(response, payload) {
+  return response.headers.get("request-id") || payload?.request_id || null;
+}
+
+function buildAnthropicTemporaryMessage() {
+  return "Anthropic tuvo una falla temporal. Intenta de nuevo en unos segundos.";
+}
+
+async function requestAnthropic({ apiKey, systemPrompt, messages }) {
+  let lastFailure = null;
+
+  for (let attempt = 0; attempt <= ANTHROPIC_RETRY_DELAYS_MS.length; attempt += 1) {
+    try {
+      const response = await fetch(ANTHROPIC_API_URL, {
+        method: "POST",
+        headers: {
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model: ANTHROPIC_MODEL,
+          max_tokens: 600,
+          system: systemPrompt,
+          messages,
+        }),
+        signal: AbortSignal.timeout(ANTHROPIC_TIMEOUT_MS),
+      });
+
+      const payload = await readJsonResponse(response);
+      if (response.ok) {
+        if (attempt > 0) {
+          logger.info("anthropic chat recovered after retry", { attempts: attempt + 1 });
+        }
+        return payload;
+      }
+
+      const requestId = getAnthropicRequestId(response, payload);
+      const providerMessage =
+        payload?.error?.message ||
+        payload?.mensaje ||
+        payload?.raw ||
+        `Anthropic devolvio estado ${response.status}.`;
+      const retryable = shouldRetryAnthropicStatus(response.status);
+
+      logger.warn("anthropic chat request failed", {
+        attempts: attempt + 1,
+        statusCode: response.status,
+        requestId,
+        retryable,
+        providerMessage,
+      });
+
+      const message = response.status >= 500
+        ? buildAnthropicTemporaryMessage()
+        : providerMessage;
+
+      lastFailure = new HttpError(
+        response.status >= 500 ? 503 : 502,
+        message,
+        {
+          provider: "anthropic",
+          anthropicStatus: response.status,
+          requestId,
+        }
+      );
+
+      if (retryable && attempt < ANTHROPIC_RETRY_DELAYS_MS.length) {
+        await wait(ANTHROPIC_RETRY_DELAYS_MS[attempt]);
+        continue;
+      }
+
+      throw lastFailure;
+    } catch (error) {
+      if (error instanceof HttpError) {
+        throw error;
+      }
+
+      logger.warn("anthropic chat request errored", {
+        attempts: attempt + 1,
+        retryable: attempt < ANTHROPIC_RETRY_DELAYS_MS.length,
+        errorMessage: error?.message || "Unknown error",
+      });
+
+      lastFailure = new HttpError(
+        503,
+        "No pude conectarme al servicio de IA en este momento. Intenta de nuevo en unos segundos."
+      );
+
+      if (attempt < ANTHROPIC_RETRY_DELAYS_MS.length) {
+        await wait(ANTHROPIC_RETRY_DELAYS_MS[attempt]);
+        continue;
+      }
+
+      throw lastFailure;
+    }
+  }
+
+  throw lastFailure || new HttpError(503, buildAnthropicTemporaryMessage());
+}
 
 // ── Contexto del portal ────────────────────────────────────────────────────
 async function fetchPortalContext(actor) {
@@ -164,30 +290,11 @@ router.post(
 
     const systemPrompt = SYSTEM_PROMPT_BASE + portalCtx + weatherCtx;
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 600,
-        system: systemPrompt,
-        messages: history,
-      }),
+    const data = await requestAnthropic({
+      apiKey,
+      systemPrompt,
+      messages: history,
     });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new HttpError(
-        502,
-        err.error?.message || "Error al contactar el servicio de IA."
-      );
-    }
-
-    const data = await response.json();
     const reply = data.content?.[0]?.text || "Sin respuesta del asistente.";
 
     res.json({ status: "ok", data: { reply } });
@@ -195,3 +302,10 @@ router.post(
 );
 
 module.exports = router;
+module.exports.__private = {
+  buildAnthropicTemporaryMessage,
+  getAnthropicRequestId,
+  readJsonResponse,
+  requestAnthropic,
+  shouldRetryAnthropicStatus,
+};
