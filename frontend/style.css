@@ -4681,3 +4681,21 @@ tbody tr {
 
 /* El modal (z-index: 300) queda por encima del FAB (z-index: 200),
    así el FAB se oculta naturalmente detrás del backdrop cuando hay un modal abierto. */
+
+/* ── Offline banner ──────────────────────────────────────────────────────────── */
+.offline-banner {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9000;
+  background: #7c4b08;
+  color: #fff;
+  padding: 0.45rem 1.1rem;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.28);
+  pointer-events: none;
+}

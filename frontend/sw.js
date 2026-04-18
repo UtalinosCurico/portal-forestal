@@ -1,4 +1,5 @@
-const CACHE_NAME = "portal-fmn-shell-v30";
+const CACHE_NAME = "portal-fmn-shell-v31";
+const DATA_CACHE  = "portal-fmn-data-v1";
 const OFFLINE_SHELL = ["/web", "/assets/fmn-icon-192.png", "/assets/fmn-icon-512.png"];
 
 function isRuntimeAsset(url) {
@@ -22,7 +23,11 @@ self.addEventListener("activate", (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
+        Promise.all(
+          keys
+            .filter((key) => key !== CACHE_NAME && key !== DATA_CACHE)
+            .map((key) => caches.delete(key))
+        )
       )
       .then(() => self.clients.claim())
   );
@@ -37,7 +42,23 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (url.pathname.startsWith("/api/")) {
-    event.respondWith(fetch(request));
+    if (request.method !== "GET") {
+      // Escrituras (POST/PATCH/DELETE): dejar pasar — fallarán offline (Phase 2 agrega cola)
+      event.respondWith(fetch(request));
+      return;
+    }
+    // GETs de API: network-first, cache-fallback para offline
+    event.respondWith(
+      fetch(request)
+        .then(async (res) => {
+          if (res.ok) {
+            const cache = await caches.open(DATA_CACHE);
+            cache.put(request, res.clone());
+          }
+          return res;
+        })
+        .catch(() => caches.match(request))
+    );
     return;
   }
 

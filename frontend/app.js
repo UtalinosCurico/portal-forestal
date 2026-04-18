@@ -1763,9 +1763,30 @@ function registerEvents() {
   });
 }
 
+function registerOfflineDetection() {
+  const banner = document.createElement("div");
+  banner.id = "offline-banner";
+  banner.className = "offline-banner hidden";
+  banner.textContent = "📡 Sin conexión — mostrando datos guardados";
+  document.body.appendChild(banner);
+
+  function update() {
+    const offline = !navigator.onLine;
+    banner.classList.toggle("hidden", !offline);
+    if (!offline && state.user) {
+      showToast("Conexión restaurada.");
+    }
+  }
+
+  window.addEventListener("online", update);
+  window.addEventListener("offline", update);
+  update();
+}
+
 async function bootstrap() {
   applyPlatformHints();
   registerPWA();
+  registerOfflineDetection();
   registerEvents();
   watchGlobalModalState();
   updateDocumentTitle();
