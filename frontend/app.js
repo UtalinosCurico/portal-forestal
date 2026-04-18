@@ -1235,9 +1235,50 @@ function applyPlatformHints() {
   document.documentElement.classList.toggle("platform-windows", isWindowsDevice());
 }
 
+const INSTALL_DISMISSED_KEY = "fmn_install_dismissed";
+
 function updateInstallButtonVisibility() {
   const shouldShow = Boolean(state.deferredInstallPrompt) && !isStandaloneMode();
   installAppBtn.classList.toggle("hidden", !shouldShow);
+}
+
+function showInstallBanner() {
+  if (isStandaloneMode()) return;
+  if (localStorage.getItem(INSTALL_DISMISSED_KEY)) return;
+
+  const existing = document.getElementById("install-banner");
+  if (existing) return;
+
+  const banner = document.createElement("div");
+  banner.id = "install-banner";
+  banner.className = "install-banner";
+
+  const isIOS = isIOSDevice();
+  banner.innerHTML = isIOS
+    ? `<span class="install-banner-text">📲 Instala el portal como app — toca <strong>Compartir</strong> y luego <strong>Añadir a inicio</strong></span>
+       <button class="install-banner-dismiss" aria-label="Cerrar">✕</button>`
+    : `<span class="install-banner-text">📲 Instala el portal como app en tu dispositivo</span>
+       <button class="install-banner-install btn">Instalar</button>
+       <button class="install-banner-dismiss" aria-label="Cerrar">✕</button>`;
+
+  banner.querySelector(".install-banner-dismiss").addEventListener("click", () => {
+    banner.remove();
+    localStorage.setItem(INSTALL_DISMISSED_KEY, "1");
+  });
+
+  if (!isIOS) {
+    banner.querySelector(".install-banner-install").addEventListener("click", async () => {
+      banner.remove();
+      localStorage.setItem(INSTALL_DISMISSED_KEY, "1");
+      await handleInstallApp();
+    });
+  }
+
+  document.body.appendChild(banner);
+}
+
+function hideInstallBanner() {
+  document.getElementById("install-banner")?.remove();
 }
 
 function registerPWA() {
@@ -1264,11 +1305,13 @@ function registerPWA() {
     event.preventDefault();
     state.deferredInstallPrompt = event;
     updateInstallButtonVisibility();
+    if (state.user) showInstallBanner();
   });
 
   window.addEventListener("appinstalled", () => {
     state.deferredInstallPrompt = null;
     updateInstallButtonVisibility();
+    hideInstallBanner();
     showToast("La app quedo instalada en este dispositivo.");
   });
 }
@@ -1336,6 +1379,7 @@ async function handleLoginSubmit(event) {
     showToast("Sesion iniciada");
     loginForm.reset();
     flushOfflineQueue();
+    if (isIOSDevice() || state.deferredInstallPrompt) showInstallBanner();
 
     // Inicializar asistente IA
     import(`/js/aiAssistant.js?v=${ASSET_VERSION}`)
@@ -1846,6 +1890,8 @@ async function bootstrap() {
   if (_fbRole === "ADMIN") refreshFeedbackBadge().catch(() => {});
   setAuthenticatedUI(true);
   flushOfflineQueue();
+  // Mostrar banner de instalación si aplica (iOS siempre, Android cuando hay prompt)
+  if (isIOSDevice() || state.deferredInstallPrompt) showInstallBanner();
   await loadView(getDefaultView());
   prefetchAllowedViews();
   runWhenIdle(() => {

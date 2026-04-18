@@ -5,7 +5,7 @@
   "start_url": "/web",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait-primary",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#f0f5f2",
   "theme_color": "#123126",
   "icons": [
