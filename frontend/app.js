@@ -1335,6 +1335,7 @@ async function handleLoginSubmit(event) {
     setAuthenticatedUI(true);
     showToast("Sesion iniciada");
     loginForm.reset();
+    flushOfflineQueue();
 
     // Inicializar asistente IA
     import(`/js/aiAssistant.js?v=${ASSET_VERSION}`)
@@ -1767,20 +1768,54 @@ function registerOfflineDetection() {
   const banner = document.createElement("div");
   banner.id = "offline-banner";
   banner.className = "offline-banner hidden";
-  banner.textContent = "📡 Sin conexión — mostrando datos guardados";
   document.body.appendChild(banner);
 
-  function update() {
-    const offline = !navigator.onLine;
-    banner.classList.toggle("hidden", !offline);
-    if (!offline && state.user) {
+  async function updateBanner() {
+    if (navigator.onLine) {
+      banner.classList.add("hidden");
+      return;
+    }
+    let n = 0;
+    try {
+      const { pendingCount } = await import("/js/offline-queue.js");
+      n = await pendingCount();
+    } catch { /* IndexedDB no disponible */ }
+    banner.textContent = n > 0
+      ? `📡 Sin conexión — ${n} acción${n !== 1 ? "es" : ""} pendiente${n !== 1 ? "s" : ""}`
+      : "📡 Sin conexión — mostrando datos guardados";
+    banner.classList.remove("hidden");
+  }
+
+  async function handleOnline() {
+    banner.classList.add("hidden");
+    if (!state.user) return;
+    try {
+      const { flushQueue } = await import("/js/offline-queue.js");
+      const sent = await flushQueue(apiRequest);
+      showToast(
+        sent > 0
+          ? `Conexión restaurada — ${sent} acción${sent !== 1 ? "es" : ""} enviada${sent !== 1 ? "s" : ""}`
+          : "Conexión restaurada."
+      );
+    } catch {
       showToast("Conexión restaurada.");
     }
   }
 
-  window.addEventListener("online", update);
-  window.addEventListener("offline", update);
-  update();
+  window.addEventListener("online", handleOnline);
+  window.addEventListener("offline", updateBanner);
+  window.addEventListener("fmn:queue-changed", updateBanner);
+  if (!navigator.onLine) updateBanner();
+}
+
+async function flushOfflineQueue() {
+  try {
+    const { flushQueue } = await import("/js/offline-queue.js");
+    const sent = await flushQueue(apiRequest);
+    if (sent > 0) {
+      showToast(`${sent} acción${sent !== 1 ? "es" : ""} offline enviada${sent !== 1 ? "s" : ""}`);
+    }
+  } catch { /* no crítico */ }
 }
 
 async function bootstrap() {
@@ -1810,6 +1845,7 @@ async function bootstrap() {
   const _fbRole = state.user?.role || state.user?.rol || "";
   if (_fbRole === "ADMIN") refreshFeedbackBadge().catch(() => {});
   setAuthenticatedUI(true);
+  flushOfflineQueue();
   await loadView(getDefaultView());
   prefetchAllowedViews();
   runWhenIdle(() => {

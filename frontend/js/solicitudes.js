@@ -927,6 +927,8 @@ async function downloadSolicitudesExcel(context, filters) {
   URL.revokeObjectURL(url);
 }
 
+import { enqueueAction } from "./offline-queue.js";
+
 export async function initSolicitudesView(context) {
   const role = context.state.user.role || context.state.user.rol;
   const currentUserId = context.state.user.id;
@@ -1827,16 +1829,26 @@ export async function initSolicitudesView(context) {
       return;
     }
 
+    const comentario =
+      detailComentario.value.trim() ||
+      (targetStatus === "ENTREGADO"
+        ? "Cierre completo de la solicitud"
+        : "Despacho completo de la solicitud");
+
+    if (!navigator.onLine) {
+      await enqueueAction({
+        url: `/api/solicitudes/${currentSolicitud.id}`,
+        method: "PUT",
+        body: { estado: targetStatus, comentario },
+        description: `Estado → ${targetStatus} en solicitud #${currentSolicitud.folio || currentSolicitud.id}`,
+      });
+      context.showToast("Sin conexión — se enviará al reconectarse");
+      return;
+    }
+
     await context.apiRequest(`/api/solicitudes/${currentSolicitud.id}`, {
       method: "PUT",
-      body: {
-        estado: targetStatus,
-        comentario:
-          detailComentario.value.trim() ||
-          (targetStatus === "ENTREGADO"
-            ? "Cierre completo de la solicitud"
-            : "Despacho completo de la solicitud"),
-      },
+      body: { estado: targetStatus, comentario },
     });
 
     await Promise.all([loadSolicitudes({ showLoading: false }), loadSolicitudDetail(currentSolicitud.id)]);
@@ -1855,6 +1867,18 @@ export async function initSolicitudesView(context) {
     const comentario = processCommentInput.value.trim();
     if (!comentario) {
       throw new Error("Escribe un comentario de proceso");
+    }
+
+    if (!navigator.onLine) {
+      await enqueueAction({
+        url: `/api/solicitudes/${currentSolicitud.id}/comentarios-proceso`,
+        method: "POST",
+        body: { comentario },
+        description: `Comentario en solicitud #${currentSolicitud.folio || currentSolicitud.id}`,
+      });
+      processCommentInput.value = "";
+      context.showToast("Sin conexión — se enviará al reconectarse");
+      return;
     }
 
     await context.apiRequest(`/api/solicitudes/${currentSolicitud.id}/comentarios-proceso`, {
