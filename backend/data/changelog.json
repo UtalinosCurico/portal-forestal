@@ -1,6 +1,14 @@
 {
-  "lastCommit": "b51bb22b7f03d355f0e4bccee4d3c5acf35d82d8",
+  "lastCommit": "222f7649519335b2f21b76c0be8a1246cda33ff0",
   "entries": [
+    {
+      "id": "222f7649",
+      "tipo": "feature",
+      "titulo": "Cola IndexedDB para acciones sin conexión",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-18T15:46:20.000Z",
+      "descripcion": "- offline-queue.js: módulo IndexedDB con enqueueAction/flushQueue/pendingCount.\n  Almacena acciones pendientes entre sesiones; las envía en orden al reconectarse.\n- solicitudes.js: cambio de estado y comentarios de proceso se encolan offline\n  en lugar de fallar; toast informa que se enviará al volver internet.\n- app.js: banner actualiza conteo de pendientes; al volver internet ejecuta\n  flushQueu"
+    },
     {
       "id": "b51bb22b",
       "tipo": "feature",
