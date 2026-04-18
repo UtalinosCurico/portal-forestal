@@ -1,6 +1,14 @@
 {
-  "lastCommit": "222f7649519335b2f21b76c0be8a1246cda33ff0",
+  "lastCommit": "bd95a028db8033272ea65166ab8bed1d3e614f44",
   "entries": [
+    {
+      "id": "bd95a028",
+      "tipo": "feature",
+      "titulo": "Banner de instalación + fix manifest orientación",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-18T15:51:28.000Z",
+      "descripcion": "- manifest: elimina portrait-primary (bloqueaba instalación en escritorio/landscape),\n  agrega display_override para mejor compatibilidad.\n- app.js: showInstallBanner() — aparece tras login, muestra instrucciones específicas\n  para iOS (Compartir → Añadir) y botón directo en Android/Chrome.\n  Se descarta con ✕ y no vuelve a aparecer (localStorage flag).\n- style.css: estilos del banner con animació"
+    },
     {
       "id": "222f7649",
       "tipo": "feature",
