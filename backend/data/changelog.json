@@ -1,6 +1,14 @@
 {
-  "lastCommit": "bd95a028db8033272ea65166ab8bed1d3e614f44",
+  "lastCommit": "d072d84371e17f5f04598f5c1361042ded823e30",
   "entries": [
+    {
+      "id": "d072d843",
+      "tipo": "feature",
+      "titulo": "Botón instalar permanente en sidebar",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-19T00:07:23.000Z",
+      "descripcion": "Cuando el banner fue descartado o no apareció, el sidebar\nmuestra \"📲 Instalar app\" mientras la app no esté instalada.\nEn iOS siempre visible; en Android/Chrome aparece cuando el\nnavegador dispara beforeinstallprompt."
+    },
     {
       "id": "bd95a028",
       "tipo": "feature",
