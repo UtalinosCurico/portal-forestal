@@ -1,6 +1,14 @@
 {
-  "lastCommit": "d072d84371e17f5f04598f5c1361042ded823e30",
+  "lastCommit": "66c86d7cc5fb07d5e3c37784f5d43c8321027ec2",
   "entries": [
+    {
+      "id": "66c86d7c",
+      "tipo": "feature",
+      "titulo": "Novedades en PG, paginación solicitudes, cola offline UI, split módulos, JWT logout",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-19T01:17:40.000Z",
+      "descripcion": "- Novedades persistidas en PostgreSQL (tabla en operationalPgStore)\n- Paginación LIMIT/OFFSET en solicitudes (SQLite + PG), botón \"Cargar más\"\n- Panel visual de cola offline (IndexedDB) con cancelación de acciones\n- novedades-ui.js y feedback-ui.js extraídos de app.js (modularización)\n- JWT: logout forzado limpio cuando token expira y reintentos se agotan"
+    },
     {
       "id": "d072d843",
       "tipo": "feature",
