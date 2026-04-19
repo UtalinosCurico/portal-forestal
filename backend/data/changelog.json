@@ -1,6 +1,14 @@
 {
-  "lastCommit": "adb98822682b1d67bc29e4833e2fa702c6c11c1f",
+  "lastCommit": "38d774eb872509826712580440f7ca4f00ca0aa5",
   "entries": [
+    {
+      "id": "38d774eb",
+      "tipo": "fix",
+      "titulo": "Prevenir doble submit en formulario nueva solicitud",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-19T19:01:50.000Z",
+      "descripcion": "Deshabilita el botón \"Guardar solicitud\" durante el request para evitar\nque taps repetidos o lag de red generen solicitudes duplicadas."
+    },
     {
       "id": "adb98822",
       "tipo": "feature",
