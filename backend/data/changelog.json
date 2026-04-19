@@ -1,6 +1,14 @@
 {
-  "lastCommit": "38d774eb872509826712580440f7ca4f00ca0aa5",
+  "lastCommit": "e66bf06ee6bd35152714055ee33dd3e1394cd160",
   "entries": [
+    {
+      "id": "e66bf06e",
+      "tipo": "feature",
+      "titulo": "Notificaciones push cuando cambia estado de solicitud",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-19T19:35:03.000Z",
+      "descripcion": "- Instala web-push y genera VAPID keys (almacenadas en Vercel env)\n- Crea tabla push_subscriptions en PostgreSQL\n- pushService.js: guarda suscripciones y envía push a usuario específico\n- Ruta POST/DELETE /api/push/subscribe para registrar dispositivos\n- Hook en notificacionesService: envía push al solicitante cuando su\n  solicitud cambia a EN_REVISION, APROBADO, EN_DESPACHO, ENTREGADO o RECHAZADO"
+    },
     {
       "id": "38d774eb",
       "tipo": "fix",
