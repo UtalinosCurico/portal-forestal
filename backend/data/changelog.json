@@ -1,6 +1,14 @@
 {
-  "lastCommit": "66c86d7cc5fb07d5e3c37784f5d43c8321027ec2",
+  "lastCommit": "adb98822682b1d67bc29e4833e2fa702c6c11c1f",
   "entries": [
+    {
+      "id": "adb98822",
+      "tipo": "feature",
+      "titulo": "Quick status items, banner entregar todo, notificaciones móvil",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-19T17:48:37.000Z",
+      "descripcion": "- Quick status chips en item cards: cambio de estado directo sin sub-modal\n- Banner \"Marcar todo entregado\" en tab Productos cuando todos los ítems están ENVIADO\n- Badge naranja en tab Estado cuando hay ítems ENVIADO pendientes\n- Toast contextual en phone para notificaciones SOLICITUD_\n- Highlight pulse verde en fila/card afectada tras actualización en tiempo real\n- data-id en filas tabla y mobile"
+    },
     {
       "id": "66c86d7c",
       "tipo": "feature",
