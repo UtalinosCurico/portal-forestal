@@ -670,12 +670,7 @@ function buildCreateItemRow(item = {}, options = {}) {
             editable ? "" : "disabled"
           } autocomplete="off" spellcheck="false" />
         </div>
-        <div>
-          <label>Estado del producto</label>
-          <select class="solicitud-item-status" ${editable ? "" : "disabled"}>
-            ${renderItemStatusOptions(item.estado_item || item.estadoItem || "NO_APLICA")}
-          </select>
-        </div>
+        <input type="hidden" class="solicitud-item-status" value="POR_GESTIONAR" />
         <div class="full">
           <label>Detalle</label>
           <input class="solicitud-item-detail" value="${item.detalle || item.comentario || ""}" ${

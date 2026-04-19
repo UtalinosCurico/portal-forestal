@@ -1024,7 +1024,17 @@ async function applyMassItemStatusUpdate(client, solicitudId, estadoItem, actorI
 
 async function createSolicitud(actor, payload) {
   const actorName = actor.nombre || actor.name || "Sistema";
-  const items = normalizeItems(payload);
+  const rawItems = normalizeItems(payload);
+  // Roles operativos no pueden poner NO_APLICA al crear — siempre POR_GESTIONAR
+  const items = isGlobalRole(getActorRole(actor))
+    ? rawItems
+    : rawItems.map((item) => ({
+        ...item,
+        estado_item:
+          item.estado_item && item.estado_item !== SOLICITUD_ITEM_STATUS.NO_APLICA
+            ? item.estado_item
+            : SOLICITUD_ITEM_STATUS.POR_GESTIONAR,
+      }));
   const equipoId = await resolveEquipoForCreation(actor, payload);
   const equipo = await ensureEquipoExists(equipoId);
   const solicitudContext = { equipo_id: equipo.id, equipo: equipo.nombre_equipo };
