@@ -1,6 +1,14 @@
 {
-  "lastCommit": "e66bf06ee6bd35152714055ee33dd3e1394cd160",
+  "lastCommit": "48353c7547bcc5ef9d7f1a1a7e1112842dcb7579",
   "entries": [
+    {
+      "id": "48353c75",
+      "tipo": "fix",
+      "titulo": "Mostrar solicitudes PENDIENTE aunque items sean NO_APLICA",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-19T20:49:32.000Z",
+      "descripcion": "La query solo filtraba items con estado_item=POR_GESTIONAR, dejando fuera\nsolicitudes recién creadas cuyos items tienen estado_item=NO_APLICA por defecto."
+    },
     {
       "id": "e66bf06e",
       "tipo": "feature",
