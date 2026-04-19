@@ -1,6 +1,14 @@
 {
-  "lastCommit": "48353c7547bcc5ef9d7f1a1a7e1112842dcb7579",
+  "lastCommit": "d12f12971b13edc6580d74d83126628f9ff428a9",
   "entries": [
+    {
+      "id": "d12f1297",
+      "tipo": "fix",
+      "titulo": "Forzar POR_GESTIONAR al crear solicitud en roles operativos",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-19T20:52:37.000Z",
+      "descripcion": "- Elimina el selector de estado del producto del formulario de creación\n  (los trabajadores no deben asignar N/A, eso es rol de admin/supervisor)\n- Backend: si el actor no es ADMIN/SUPERVISOR, fuerza POR_GESTIONAR\n  aunque el payload traiga NO_APLICA"
+    },
     {
       "id": "48353c75",
       "tipo": "fix",
