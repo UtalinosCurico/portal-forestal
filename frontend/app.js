@@ -838,7 +838,8 @@ function handleRealtimeNotification(notification) {
 
   renderAlertsFeed();
   updateAlertsBadge(state.lastAlertsCount);
-  if (!isPhoneLayout() || isUrgentNotification(notification)) {
+  const isSolicitudNotif = String(notification.tipo || "").startsWith("SOLICITUD_");
+  if (!isPhoneLayout() || isUrgentNotification(notification) || isSolicitudNotif) {
     showToast(notification.titulo || "Nueva alerta recibida");
   }
   window.dispatchEvent(new CustomEvent("fmn:notification", { detail: notification }));

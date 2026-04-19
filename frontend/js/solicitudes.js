@@ -569,7 +569,7 @@ function renderRows(rows, tableBody, mobileList, formatDate, role) {
         const solicitante = item.solicitante_name || item.solicitante_nombre || item.solicitante || "-";
         const rowDelay = Math.min(i * 0.03, 0.28);
         return `
-        <tr style="animation-delay:${rowDelay}s">
+        <tr data-id="${item.id}" style="animation-delay:${rowDelay}s">
           <td>${item.id}</td>
           <td>
             <strong>${item.nombre_equipo || item.equipo || "-"}</strong>
@@ -609,7 +609,7 @@ function renderRows(rows, tableBody, mobileList, formatDate, role) {
       const solicitante = item.solicitante_name || item.solicitante_nombre || item.solicitante || "-";
       const cardDelay = Math.min(i * 0.04, 0.32);
       return `
-        <article class="solicitud-mobile-card" style="animation-delay:${cardDelay}s" data-status="${item.estado}">
+        <article class="solicitud-mobile-card" data-id="${item.id}" style="animation-delay:${cardDelay}s" data-status="${item.estado}">
           <div class="solicitud-mobile-top">
             <div>
               <strong>Solicitud #${item.id}</strong>
@@ -737,10 +737,16 @@ function buildDetailItemRow(item = {}, options = {}) {
           ${enviadoPor}
           ${recepcionadoPor}
           ${gestion}
+          ${canManageItem ? `
+          <div class="item-quick-actions">
+            ${["GESTIONADO", "ENVIADO", "ENTREGADO"].map((s) => `
+              <button class="item-quick-btn${item.estado_item === s ? " item-quick-active" : ""}" data-quick-status="${s}" type="button">${getItemStatusLabel(s)}</button>
+            `).join("")}
+          </div>` : ""}
         </div>
         ${
           canConfigure
-            ? `<button class="table-btn solicitud-configure-item-btn" type="button">Configurar producto</button>`
+            ? `<button class="table-btn solicitud-configure-item-btn" type="button">Configurar</button>`
             : ""
         }
       </div>
@@ -1664,6 +1670,27 @@ export async function initSolicitudesView(context) {
         if (currentSolicitud && (!referenceId || Number(currentSolicitud.id) === referenceId)) {
           await loadSolicitudDetail(currentSolicitud.id, { preserveChat: shouldPreserveChat });
         }
+
+        // Toast contextual con info del cambio
+        if (notification.titulo) {
+          context.showToast(notification.titulo);
+        }
+
+        // Highlight visual de la fila/card que cambió
+        if (referenceId) {
+          window.requestAnimationFrame(() => {
+            [
+              tableBody.querySelector(`[data-id="${referenceId}"]`),
+              mobileList.querySelector(`[data-id="${referenceId}"]`),
+            ]
+              .filter(Boolean)
+              .forEach((el) => {
+                el.classList.remove("row-highlight");
+                void el.offsetWidth;
+                el.classList.add("row-highlight");
+              });
+          });
+        }
       } catch {
         // Ignorar errores silenciosos del refresco en vivo.
       }
@@ -1753,6 +1780,43 @@ export async function initSolicitudesView(context) {
         solicitante: solicitud.solicitante_name || solicitud.solicitante,
       })
     );
+
+    // Banner "Entregar todo" en tab Productos cuando todos los ítems están en ENVIADO
+    const deliverBannerEl = document.getElementById("solicitud-items-deliver-banner");
+    if (deliverBannerEl) {
+      const sumBanner = summarizeItemStatuses(solicitud.items || []);
+      const allShipped =
+        sumBanner.totalTrackable > 0 &&
+        sumBanner.enviados + sumBanner.entregados === sumBanner.totalTrackable &&
+        sumBanner.entregados < sumBanner.totalTrackable;
+      if (canManage && allShipped) {
+        const pendingCount = sumBanner.totalTrackable - sumBanner.entregados;
+        deliverBannerEl.innerHTML = `
+          <div>
+            <strong>Todos los productos enviados</strong>
+            <p>${pendingCount} ${pendingCount === 1 ? "producto listo" : "productos listos"} para recepcionar.</p>
+          </div>
+          <button class="action-btn deliver-banner-btn" data-bulk-status="ENTREGADO" type="button">
+            Marcar todo entregado
+          </button>
+        `;
+        deliverBannerEl.classList.remove("hidden");
+      } else {
+        deliverBannerEl.innerHTML = "";
+        deliverBannerEl.classList.add("hidden");
+      }
+    }
+
+    // Badge en tab Estado si hay ítems ENVIADO pendientes de recepcionar
+    const estadoTabBtn = document.querySelector('.detail-tab-btn[data-detail-tab="estado"]');
+    if (estadoTabBtn) {
+      const sumTab = summarizeItemStatuses(solicitud.items || []);
+      estadoTabBtn.classList.toggle(
+        "has-badge",
+        sumTab.totalTrackable > 0 && sumTab.enviados > 0 && sumTab.entregados < sumTab.totalTrackable
+      );
+    }
+
     detailAddItemBtn.classList.toggle("hidden", !editable);
     saveBtn.classList.toggle("hidden", !editable && !canManage);
     deleteBtn.classList.toggle("hidden", !canManage);
@@ -2116,6 +2180,34 @@ export async function initSolicitudesView(context) {
   });
 
   detailItemsList.addEventListener("click", async (event) => {
+    // Quick status change (sin abrir modal)
+    const quickBtn = event.target.closest("[data-quick-status]");
+    if (quickBtn && !event.target.closest(".solicitud-configure-item-btn")) {
+      if (!canManage || !currentSolicitud) return;
+      const card = quickBtn.closest(".item-tracking-card");
+      const itemId = Number(card?.dataset.itemId || 0);
+      const newStatus = quickBtn.dataset.quickStatus;
+      if (!itemId || !newStatus) return;
+      const prev = quickBtn.closest(".item-quick-actions")?.querySelector(".item-quick-active");
+      if (prev?.dataset.quickStatus === newStatus) return; // ya activo
+      try {
+        quickBtn.disabled = true;
+        await context.apiRequest(`/api/solicitudes/${currentSolicitud.id}/items/${itemId}`, {
+          method: "PUT",
+          body: { estado_item: newStatus },
+        });
+        await Promise.all([
+          loadSolicitudes({ showLoading: false }),
+          loadSolicitudDetail(currentSolicitud.id),
+        ]);
+        context.showToast(`Producto marcado como ${getItemStatusLabel(newStatus)}`);
+      } catch (error) {
+        context.showToast(error.message, true);
+        quickBtn.disabled = false;
+      }
+      return;
+    }
+
     const button = event.target.closest(".solicitud-configure-item-btn");
     if (!button) {
       return;
@@ -2319,6 +2411,23 @@ export async function initSolicitudesView(context) {
       actionsRow.insertAdjacentElement("afterend", panel);
     } else {
       deliveryAssistant.appendChild(panel);
+    }
+  });
+
+  // Banner "Entregar todo" en tab Productos
+  const deliverBannerEl = document.getElementById("solicitud-items-deliver-banner");
+  deliverBannerEl?.addEventListener("click", async (event) => {
+    const btn = event.target.closest("[data-bulk-status]");
+    if (!btn || !canManage) return;
+    const targetStatus = btn.dataset.bulkStatus;
+    const warning = buildBulkStatusWarning(currentSolicitud, targetStatus);
+    if (warning && !window.confirm(warning)) return;
+    try {
+      btn.disabled = true;
+      await executeBulkSolicitudStatus(targetStatus);
+    } catch (error) {
+      context.showToast(error.message, true);
+      btn.disabled = false;
     }
   });
 

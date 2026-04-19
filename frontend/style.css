@@ -4826,3 +4826,96 @@ tbody tr {
   justify-content: center;
   padding: 1rem 0 0.5rem;
 }
+
+/* ── UX: Quick item status buttons ──────────────────────────────────────────── */
+.item-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.item-quick-btn {
+  font-size: 0.74rem;
+  padding: 4px 11px;
+  border-radius: 999px;
+  border: 1.5px solid #c0d8cc;
+  background: #f2faf6;
+  color: #2a5045;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 120ms, border-color 120ms, color 120ms;
+}
+
+.item-quick-btn.item-quick-active {
+  background: var(--forest-600, #2d7a57);
+  border-color: var(--forest-600, #2d7a57);
+  color: #fff;
+}
+
+.item-quick-btn:hover:not(.item-quick-active):not(:disabled) {
+  background: #d8f0e5;
+  border-color: #8cc4ad;
+}
+
+.item-quick-btn:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+/* ── UX: Deliver ready banner (tab Productos) ────────────────────────────────── */
+.deliver-ready-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: linear-gradient(100deg, #e6f7ee, #f0fcf5);
+  border: 1.5px solid #5ec990;
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  animation: slide-up-fade 0.25s ease both;
+}
+
+.deliver-ready-banner strong {
+  display: block;
+  color: #1a5c38;
+  font-size: 0.92rem;
+}
+
+.deliver-ready-banner p {
+  margin: 3px 0 0;
+  font-size: 0.83rem;
+  color: #2e6b49;
+}
+
+.deliver-banner-btn {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── UX: Tab badge dot (Estado tab) ─────────────────────────────────────────── */
+.detail-tab-btn.has-badge::after {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #e07020;
+  margin-left: 5px;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+}
+
+/* ── UX: Row/card highlight after realtime update ────────────────────────────── */
+@keyframes row-highlight-pulse {
+  0%   { background-color: rgba(94, 201, 144, 0.30); }
+  60%  { background-color: rgba(94, 201, 144, 0.15); }
+  100% { background-color: transparent; }
+}
+
+.row-highlight {
+  animation: row-highlight-pulse 2s ease-out forwards !important;
+}
