@@ -130,6 +130,7 @@ const menuToggle = document.getElementById("menu-toggle");
 const helpBtn = document.getElementById("help-btn");
 const toast = document.getElementById("toast");
 const installAppBtn = document.getElementById("install-app-btn");
+const sidebarInstallBtn = document.getElementById("sidebar-install-btn");
 const alertsBtn = document.getElementById("alerts-btn");
 const alertsBadge = document.getElementById("alerts-badge");
 const alertsModal = document.getElementById("alerts-modal");
@@ -1240,6 +1241,9 @@ const INSTALL_DISMISSED_KEY = "fmn_install_dismissed";
 function updateInstallButtonVisibility() {
   const shouldShow = Boolean(state.deferredInstallPrompt) && !isStandaloneMode();
   installAppBtn.classList.toggle("hidden", !shouldShow);
+  // Botón sidebar: visible cuando no está instalada (iOS siempre, Android cuando hay prompt)
+  const sidebarShow = !isStandaloneMode() && (isIOSDevice() || Boolean(state.deferredInstallPrompt));
+  sidebarInstallBtn?.classList.toggle("hidden", !sidebarShow);
 }
 
 function showInstallBanner() {
@@ -1740,6 +1744,11 @@ function registerEvents() {
     } catch (error) {
       showToast(error.message, true);
     }
+  });
+
+  sidebarInstallBtn?.addEventListener("click", async () => {
+    closeSidebar();
+    await handleInstallApp();
   });
 
   installAppBtn.addEventListener("click", async () => {

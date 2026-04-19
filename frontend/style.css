@@ -4761,3 +4761,23 @@ tbody tr {
 .install-banner-dismiss:hover {
   color: #fff;
 }
+
+/* ── Sidebar install button ──────────────────────────────────────────────────── */
+.sidebar-install-btn {
+  display: block;
+  width: calc(100% - 2rem);
+  margin: 0.25rem 1rem;
+  padding: 0.55rem 1rem;
+  background: var(--forest-700);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-btn);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sidebar-install-btn:hover {
+  background: var(--forest-600);
+}
