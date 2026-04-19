@@ -7,6 +7,7 @@ const { authorize } = require("../middleware/authorize");
 const { run, all } = require("../database/db");
 const { ROLES } = require("../config/appRoles");
 const { HttpError } = require("../utils/errors");
+const { isOperationalPgEnabled, getOperationalPool } = require("../services/operationalPgStore");
 
 const router = express.Router();
 router.use(authenticate);
@@ -26,52 +27,74 @@ function readChangelogEntries() {
   }
 }
 
-// GET /api/novedades — todos los roles autenticados
-// Lee del archivo changelog.json (auto-generado por GitHub Actions) + tabla DB (admin manual)
+async function getDbRows(fields = "*") {
+  if (isOperationalPgEnabled()) {
+    const pg = getOperationalPool();
+    const { rows } = await pg.query(`SELECT ${fields} FROM novedades ORDER BY created_at DESC`);
+    return rows;
+  }
+  try {
+    return await all(`SELECT ${fields} FROM novedades ORDER BY created_at DESC`);
+  } catch {
+    return [];
+  }
+}
+
+async function insertNovedad(tipo, titulo, descripcion, autorNombre) {
+  if (isOperationalPgEnabled()) {
+    const pg = getOperationalPool();
+    await pg.query(
+      `INSERT INTO novedades (tipo, titulo, descripcion, autor_nombre) VALUES ($1, $2, $3, $4)`,
+      [tipo, titulo, descripcion, autorNombre]
+    );
+    return;
+  }
+  await run(
+    `INSERT INTO novedades (tipo, titulo, descripcion, autor_nombre) VALUES (?, ?, ?, ?)`,
+    [tipo, titulo, descripcion, autorNombre]
+  );
+}
+
+async function deleteNovedad(id) {
+  if (isOperationalPgEnabled()) {
+    const pg = getOperationalPool();
+    await pg.query(`DELETE FROM novedades WHERE id = $1`, [id]);
+    return;
+  }
+  await run(`DELETE FROM novedades WHERE id = ?`, [id]);
+}
+
+// GET /api/novedades
 router.get(
   "/",
   authorize(...ALL_ROLES),
   asyncHandler(async (req, res) => {
     const fileEntries = readChangelogEntries();
-    let dbRows = [];
-    try {
-      dbRows = await all(`SELECT * FROM novedades ORDER BY created_at DESC`);
-    } catch {
-      // Tabla aún no inicializada (p.ej. primer arranque) — ignorar
-    }
-
+    const dbRows = await getDbRows();
     const merged = [...fileEntries, ...dbRows].sort(
       (a, b) => (b.created_at || "").localeCompare(a.created_at || "")
     );
-
     res.json({ status: "ok", data: merged });
   })
 );
 
-// GET /api/novedades/count?since=ISO_DATE — cantidad de entradas nuevas (para badge)
+// GET /api/novedades/count?since=ISO_DATE
 router.get(
   "/count",
   authorize(...ALL_ROLES),
   asyncHandler(async (req, res) => {
     const since = req.query.since ? String(req.query.since).slice(0, 30) : null;
     const fileEntries = readChangelogEntries();
-    let dbRows = [];
-    try {
-      dbRows = await all(`SELECT id, created_at FROM novedades`);
-    } catch {
-      // Tabla aún no inicializada — ignorar
-    }
+    const dbRows = await getDbRows("id, created_at");
     const all_entries = [...fileEntries, ...dbRows];
-
     const count = since
       ? all_entries.filter((e) => (e.created_at || "") > since).length
       : all_entries.length;
-
     res.json({ status: "ok", data: { count } });
   })
 );
 
-// POST /api/novedades — solo ADMIN (entrada manual)
+// POST /api/novedades — solo ADMIN
 router.post(
   "/",
   authorize(ROLES.ADMIN),
@@ -81,21 +104,22 @@ router.post(
       throw new HttpError(400, "Título y descripción son obligatorios");
     }
     const tipoValido = ["feature", "mejora", "fix"].includes(tipo) ? tipo : "feature";
-    await run(
-      `INSERT INTO novedades (tipo, titulo, descripcion, autor_nombre) VALUES (?, ?, ?, ?)`,
-      [tipoValido, titulo.trim().slice(0, 120), descripcion.trim().slice(0, 1000),
-       req.user.nombre || req.user.name || "Admin"]
+    await insertNovedad(
+      tipoValido,
+      titulo.trim().slice(0, 120),
+      descripcion.trim().slice(0, 1000),
+      req.user.nombre || req.user.name || "Admin"
     );
     res.json({ status: "ok", data: { message: "Novedad publicada." } });
   })
 );
 
-// DELETE /api/novedades/:id — solo ADMIN (borra entrada manual de DB)
+// DELETE /api/novedades/:id — solo ADMIN
 router.delete(
   "/:id",
   authorize(ROLES.ADMIN),
   asyncHandler(async (req, res) => {
-    await run(`DELETE FROM novedades WHERE id = ?`, [req.params.id]);
+    await deleteNovedad(req.params.id);
     res.json({ status: "ok" });
   })
 );

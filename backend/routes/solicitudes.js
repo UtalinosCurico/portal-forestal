@@ -13,10 +13,11 @@ router.get(
   "/",
   authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.JEFE_FAENA, ROLES.MECANICO, ROLES.OPERADOR),
   asyncHandler(async (req, res) => {
-    const rows = await solicitudesService.listSolicitudes(req.user, req.query || {});
+    const result = await solicitudesService.listSolicitudes(req.user, req.query || {});
     res.json({
       status: "ok",
-      data: rows,
+      data: result.data,
+      meta: { total: result.total, page: result.page, pages: result.pages },
     });
   })
 );

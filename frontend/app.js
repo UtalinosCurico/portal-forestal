@@ -139,33 +139,9 @@ const alertsRefreshBtn = document.getElementById("alerts-refresh-btn");
 const alertsList = document.getElementById("alerts-list");
 const alertsStatus = document.getElementById("alerts-status");
 
-const novedadesBtn      = document.getElementById("novedades-btn");
-const novedadesBadge    = document.getElementById("novedades-badge");
-const novedadesModal    = document.getElementById("novedades-modal");
-const novedadesCloseBtn = document.getElementById("novedades-close-btn");
-const novedadesList     = document.getElementById("novedades-list");
-const novedadesAddBtn   = document.getElementById("novedades-add-btn");
-const novedadesFormWrap = document.getElementById("novedades-form-wrap");
-const novedadesForm     = document.getElementById("novedades-form");
-const novedadesTitulo   = document.getElementById("novedades-titulo");
-const novedadesDesc     = document.getElementById("novedades-desc");
-const novedadesFormErr  = document.getElementById("novedades-form-error");
-const novedadesSubmitBtn= document.getElementById("novedades-submit-btn");
-const novedadesCancelBtn= document.getElementById("novedades-cancel-btn");
-
-const feedbackBtn       = document.getElementById("feedback-btn");
-const feedbackBadge     = document.getElementById("feedback-badge");
-const feedbackModal     = document.getElementById("feedback-modal");
-const feedbackCloseBtn  = document.getElementById("feedback-close-btn");
-const feedbackForm      = document.getElementById("feedback-form");
-const feedbackTitulo    = document.getElementById("feedback-titulo");
-const feedbackDesc      = document.getElementById("feedback-desc");
-const feedbackFormError = document.getElementById("feedback-form-error");
-const feedbackSubmitBtn = document.getElementById("feedback-submit-btn");
-const feedbackPanelSend = document.getElementById("feedback-panel-send");
-const feedbackPanelList = document.getElementById("feedback-panel-list");
-const feedbackList      = document.getElementById("feedback-list");
-const feedbackUnreadChip= document.getElementById("feedback-unread-chip");
+const offlineQueueModal    = document.getElementById("offline-queue-modal");
+const offlineQueueCloseBtn = document.getElementById("offline-queue-close-btn");
+const offlineQueueList     = document.getElementById("offline-queue-list");
 
 const VIEWS = {
   dashboard: {
@@ -621,14 +597,18 @@ async function apiRequest(path, options = {}, requiresAuth = true) {
       continue;
     }
 
-    if (response.status === 401 && isCurrentAuthenticatedRequest && forceLogoutOn401) {
-      stopRealtimeAlerts();
-      stopAlertsPolling();
-      stopSessionPolling();
-      clearSession();
-      updateAlertsBadge(0);
-      closeAlertsModal();
-      setAuthenticatedUI(false);
+    if (response.status === 401 && isCurrentAuthenticatedRequest) {
+      // Token expirado (retries agotados o forceLogoutOn401) — cerrar sesión limpiamente
+      if (forceLogoutOn401 || attempt >= 2) {
+        stopRealtimeAlerts();
+        stopAlertsPolling();
+        stopSessionPolling();
+        clearSession();
+        updateAlertsBadge(0);
+        closeAlertsModal();
+        setAuthenticatedUI(false);
+        showToast("Sesión expirada. Vuelve a iniciar sesión.", true);
+      }
     }
 
     if (!response.ok) {
@@ -1444,132 +1424,14 @@ async function restoreSession() {
   }
 }
 
-// ── Novedades ─────────────────────────────────────────────────────────────────
-const NOVEDADES_LS_KEY = "fmn_novedades_seen_at";
+// ── Novedades + Feedback — delegados a módulos separados ──────────────────────
+const { initNovedades, refreshNovedadesBadge: _refreshNovedadesBadge } =
+  await import("/js/novedades-ui.js");
+const { initFeedback, refreshFeedbackBadge: _refreshFeedbackBadge } =
+  await import("/js/feedback-ui.js");
 
-const NOV_TIPO_META = {
-  feature: { label: "🚀 Nueva función", cls: "feature" },
-  mejora:  { label: "✨ Mejora",        cls: "mejora"  },
-  fix:     { label: "🐛 Corrección",    cls: "fix"     },
-};
-
-function openNovedadesModal() {
-  novedadesModal.classList.remove("hidden");
-  // Mostrar botón agregar solo para ADMIN
-  const isAdmin = (state.user?.role || state.user?.rol) === "ADMIN";
-  novedadesAddBtn?.classList.toggle("hidden", !isAdmin);
-  loadNovedades();
-  // Marcar como visto
-  localStorage.setItem(NOVEDADES_LS_KEY, new Date().toISOString());
-  novedadesBadge?.classList.add("hidden");
-}
-
-function closeNovedadesModal() {
-  novedadesModal.classList.add("hidden");
-  novedadesFormWrap?.classList.add("hidden");
-  novedadesForm?.reset();
-}
-
-async function loadNovedades() {
-  if (!novedadesList) return;
-  novedadesList.innerHTML = "<div class='history-empty'>Cargando…</div>";
-  try {
-    const { data } = await apiRequest("/novedades");
-    const items = Array.isArray(data) ? data : [];
-    if (!items.length) {
-      novedadesList.innerHTML = "<div class='history-empty'>Sin novedades publicadas todavía.</div>";
-      return;
-    }
-    const isAdmin = (state.user?.role || state.user?.rol) === "ADMIN";
-    const lastSeen = localStorage.getItem(NOVEDADES_LS_KEY) || "1970-01-01T00:00:00Z";
-    novedadesList.innerHTML = items.map((n) => {
-      const meta = NOV_TIPO_META[n.tipo] || NOV_TIPO_META.feature;
-      const isNew = n.created_at > lastSeen;
-      const fecha = n.created_at ? n.created_at.slice(0, 16).replace("T", " ") : "-";
-      return `
-        <div class="novedades-card">
-          <div class="novedades-card-head">
-            <span class="novedades-card-tipo ${meta.cls}">${meta.label}</span>
-            ${isNew ? '<span class="mini-chip active" style="font-size:0.72rem">Nuevo</span>' : ""}
-            <span class="novedades-card-titulo">${n.titulo}</span>
-          </div>
-          ${n.descripcion ? `<p class="novedades-card-desc">${n.descripcion}</p>` : ""}
-          <div class="novedades-card-meta">
-            <span>👤 ${n.autor_nombre || "Admin"} · 📅 ${fecha}</span>
-            ${isAdmin ? `<button class="action-btn secondary" style="font-size:0.78rem;min-height:28px;padding:0.15rem 0.6rem;color:#c62828" data-nov-delete="${n.id}">Eliminar</button>` : ""}
-          </div>
-        </div>`;
-    }).join("");
-  } catch {
-    novedadesList.innerHTML = "<div class='history-empty'>Error al cargar novedades.</div>";
-  }
-}
-
-async function refreshNovedadesBadge() {
-  try {
-    const since = localStorage.getItem(NOVEDADES_LS_KEY) || "1970-01-01T00:00:00Z";
-    const { data } = await apiRequest(`/novedades/count?since=${encodeURIComponent(since)}`);
-    const n = data?.count || 0;
-    if (novedadesBadge) {
-      novedadesBadge.classList.toggle("hidden", n === 0);
-      novedadesBadge.textContent = n;
-    }
-  } catch { /* no crítico */ }
-}
-
-// ── Feedback ──────────────────────────────────────────────────────────────────
-function openFeedbackModal() {
-  feedbackModal.classList.remove("hidden");
-  feedbackTitulo?.focus();
-}
-function closeFeedbackModal() {
-  feedbackModal.classList.add("hidden");
-}
-
-async function loadFeedbackList() {
-  try {
-    const { data } = await apiRequest("/feedback");
-    const items = Array.isArray(data) ? data : [];
-    if (!items.length) {
-      feedbackList.innerHTML = "<div class='history-empty'>Sin feedback recibido todavía.</div>";
-      return;
-    }
-    const TIPO_LABEL = { idea: "💡 Idea", error: "🐛 Error" };
-    feedbackList.innerHTML = items.map((fb) => `
-      <div class="feedback-card ${fb.leido ? "leido" : ""}" data-fb-id="${fb.id}">
-        <div class="feedback-card-head">
-          <span class="feedback-card-tipo ${fb.tipo}">${TIPO_LABEL[fb.tipo] || fb.tipo}</span>
-          <span class="feedback-card-titulo">${fb.titulo}</span>
-          ${!fb.leido ? '<span class="mini-chip active" style="font-size:0.72rem">Nuevo</span>' : ""}
-        </div>
-        <p class="feedback-card-desc">${fb.descripcion}</p>
-        <div class="feedback-card-meta">
-          <span>👤 ${fb.autor_nombre || "Usuario"}</span>
-          <span>📅 ${fb.created_at ? fb.created_at.slice(0, 16).replace("T", " ") : "-"}</span>
-        </div>
-        <div class="feedback-card-actions">
-          ${!fb.leido ? `<button class="action-btn secondary" style="font-size:0.8rem;min-height:30px;padding:0.2rem 0.7rem" data-fb-mark="${fb.id}">Marcar leído</button>` : ""}
-          <button class="action-btn secondary" style="font-size:0.8rem;min-height:30px;padding:0.2rem 0.7rem;color:#c62828" data-fb-delete="${fb.id}">Eliminar</button>
-        </div>
-      </div>
-    `).join("");
-  } catch {
-    feedbackList.innerHTML = "<div class='history-empty'>Error al cargar feedback.</div>";
-  }
-}
-
-async function refreshFeedbackBadge() {
-  try {
-    const { data } = await apiRequest("/feedback/count");
-    const n = data?.unread || 0;
-    feedbackBadge?.classList.toggle("hidden", n === 0);
-    if (feedbackBadge) feedbackBadge.textContent = n;
-    if (feedbackUnreadChip) {
-      feedbackUnreadChip.classList.toggle("hidden", n === 0);
-      feedbackUnreadChip.textContent = n;
-    }
-  } catch { /* no es crítico */ }
-}
+function refreshNovedadesBadge() { return _refreshNovedadesBadge(apiRequest); }
+function refreshFeedbackBadge()  { return _refreshFeedbackBadge(apiRequest); }
 
 function registerEvents() {
   loginForm.addEventListener("submit", handleLoginSubmit);
@@ -1579,130 +1441,10 @@ function registerEvents() {
     closeSidebar();
   });
 
-  // Novedades
-  novedadesBtn?.addEventListener("click", openNovedadesModal);
-  novedadesCloseBtn?.addEventListener("click", closeNovedadesModal);
-  novedadesModal?.addEventListener("click", (e) => {
-    if (e.target.dataset.close === "true") closeNovedadesModal();
-  });
-
-  novedadesAddBtn?.addEventListener("click", () => {
-    novedadesFormWrap?.classList.remove("hidden");
-    novedadesAddBtn.classList.add("hidden");
-    novedadesTitulo?.focus();
-  });
-
-  novedadesCancelBtn?.addEventListener("click", () => {
-    novedadesFormWrap?.classList.add("hidden");
-    novedadesAddBtn?.classList.remove("hidden");
-    novedadesForm?.reset();
-  });
-
-  novedadesForm?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    novedadesFormErr?.classList.add("hidden");
-    const tipo = novedadesForm.querySelector("input[name=nov_tipo]:checked")?.value || "feature";
-    const titulo = novedadesTitulo?.value.trim();
-    const descripcion = novedadesDesc?.value.trim();
-    if (!titulo || !descripcion) return;
-    novedadesSubmitBtn.disabled = true;
-    novedadesSubmitBtn.textContent = "Publicando…";
-    try {
-      await apiRequest("/novedades", {
-        method: "POST",
-        body: JSON.stringify({ tipo, titulo, descripcion }),
-      });
-      novedadesForm.reset();
-      novedadesFormWrap?.classList.add("hidden");
-      novedadesAddBtn?.classList.remove("hidden");
-      showToast("Novedad publicada correctamente.");
-      loadNovedades();
-    } catch (err) {
-      if (novedadesFormErr) {
-        novedadesFormErr.textContent = err.message || "Error al publicar";
-        novedadesFormErr.classList.remove("hidden");
-      }
-    } finally {
-      novedadesSubmitBtn.disabled = false;
-      novedadesSubmitBtn.textContent = "Publicar";
-    }
-  });
-
-  novedadesList?.addEventListener("click", async (e) => {
-    const del = e.target.closest("[data-nov-delete]");
-    if (!del) return;
-    await apiRequest(`/novedades/${del.dataset.novDelete}`, { method: "DELETE" });
-    loadNovedades();
-  });
-
-  // Feedback
-  feedbackBtn?.addEventListener("click", () => {
-    openFeedbackModal();
-    // si es admin, mostrar tab de lista
-    const role = state.user?.role || state.user?.rol || "";
-    const isAdmin = role === "ADMIN";
-    document.querySelectorAll(".feedback-tab.admin-only").forEach((t) => t.classList.toggle("hidden", !isAdmin));
-  });
-  feedbackCloseBtn?.addEventListener("click", closeFeedbackModal);
-  feedbackModal?.addEventListener("click", (e) => {
-    if (e.target.dataset.closeFeedback === "true") closeFeedbackModal();
-  });
-
-  // Tabs enviar / lista
-  document.getElementById("feedback-tabs")?.addEventListener("click", (e) => {
-    const tab = e.target.closest(".feedback-tab");
-    if (!tab) return;
-    document.querySelectorAll(".feedback-tab").forEach((t) => t.classList.remove("active"));
-    tab.classList.add("active");
-    const isPanelList = tab.dataset.tab === "list";
-    feedbackPanelSend?.classList.toggle("hidden", isPanelList);
-    feedbackPanelList?.classList.toggle("hidden", !isPanelList);
-    if (isPanelList) loadFeedbackList();
-  });
-
-  // Acciones en lista (marcar leído / eliminar)
-  feedbackList?.addEventListener("click", async (e) => {
-    const markBtn = e.target.closest("[data-fb-mark]");
-    const delBtn  = e.target.closest("[data-fb-delete]");
-    if (markBtn) {
-      await apiRequest(`/feedback/${markBtn.dataset.fbMark}/leido`, { method: "PATCH" });
-      loadFeedbackList();
-      refreshFeedbackBadge();
-    }
-    if (delBtn) {
-      await apiRequest(`/feedback/${delBtn.dataset.fbDelete}`, { method: "DELETE" });
-      loadFeedbackList();
-      refreshFeedbackBadge();
-    }
-  });
-
-  // Envío del formulario
-  feedbackForm?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    feedbackFormError?.classList.add("hidden");
-    const tipo = feedbackForm.querySelector("input[name=feedback_tipo]:checked")?.value || "idea";
-    const titulo = feedbackTitulo?.value.trim();
-    const descripcion = feedbackDesc?.value.trim();
-    if (!titulo || !descripcion) return;
-    feedbackSubmitBtn.disabled = true;
-    feedbackSubmitBtn.textContent = "Enviando...";
-    try {
-      await apiRequest("/feedback", {
-        method: "POST",
-        body: JSON.stringify({ tipo, titulo, descripcion }),
-      });
-      feedbackForm.reset();
-      closeFeedbackModal();
-      showToast("¡Feedback enviado! Gracias por tu aporte.");
-    } catch (err) {
-      if (feedbackFormError) {
-        feedbackFormError.textContent = err.message || "Error al enviar";
-        feedbackFormError.classList.remove("hidden");
-      }
-    } finally {
-      feedbackSubmitBtn.disabled = false;
-      feedbackSubmitBtn.textContent = "Enviar";
-    }
+  // Cola offline
+  offlineQueueCloseBtn?.addEventListener("click", closeOfflineQueueModal);
+  offlineQueueModal?.addEventListener("click", (e) => {
+    if (e.target.dataset.closeQueue === "true") closeOfflineQueueModal();
   });
 
   alertsBtn.addEventListener("click", openAlertsModal);
@@ -1817,6 +1559,43 @@ function registerEvents() {
   });
 }
 
+async function openOfflineQueueModal() {
+  if (!offlineQueueModal || !offlineQueueList) return;
+  offlineQueueModal.classList.remove("hidden");
+  offlineQueueList.innerHTML = "<div class='history-empty'>Cargando…</div>";
+  try {
+    const { getPending, cancelAction } = await import("/js/offline-queue.js");
+    const actions = await getPending();
+    if (!actions.length) {
+      offlineQueueList.innerHTML = "<div class='history-empty'>No hay acciones pendientes.</div>";
+      return;
+    }
+    offlineQueueList.innerHTML = actions.map((a) => {
+      const fecha = new Date(a.timestamp).toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" });
+      return `<div class="offline-queue-item">
+        <div class="offline-queue-item-info">
+          <span class="offline-queue-item-desc">${a.description || a.url}</span>
+          <span class="offline-queue-item-meta">${a.method} · ${fecha}</span>
+        </div>
+        <button class="action-btn secondary offline-queue-cancel" data-id="${a.id}" style="font-size:0.78rem;min-height:28px;padding:0.15rem 0.7rem;color:#c62828">Cancelar</button>
+      </div>`;
+    }).join("");
+
+    offlineQueueList.addEventListener("click", async (e) => {
+      const btn = e.target.closest(".offline-queue-cancel");
+      if (!btn) return;
+      await cancelAction(btn.dataset.id);
+      openOfflineQueueModal();
+    }, { once: true });
+  } catch {
+    offlineQueueList.innerHTML = "<div class='history-empty'>Error al cargar acciones.</div>";
+  }
+}
+
+function closeOfflineQueueModal() {
+  offlineQueueModal?.classList.add("hidden");
+}
+
 function registerOfflineDetection() {
   const banner = document.createElement("div");
   banner.id = "offline-banner";
@@ -1833,9 +1612,13 @@ function registerOfflineDetection() {
       const { pendingCount } = await import("/js/offline-queue.js");
       n = await pendingCount();
     } catch { /* IndexedDB no disponible */ }
-    banner.textContent = n > 0
-      ? `📡 Sin conexión — ${n} acción${n !== 1 ? "es" : ""} pendiente${n !== 1 ? "s" : ""}`
-      : "📡 Sin conexión — mostrando datos guardados";
+    if (n > 0) {
+      banner.innerHTML = `📡 Sin conexión — <u style="cursor:pointer">${n} acción${n !== 1 ? "es" : ""} pendiente${n !== 1 ? "s" : ""}</u>`;
+      banner.onclick = openOfflineQueueModal;
+    } else {
+      banner.textContent = "📡 Sin conexión — mostrando datos guardados";
+      banner.onclick = null;
+    }
     banner.classList.remove("hidden");
   }
 
@@ -1876,6 +1659,8 @@ async function bootstrap() {
   registerPWA();
   registerOfflineDetection();
   registerEvents();
+  initNovedades(getViewContext());
+  initFeedback(getViewContext());
   watchGlobalModalState();
   updateDocumentTitle();
   updateInstallButtonVisibility();

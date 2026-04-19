@@ -674,6 +674,14 @@ async function getSolicitudDetail(actor, solicitudId) {
 
 async function listSolicitudes(actor, filters = {}) {
   const scope = buildWhereClause(actor, filters, "s");
+  const limit = Math.min(100, Math.max(10, Number(filters.limit) || 50));
+  const page  = Math.max(1, Number(filters.page) || 1);
+  const offset = (page - 1) * limit;
+
+  const [{ total }] = await all(
+    `SELECT COUNT(*) AS total FROM solicitudes s ${scope.where}`,
+    scope.params
+  );
 
   const rows = await all(
     `
@@ -692,17 +700,25 @@ async function listSolicitudes(actor, filters = {}) {
       LEFT JOIN usuarios rc ON rc.id = s.received_by
       ${scope.where}
       ORDER BY s.id DESC
+      LIMIT ${limit} OFFSET ${offset}
     `,
     scope.params
   );
 
-  if (!rows.length) {
-    return [];
+  const data = rows.length
+    ? (() => {
+        const itemsBySolicitudId = null; // resolved below
+        return rows;
+      })()
+    : [];
+
+  if (!data.length) {
+    return { data: [], total: Number(total), page, pages: Math.ceil(Number(total) / limit) };
   }
 
-  const itemsBySolicitudId = await getSolicitudItemsBySolicitudIds(rows.map((row) => row.id));
+  const itemsBySolicitudId = await getSolicitudItemsBySolicitudIds(rows.map((r) => r.id));
 
-  return rows.map((row) => {
+  const decorated = rows.map((row) => {
     const items = itemsBySolicitudId.get(row.id) || [];
     const summary = items.length
       ? buildSolicitudSummary(items)
@@ -711,14 +727,10 @@ async function listSolicitudes(actor, filters = {}) {
           totalUnidades: Number(row.cantidad || 0),
           repuestoResumen: row.repuesto || "Solicitud",
         };
-
-    return {
-      ...row,
-      total_items: summary.totalItems,
-      total_unidades: summary.totalUnidades,
-      resumen_items: summary.repuestoResumen,
-    };
+    return { ...row, total_items: summary.totalItems, total_unidades: summary.totalUnidades, resumen_items: summary.repuestoResumen };
   });
+
+  return { data: decorated, total: Number(total), page, pages: Math.ceil(Number(total) / limit) };
 }
 
 async function listSolicitudesForExport(actor, filters = {}) {

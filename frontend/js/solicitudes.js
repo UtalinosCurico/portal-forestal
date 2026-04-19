@@ -1040,6 +1040,8 @@ export async function initSolicitudesView(context) {
   const inlinePendingToggle = document.getElementById("inline-pending-toggle");
   const inlinePendingBody = document.getElementById("inline-pending-body");
 
+  let currentFilters = {};
+
   const filters = {
     estado: "",
     fechaDesde: "",
@@ -1048,6 +1050,7 @@ export async function initSolicitudesView(context) {
   };
 
   let solicitudesCache = [];
+  let solicitudesMeta = { total: 0, page: 1, pages: 1 };
   let currentSolicitud = null;
   let pendingImageData = "";
   let pendingImageName = "";
@@ -1500,6 +1503,41 @@ export async function initSolicitudesView(context) {
     searchSummary.textContent = `Mostrando ${visibleRows.length} de ${solicitudesCache.length} resultado(s) para "${rawSearch}".`;
   }
 
+  function renderLoadMoreBtn() {
+    const existing = document.getElementById("solicitudes-load-more");
+    if (existing) existing.remove();
+
+    const hasMore = solicitudesMeta.page < solicitudesMeta.pages;
+    const loaded = solicitudesCache.length;
+    const total = solicitudesMeta.total;
+
+    if (!hasMore) return;
+
+    const btn = document.createElement("div");
+    btn.id = "solicitudes-load-more";
+    btn.className = "solicitudes-load-more";
+    btn.innerHTML = `<button class="action-btn secondary" type="button">Cargar más (${loaded} de ${total})</button>`;
+    btn.querySelector("button").addEventListener("click", loadMoreSolicitudes);
+    mobileList.after(btn);
+  }
+
+  async function loadMoreSolicitudes() {
+    if (isListLoading) return;
+    const nextPage = solicitudesMeta.page + 1;
+    setListBusy(false);
+    try {
+      const query = buildQueryString({ ...currentFilters, limit: 50, page: nextPage });
+      const payload = await context.apiRequest(`/api/solicitudes${query}`);
+      solicitudesCache = [...solicitudesCache, ...(payload.data || [])];
+      solicitudesMeta = payload.meta || solicitudesMeta;
+      renderCurrentSolicitudes();
+      syncQuickFilterUI();
+      renderLoadMoreBtn();
+    } catch (err) {
+      context.showToast(err.message, true);
+    }
+  }
+
   function renderCurrentSolicitudes() {
     const visibleRows = getVisibleSolicitudes();
     renderSolicitudes(visibleRows);
@@ -1589,11 +1627,14 @@ export async function initSolicitudesView(context) {
     }
 
     try {
-      const query = buildQueryString(filters);
+      currentFilters = { ...filters };
+      const query = buildQueryString({ ...filters, limit: 50, page: 1 });
       const payload = await context.apiRequest(`/api/solicitudes${query}`);
       solicitudesCache = payload.data || [];
+      solicitudesMeta = payload.meta || { total: solicitudesCache.length, page: 1, pages: 1 };
       renderCurrentSolicitudes();
       syncQuickFilterUI();
+      renderLoadMoreBtn();
     } finally {
       if (showLoading) {
         setListBusy(false);

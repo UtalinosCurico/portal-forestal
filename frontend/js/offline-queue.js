@@ -47,6 +47,11 @@ async function removeAction(id) {
   });
 }
 
+export async function cancelAction(id) {
+  await removeAction(id);
+  notifyChange();
+}
+
 export async function getPending() {
   const db = await openDB();
   return new Promise((res, rej) => {

@@ -484,6 +484,21 @@
       </section>
     </div>
 
+    <!-- Modal cola offline -->
+    <div id="offline-queue-modal" class="modal hidden">
+      <div class="modal-backdrop" data-close-queue="true"></div>
+      <section class="modal-content modal-compact offline-queue-sheet">
+        <header class="modal-header">
+          <div>
+            <h4>Acciones pendientes</h4>
+            <p class="muted-text">Se enviarán al reconectarse a internet.</p>
+          </div>
+          <button id="offline-queue-close-btn" class="icon-btn" type="button">x</button>
+        </header>
+        <div id="offline-queue-list" class="offline-queue-list"></div>
+      </section>
+    </div>
+
     <script type="module" src="/app.js?v=__APP_VER__"></script>
   </body>
 </html>

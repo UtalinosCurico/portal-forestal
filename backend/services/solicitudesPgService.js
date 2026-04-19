@@ -761,57 +761,46 @@ async function getSolicitudDetail(actor, solicitudId) {
 async function listSolicitudes(actor, filters = {}) {
   const scope = buildWhereClause(actor, filters, "s");
   const pg = getOperationalPool();
+  const limit = Math.min(100, Math.max(10, Number(filters.limit) || 50));
+  const page  = Math.max(1, Number(filters.page) || 1);
+  const offset = (page - 1) * limit;
+
+  const { rows: countRows } = await pg.query(
+    `SELECT COUNT(*)::int AS total FROM solicitudes s ${scope.where}`,
+    scope.params
+  );
+  const total = Number(countRows[0]?.total || 0);
 
   const { rows } = await pg.query(
     `
       SELECT
-        id,
-        solicitante_id,
-        equipo,
-        equipo_id,
-        repuesto,
-        cantidad,
-        comentario,
-        estado,
-        reviewed_at,
-        reviewed_by,
-        dispatched_at,
-        dispatched_by,
-        received_at,
-        received_by,
-        created_at,
-        updated_at
+        id, solicitante_id, equipo, equipo_id, repuesto, cantidad,
+        comentario, estado, reviewed_at, reviewed_by,
+        dispatched_at, dispatched_by, received_at, received_by,
+        created_at, updated_at
       FROM solicitudes s
       ${scope.where}
       ORDER BY s.id DESC
+      LIMIT $${scope.params.length + 1} OFFSET $${scope.params.length + 2}
     `,
-    scope.params
+    [...scope.params, limit, offset]
   );
 
   if (!rows.length) {
-    return [];
+    return { data: [], total, page, pages: Math.ceil(total / limit) };
   }
 
   const decoratedRows = await decorateSolicitudes(rows);
   const itemsBySolicitudId = await getSolicitudItemsBySolicitudIds(rows.map((row) => row.id));
 
-  return decoratedRows.map((row) => {
+  const data = decoratedRows.map((row) => {
     const items = itemsBySolicitudId.get(Number(row.id)) || [];
     const summary = items.length
       ? buildSolicitudSummary(items)
-      : {
-          totalItems: row.repuesto ? 1 : 0,
-          totalUnidades: Number(row.cantidad || 0),
-          repuestoResumen: row.repuesto || "Solicitud",
-        };
+      : { totalItems: row.repuesto ? 1 : 0, totalUnidades: Number(row.cantidad || 0), repuestoResumen: row.repuesto || "Solicitud" };
     const itemStatusSummary = items.length
       ? buildItemStatusSummary(items)
-      : buildItemStatusSummary(
-          summary.totalItems
-            ? [{ estado_item: SOLICITUD_ITEM_STATUS.POR_GESTIONAR }]
-            : []
-        );
-
+      : buildItemStatusSummary(summary.totalItems ? [{ estado_item: SOLICITUD_ITEM_STATUS.POR_GESTIONAR }] : []);
     return {
       ...row,
       total_items: summary.totalItems,
@@ -821,6 +810,8 @@ async function listSolicitudes(actor, filters = {}) {
       item_status_text: buildItemStatusText(itemStatusSummary),
     };
   });
+
+  return { data, total, page, pages: Math.ceil(total / limit) };
 }
 
 async function listSolicitudesForExport(actor, filters = {}) {
