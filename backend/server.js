@@ -18,6 +18,7 @@ const reportesRoutes = require("./routes/reportes");
 const powerbiRoutes = require("./routes/powerbi");
 const enviosRoutes = require("./routes/envios");
 const notificacionesRoutes = require("./routes/notificaciones");
+const pushRoutes = require("./routes/push");
 const aiRoutes = require("./routes/ai");
 const feedbackRoutes = require("./routes/feedback");
 const novedadesRoutes = require("./routes/novedades");
@@ -53,6 +54,7 @@ function createApp() {
   app.use("/api/powerbi", powerbiRoutes);
   app.use("/api/envios", enviosRoutes);
   app.use("/api/notificaciones", notificacionesRoutes);
+  app.use("/api/push", pushRoutes);
   app.use("/api/ai", aiRoutes);
   app.use("/api/feedback", feedbackRoutes);
   app.use("/api/novedades", novedadesRoutes);

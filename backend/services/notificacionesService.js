@@ -5,6 +5,7 @@ const { HttpError } = require("../utils/httpError");
 const { ROLES } = require("../config/appRoles");
 const { isOperationalPgEnabled } = require("./operationalPgStore");
 const pgService = require("./notificacionesPgService");
+const pushService = require("./pushService");
 
 const notificationBus = new EventEmitter();
 notificationBus.setMaxListeners(100);
@@ -279,12 +280,21 @@ async function createSolicitudNotification({ solicitudId, equipoId, equipoNombre
   }
 }
 
+const ESTADO_LABELS_PUSH = {
+  EN_REVISION: "está en gestión",
+  APROBADO: "fue aprobada",
+  EN_DESPACHO: "va en camino",
+  ENTREGADO: "fue entregada",
+  RECHAZADO: "fue rechazada",
+};
+
 async function createSolicitudStatusNotification({
   solicitudId,
   equipoId,
   equipoNombre,
   repuesto,
   estado,
+  solicitanteId,
 }) {
   if (isOperationalPgEnabled()) {
     const notifications = await pgService.createSolicitudStatusNotification({
@@ -294,27 +304,36 @@ async function createSolicitudStatusNotification({
       repuesto,
       estado,
     });
-    return emitNotifications(notifications);
+    emitNotifications(notifications);
+  } else {
+    if (!equipoId) return;
+    const parts = [
+      equipoNombre ? `Equipo: ${equipoNombre}` : null,
+      repuesto ? `Repuesto: ${repuesto}` : null,
+      estado ? `Estado: ${estado}` : null,
+    ].filter(Boolean);
+    await insertNotification({
+      tipo: "SOLICITUD_ESTADO",
+      titulo: "Actualizacion de solicitud",
+      mensaje: parts.join(" | ") || "La solicitud cambio de estado",
+      rolDestino: ROLES.JEFE_FAENA,
+      equipoId,
+      referenciaId: solicitudId || null,
+    });
   }
 
-  if (!equipoId) {
-    return;
+  // Push notification al solicitante si tiene suscripción activa
+  if (solicitanteId && estado && ESTADO_LABELS_PUSH[estado]) {
+    const label = ESTADO_LABELS_PUSH[estado];
+    const titulo = `Tu solicitud ${label}`;
+    const cuerpo = repuesto ? `Pedido: ${repuesto}` : `Solicitud #${solicitudId}`;
+    pushService.sendPushToUser(solicitanteId, {
+      title: titulo,
+      body: cuerpo,
+      solicitudId: solicitudId || null,
+      url: "/web",
+    }).catch(() => {});
   }
-
-  const parts = [
-    equipoNombre ? `Equipo: ${equipoNombre}` : null,
-    repuesto ? `Repuesto: ${repuesto}` : null,
-    estado ? `Estado: ${estado}` : null,
-  ].filter(Boolean);
-
-  await insertNotification({
-    tipo: "SOLICITUD_ESTADO",
-    titulo: "Actualizacion de solicitud",
-    mensaje: parts.join(" | ") || "La solicitud cambio de estado",
-    rolDestino: ROLES.JEFE_FAENA,
-    equipoId,
-    referenciaId: solicitudId || null,
-  });
 }
 
 async function createEnvioNotification({

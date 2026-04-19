@@ -1383,10 +1383,58 @@ async function handleLoginSubmit(event) {
         showToast(notificationsError.message, true);
       });
     }, 120);
+
+    runWhenIdle(() => {
+      subscribeToPush().catch(() => {});
+    }, 300);
   } catch (error) {
     loginError.textContent = error.message;
     loginError.classList.remove("hidden");
   }
+}
+
+async function subscribeToPush() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+
+  const sw = await navigator.serviceWorker.ready;
+  let permission = Notification.permission;
+  if (permission === "denied") return;
+  if (permission === "default") {
+    permission = await Notification.requestPermission();
+  }
+  if (permission !== "granted") return;
+
+  // Obtener VAPID public key del backend
+  const { publicKey } = await apiRequest("/api/push/vapid-public-key");
+  if (!publicKey) return;
+
+  const existing = await sw.pushManager.getSubscription();
+  if (existing) {
+    // Renovar en el backend por si expiró
+    await apiRequest("/api/push/subscribe", {
+      method: "POST",
+      body: { endpoint: existing.endpoint, keys: { p256dh: btoa(String.fromCharCode(...new Uint8Array(existing.getKey("p256dh")))), auth: btoa(String.fromCharCode(...new Uint8Array(existing.getKey("auth")))) } },
+    }).catch(() => {});
+    return;
+  }
+
+  const subscription = await sw.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(publicKey),
+  });
+
+  const raw = subscription.toJSON();
+  await apiRequest("/api/push/subscribe", {
+    method: "POST",
+    body: { endpoint: raw.endpoint, keys: raw.keys },
+  });
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(base64);
+  return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
 }
 
 function logout() {

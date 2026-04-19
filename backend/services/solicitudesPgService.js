@@ -1327,6 +1327,7 @@ async function updateSolicitud(actor, solicitudId, payload) {
       equipoNombre: updated?.nombre_equipo || updated?.equipo,
       repuesto: updated?.resumen_items || updated?.repuesto,
       estado: updated?.estado,
+      solicitanteId: updated?.solicitante_id,
     });
   }
 
@@ -1736,6 +1737,7 @@ async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
       equipoNombre: refreshedSolicitud?.nombre_equipo || refreshedSolicitud?.equipo,
       repuesto: refreshedSolicitud?.resumen_items || refreshedSolicitud?.repuesto,
       estado: refreshedSolicitud?.estado,
+      solicitanteId: refreshedSolicitud?.solicitante_id,
     });
   }
   await notificacionesService.createSolicitudItemNotification({
@@ -1854,6 +1856,7 @@ async function createSolicitudItem(actor, solicitudId, payload = {}) {
       equipoNombre: refreshedSolicitud?.nombre_equipo || refreshedSolicitud?.equipo,
       repuesto: refreshedSolicitud?.resumen_items || refreshedSolicitud?.repuesto,
       estado: refreshedSolicitud?.estado,
+      solicitanteId: refreshedSolicitud?.solicitante_id,
     });
   }
   await notificacionesService.createSolicitudItemNotification({
@@ -1935,6 +1938,7 @@ async function deleteSolicitudItem(actor, solicitudId, itemId) {
       equipoNombre: refreshedSolicitud?.nombre_equipo || refreshedSolicitud?.equipo,
       repuesto: refreshedSolicitud?.resumen_items || refreshedSolicitud?.repuesto,
       estado: refreshedSolicitud?.estado,
+      solicitanteId: refreshedSolicitud?.solicitante_id,
     });
   }
 

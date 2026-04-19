@@ -95,3 +95,37 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { title: "Portal FMN", body: event.data?.text() || "Nueva notificacion" };
+  }
+
+  const title = data.title || "Portal Forestal MN";
+  const options = {
+    body: data.body || "Tienes una actualizacion en tus solicitudes",
+    icon: "/assets/fmn-icon-192.png",
+    badge: "/assets/fmn-icon-192.png",
+    data: { url: data.url || "/web", solicitudId: data.solicitudId || null },
+    vibrate: [200, 100, 200],
+    tag: data.solicitudId ? `solicitud-${data.solicitudId}` : "fmn-push",
+    renotify: true,
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/web";
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
+      const existing = windowClients.find((c) => c.url.includes("/web") && "focus" in c);
+      if (existing) return existing.focus();
+      return clients.openWindow(url);
+    })
+  );
+});
