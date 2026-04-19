@@ -2181,8 +2181,11 @@ async function listPendingItems(actor) {
       s.solicitante_id
     FROM solicitud_items si
     INNER JOIN solicitudes s ON s.id = si.solicitud_id
-    WHERE si.estado_item = ${push(SOLICITUD_ITEM_STATUS.POR_GESTIONAR)}
-      AND s.estado NOT IN ('ENTREGADO', 'RECHAZADO')
+    WHERE s.estado NOT IN ('ENTREGADO', 'RECHAZADO')
+      AND (
+        si.estado_item = ${push(SOLICITUD_ITEM_STATUS.POR_GESTIONAR)}
+        OR s.estado = 'PENDIENTE'
+      )
   `;
   if (!isGlobalRole(role)) {
     requireTeamAssigned(actor);
