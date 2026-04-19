@@ -2251,6 +2251,9 @@ export async function initSolicitudesView(context) {
 
   createForm.addEventListener("submit", async (event) => {
     event.preventDefault();
+    const submitBtn = document.getElementById("solicitudes-create-submit-btn");
+    if (submitBtn?.disabled) return;
+    if (submitBtn) submitBtn.disabled = true;
     try {
       const items = parseItemsFromContainer(createItemsList);
       const formData = new FormData(createForm);
@@ -2278,6 +2281,8 @@ export async function initSolicitudesView(context) {
       context.showToast("Solicitud creada");
     } catch (error) {
       context.showToast(error.message, true);
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
     }
   });
 
