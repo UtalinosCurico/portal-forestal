@@ -1317,7 +1317,6 @@ async function createSolicitud(actor, payload) {
   }
   const summary = buildSolicitudSummary(items);
   const comentarioGeneral = payload.comentario ? String(payload.comentario).trim() : null;
-  const existingPendingSolicitudId = await findLatestPendingSolicitudForActor(actor.id, equipoId);
 
   if (clientRequestId) {
     const existing = await findSolicitudIdByClientRequestId(clientRequestId);
@@ -1330,10 +1329,6 @@ async function createSolicitud(actor, payload) {
       );
       return getSolicitudById(existing.id, actor);
     }
-  }
-
-  if (existingPendingSolicitudId) {
-    return reusePendingSolicitudForCreate(actor, existingPendingSolicitudId, payload, items);
   }
 
   const pg = getOperationalPool();

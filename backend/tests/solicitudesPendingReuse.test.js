@@ -42,7 +42,7 @@ async function setupSqliteScenario() {
   return { all, get, solicitudesService };
 }
 
-test("createSolicitud reutiliza una pendiente existente del mismo usuario y agrega solo los items nuevos", async () => {
+test("createSolicitud crea una nueva solicitud aunque exista otra pendiente del mismo usuario y equipo", async () => {
   const { all, get, solicitudesService } = await setupSqliteScenario();
 
   const actor = await get(
@@ -68,27 +68,23 @@ test("createSolicitud reutiliza una pendiente existente del mismo usuario y agre
 
   const secondSolicitud = await solicitudesService.createSolicitud(actor, {
     equipo_id: Number(equipo.id),
-    comentario: "Agregar casco",
+    comentario: "Solicitud separada",
     client_request_id: "pending-reuse-002",
     items: [
-      { nombre_item: "Botas", cantidad: 1, unidad_medida: "par" },
-      { nombre_item: "Guantes", cantidad: 2, unidad_medida: "par" },
       { nombre_item: "Casco", cantidad: 1, unidad_medida: "unidad" },
     ],
   });
 
-  assert.equal(secondSolicitud.id, firstSolicitud.id);
-  assert.equal(secondSolicitud.meta?.action, "merged_into_pending");
-  assert.equal(secondSolicitud.meta?.addedItems, 1);
-  assert.equal(secondSolicitud.meta?.skippedItems, 2);
+  assert.notEqual(secondSolicitud.id, firstSolicitud.id);
+  assert.equal(secondSolicitud.meta, undefined);
 
   const storedSolicitudes = await get(
     "SELECT COUNT(*) AS total FROM solicitudes WHERE solicitante_id = ? AND equipo_id = ?",
     [Number(actor.id), Number(equipo.id)]
   );
-  assert.equal(Number(storedSolicitudes.total), 1);
+  assert.equal(Number(storedSolicitudes.total), 2);
 
-  const storedItems = await all(
+  const firstStoredItems = await all(
     `
       SELECT nombre_item, cantidad, unidad_medida
       FROM solicitud_items
@@ -97,18 +93,30 @@ test("createSolicitud reutiliza una pendiente existente del mismo usuario y agre
     `,
     [Number(firstSolicitud.id)]
   );
+  const secondStoredItems = await all(
+    `
+      SELECT nombre_item, cantidad, unidad_medida
+      FROM solicitud_items
+      WHERE solicitud_id = ?
+      ORDER BY id ASC
+    `,
+    [Number(secondSolicitud.id)]
+  );
 
   assert.deepEqual(
-    storedItems.map((row) => `${row.nombre_item}:${row.cantidad}:${row.unidad_medida || ""}`),
-    ["Botas:1:par", "Guantes:2:par", "Casco:1:unidad"]
+    firstStoredItems.map((row) => `${row.nombre_item}:${row.cantidad}:${row.unidad_medida || ""}`),
+    ["Botas:1:par", "Guantes:2:par"]
+  );
+  assert.deepEqual(
+    secondStoredItems.map((row) => `${row.nombre_item}:${row.cantidad}:${row.unidad_medida || ""}`),
+    ["Casco:1:unidad"]
   );
 
-  const refreshedSolicitud = await get(
+  const refreshedSecondSolicitud = await get(
     "SELECT comentario FROM solicitudes WHERE id = ?",
-    [Number(firstSolicitud.id)]
+    [Number(secondSolicitud.id)]
   );
-  assert.match(refreshedSolicitud.comentario || "", /Solicitud inicial/);
-  assert.match(refreshedSolicitud.comentario || "", /Agregar casco/);
+  assert.equal(refreshedSecondSolicitud.comentario, "Solicitud separada");
 });
 
 test("createSolicitud no mezcla solicitudes pendientes entre usuarios distintos aunque usen el mismo equipo", async () => {
