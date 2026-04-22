@@ -1,6 +1,13 @@
 {
-  "lastCommit": "5c90c2dbb7a91501499e6d4702868fb7a4ddd7a2",
+  "lastCommit": "52863bce2cba99d00f2620236ac2dffeaff43615",
   "entries": [
+    {
+      "id": "52863bce",
+      "tipo": "fix",
+      "titulo": "Enforce solicitud integrity in postgres",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-22T21:09:10.000Z"
+    },
     {
       "id": "5c90c2db",
       "tipo": "fix",
