@@ -1,6 +1,13 @@
 {
-  "lastCommit": "bf6f751c83db1d739ba8823da3fa7de9fabfe840",
+  "lastCommit": "c0a3422fc8a6e21725e55f2cfcb1db94a5130ab1",
   "entries": [
+    {
+      "id": "c0a3422f",
+      "tipo": "fix",
+      "titulo": "Reuse pending solicitudes instead of duplicating",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-22T19:52:39.000Z"
+    },
     {
       "id": "bf6f751c",
       "tipo": "feature",
