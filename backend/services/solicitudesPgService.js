@@ -264,6 +264,60 @@ function buildSolicitudSummary(items) {
   };
 }
 
+function normalizeComparableText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function buildBusinessItemSignature(item = {}) {
+  return [
+    normalizeComparableText(item.nombre_item ?? item.nombre ?? item.repuesto ?? item.item),
+    Number(item.cantidad || 0),
+    normalizeComparableText(item.unidad_medida ?? item.unidadMedida ?? item.talla ?? item.unidad),
+    normalizeComparableText(item.codigo_referencia ?? item.codigoReferencia ?? item.codigo),
+    normalizeComparableText(item.usuario_final ?? item.usuarioFinal),
+    normalizeComparableText(item.comentario ?? item.detalle),
+  ].join("|");
+}
+
+function partitionIncomingItems(existingItems = [], incomingItems = []) {
+  const knownSignatures = new Set(existingItems.map((item) => buildBusinessItemSignature(item)));
+  const itemsToInsert = [];
+  const skippedItems = [];
+
+  for (const item of incomingItems) {
+    const signature = buildBusinessItemSignature(item);
+    if (knownSignatures.has(signature)) {
+      skippedItems.push(item);
+      continue;
+    }
+    knownSignatures.add(signature);
+    itemsToInsert.push(item);
+  }
+
+  return { itemsToInsert, skippedItems };
+}
+
+function mergeSolicitudComment(existingComment, incomingComment) {
+  const current = String(existingComment || "").trim();
+  const next = String(incomingComment || "").trim();
+
+  if (!next) {
+    return current || null;
+  }
+  if (!current) {
+    return next;
+  }
+  if (normalizeComparableText(current) === normalizeComparableText(next)) {
+    return current;
+  }
+  return `${current}\n${next}`;
+}
+
 function buildItemStatusSummary(items = []) {
   const baseSummary = {
     total_items: items.length,
@@ -916,6 +970,22 @@ async function resolveEquipoForCreation(actor, payload) {
   return equipo.id;
 }
 
+async function findLatestPendingSolicitudForActor(actorId, equipoId) {
+  const pg = getOperationalPool();
+  const { rows } = await pg.query(
+    `
+      SELECT id
+      FROM solicitudes
+      WHERE solicitante_id = $1 AND equipo_id = $2 AND estado = $3
+      ORDER BY COALESCE(updated_at, created_at) DESC, id DESC
+      LIMIT 1
+    `,
+    [Number(actorId), Number(equipoId), SOLICITUD_STATUS.PENDIENTE]
+  );
+
+  return rows[0] ? Number(rows[0].id) : null;
+}
+
 async function insertSolicitudItems(client, solicitudId, items) {
   for (const item of items) {
     await client.query(
@@ -1044,6 +1114,141 @@ async function refreshSolicitudSummary(client, solicitudId, options = {}) {
   };
 }
 
+async function findMatchingSolicitudItem(solicitudId, item) {
+  const existingItems = await getSolicitudItemsBySolicitudId(solicitudId);
+  const targetSignature = buildBusinessItemSignature(item);
+  return (
+    existingItems.find(
+      (existingItem) => buildBusinessItemSignature(existingItem) === targetSignature
+    ) || null
+  );
+}
+
+async function reusePendingSolicitudForCreate(actor, solicitudId, payload, items) {
+  const current = await loadSolicitudRecord(solicitudId);
+  if (!current) {
+    throw new HttpError(404, "Solicitud no encontrada");
+  }
+
+  const actorName = actor.nombre || actor.name || "Sistema";
+  const pg = getOperationalPool();
+  const client = await pg.connect();
+  let refreshResult = {
+    previousStatus: current.estado,
+    nextStatus: current.estado,
+    statusChanged: false,
+  };
+  let itemsToInsert = [];
+  let skippedItems = [];
+
+  try {
+    await client.query("BEGIN");
+    const existingItems = await getSolicitudItemsBySolicitudId(solicitudId);
+    ({ itemsToInsert, skippedItems } = partitionIncomingItems(existingItems, items));
+
+    const mergedComment = mergeSolicitudComment(
+      current.comentario,
+      payload.comentario ? String(payload.comentario).trim() : null
+    );
+    const commentChanged = (current.comentario || null) !== (mergedComment || null);
+
+    if (itemsToInsert.length) {
+      await insertSolicitudItems(client, solicitudId, itemsToInsert);
+    }
+
+    if (commentChanged) {
+      await client.query(
+        `
+          UPDATE solicitudes
+          SET comentario = $1, updated_at = NOW()
+          WHERE id = $2
+        `,
+        [mergedComment, Number(solicitudId)]
+      );
+    }
+
+    if (itemsToInsert.length || commentChanged) {
+      refreshResult = await refreshSolicitudSummary(client, solicitudId, {
+        actorId: actor.id,
+        actorName,
+        reason: "La solicitud pendiente existente fue reutilizada para agregar nuevos productos",
+      });
+
+      const detailParts = [
+        itemsToInsert.length
+          ? `Se agregaron ${itemsToInsert.length} item(s) nuevo(s) a la solicitud pendiente existente.`
+          : null,
+        skippedItems.length
+          ? `Se omitieron ${skippedItems.length} item(s) porque ya estaban registrados.`
+          : null,
+        commentChanged ? "Se anexó el comentario general recibido." : null,
+      ].filter(Boolean);
+
+      if (detailParts.length) {
+        await client.query(
+          `
+            INSERT INTO solicitud_historial
+              (solicitud_id, accion, estado_anterior, estado_nuevo, detalle, actor_id, actor_name)
+            VALUES ($1, 'SOLICITUD_REUTILIZADA', $2, $3, $4, $5, $6)
+          `,
+          [
+            Number(solicitudId),
+            current.estado,
+            refreshResult.nextStatus || current.estado,
+            detailParts.join(" "),
+            Number(actor.id),
+            actorName,
+          ]
+        );
+      }
+    }
+
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  const refreshedSolicitud = await getSolicitudById(solicitudId, actor);
+  if (refreshResult.statusChanged) {
+    await notificacionesService.createSolicitudStatusNotification({
+      solicitudId: refreshedSolicitud?.id,
+      equipoId: refreshedSolicitud?.equipo_id,
+      equipoNombre: refreshedSolicitud?.nombre_equipo || refreshedSolicitud?.equipo,
+      repuesto: refreshedSolicitud?.resumen_items || refreshedSolicitud?.repuesto,
+      estado: refreshedSolicitud?.estado,
+      solicitanteId: refreshedSolicitud?.solicitante_id,
+    });
+  }
+
+  for (const item of itemsToInsert) {
+    await notificacionesService.createSolicitudItemNotification({
+      solicitudId,
+      equipoId: refreshedSolicitud?.equipo_id || current.equipo_id,
+      equipoNombre:
+        refreshedSolicitud?.nombre_equipo ||
+        refreshedSolicitud?.equipo ||
+        current.nombre_equipo ||
+        current.equipo,
+      itemNombre: item.nombre_item,
+      accion: "Agregado por reutilizacion",
+      estadoItem: item.estado_item || SOLICITUD_ITEM_STATUS.POR_GESTIONAR,
+    });
+  }
+
+  return {
+    ...refreshedSolicitud,
+    meta: {
+      action: "merged_into_pending",
+      solicitudId,
+      addedItems: itemsToInsert.length,
+      skippedItems: skippedItems.length,
+    },
+  };
+}
+
 async function applyMassItemStatusUpdate(client, solicitudId, estadoItem, actorId) {
   const normalizedStatus = String(estadoItem || "").trim().toUpperCase();
   if (!VALID_ITEM_STATUS.has(normalizedStatus)) {
@@ -1112,9 +1317,7 @@ async function createSolicitud(actor, payload) {
   }
   const summary = buildSolicitudSummary(items);
   const comentarioGeneral = payload.comentario ? String(payload.comentario).trim() : null;
-  const pg = getOperationalPool();
-  const client = await pg.connect();
-  let solicitudId = null;
+  const existingPendingSolicitudId = await findLatestPendingSolicitudForActor(actor.id, equipoId);
 
   if (clientRequestId) {
     const existing = await findSolicitudIdByClientRequestId(clientRequestId);
@@ -1128,6 +1331,14 @@ async function createSolicitud(actor, payload) {
       return getSolicitudById(existing.id, actor);
     }
   }
+
+  if (existingPendingSolicitudId) {
+    return reusePendingSolicitudForCreate(actor, existingPendingSolicitudId, payload, items);
+  }
+
+  const pg = getOperationalPool();
+  const client = await pg.connect();
+  let solicitudId = null;
 
   try {
     await client.query("BEGIN");
@@ -1897,11 +2108,6 @@ async function createSolicitudItem(actor, solicitudId, payload = {}) {
     await assertReceiverAllowed(actor, solicitud, item.recepcionado_por_id);
   }
 
-  const pg = getOperationalPool();
-  const client = await pg.connect();
-  let createdId = null;
-  let refreshResult = null;
-
   if (clientRequestId) {
     const existing = await findSolicitudItemByClientRequestId(clientRequestId);
     if (existing) {
@@ -1917,6 +2123,23 @@ async function createSolicitudItem(actor, solicitudId, payload = {}) {
       };
     }
   }
+
+  const matchingItem = await findMatchingSolicitudItem(solicitudId, item);
+  if (matchingItem) {
+    return {
+      item: matchingItem,
+      solicitud,
+      meta: {
+        action: "existing_item_reused",
+        itemId: Number(matchingItem.id),
+      },
+    };
+  }
+
+  const pg = getOperationalPool();
+  const client = await pg.connect();
+  let createdId = null;
+  let refreshResult = null;
 
   try {
     await client.query("BEGIN");

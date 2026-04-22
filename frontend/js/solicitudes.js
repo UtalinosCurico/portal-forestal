@@ -2051,20 +2051,20 @@ export async function initSolicitudesView(context) {
     if (currentItemEditor.isNew) {
       payload.client_request_id =
         currentItemEditor.clientRequestId || generateClientRequestId("solicitud-item");
-      await context.apiRequest(`/api/solicitudes/${currentSolicitud.id}/items`, {
+      const response = await context.apiRequest(`/api/solicitudes/${currentSolicitud.id}/items`, {
         method: "POST",
         body: payload,
       });
-      context.showToast("Producto agregado");
+      context.showToast(response?.mensaje || "Producto agregado");
     } else {
-      await context.apiRequest(
+      const response = await context.apiRequest(
         `/api/solicitudes/${currentSolicitud.id}/items/${currentItemEditor.itemId}`,
         {
           method: "PUT",
           body: payload,
         }
       );
-      context.showToast("Producto actualizado");
+      context.showToast(response?.mensaje || "Producto actualizado");
     }
 
     const wasNew = currentItemEditor.isNew;
@@ -2283,7 +2283,7 @@ export async function initSolicitudesView(context) {
         payload.equipo_id = equipoId;
       }
 
-      await context.apiRequest("/api/solicitudes", {
+      const response = await context.apiRequest("/api/solicitudes", {
         method: "POST",
         body: payload,
       });
@@ -2291,7 +2291,7 @@ export async function initSolicitudesView(context) {
       resetCreateSolicitudForm();
       closeModal(createModal);
       await loadSolicitudes();
-      context.showToast("Solicitud creada");
+      context.showToast(response?.mensaje || "Solicitud creada");
     } catch (error) {
       context.showToast(error.message, true);
     } finally {

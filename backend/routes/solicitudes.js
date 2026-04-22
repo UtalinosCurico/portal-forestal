@@ -49,10 +49,15 @@ router.post(
   authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.JEFE_FAENA, ROLES.MECANICO, ROLES.OPERADOR),
   asyncHandler(async (req, res) => {
     const created = await solicitudesService.createSolicitud(req.user, req.body || {});
-    res.status(201).json({
+    const { meta, ...data } = created || {};
+    const mergedIntoPending = meta?.action === "merged_into_pending";
+    res.status(mergedIntoPending ? 200 : 201).json({
       status: "ok",
-      mensaje: "Solicitud creada correctamente",
-      data: created,
+      mensaje: mergedIntoPending
+        ? `Se actualizó la solicitud pendiente #${meta?.solicitudId} sin crear duplicados`
+        : "Solicitud creada correctamente",
+      data,
+      ...(meta ? { meta } : {}),
     });
   })
 );
@@ -115,10 +120,15 @@ router.post(
   asyncHandler(async (req, res) => {
     const solicitudId = Number(req.params.id);
     const created = await solicitudesService.createSolicitudItem(req.user, solicitudId, req.body || {});
-    res.status(201).json({
+    const { meta, ...data } = created || {};
+    const reusedExistingItem = meta?.action === "existing_item_reused";
+    res.status(reusedExistingItem ? 200 : 201).json({
       status: "ok",
-      mensaje: "Item creado correctamente",
-      data: created,
+      mensaje: reusedExistingItem
+        ? `El producto ya existía en la solicitud #${solicitudId}; no se duplicó`
+        : "Item creado correctamente",
+      data,
+      ...(meta ? { meta } : {}),
     });
   })
 );
