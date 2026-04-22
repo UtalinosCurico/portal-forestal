@@ -8,6 +8,8 @@
     "dev": "node backend/server.js",
     "dedupe:preview": "node backend/scripts/dedupe-solicitudes.js",
     "dedupe:apply": "node backend/scripts/dedupe-solicitudes.js --apply",
+    "dedupe:progressive:preview": "node backend/scripts/dedupe-progressive-solicitudes.js",
+    "dedupe:progressive:apply": "node backend/scripts/dedupe-progressive-solicitudes.js --apply",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

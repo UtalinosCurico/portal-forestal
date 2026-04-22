@@ -107,6 +107,30 @@ Notas:
 node backend/scripts/dedupe-solicitudes.js --window-minutes 15
 ```
 
+Para el bug historico de arrastre, donde una solicitud nueva copiaba todos los items
+de la anterior y solo agregaba los nuevos, existe un segundo script:
+
+```bash
+npm run dedupe:progressive:preview
+```
+
+Aplicacion real:
+
+```bash
+npm run dedupe:progressive:apply
+```
+
+Notas:
+
+- Conserva la solicitud mas completa del grupo y fusiona progreso, historial, mensajes
+  y notificaciones desde las solicitudes arrastradas.
+- Antes de aplicar crea un respaldo JSON en `backups/solicitudes-progressive-dedupe-<timestamp>/`.
+- Se puede ajustar la ventana historica, por ejemplo:
+
+```bash
+node backend/scripts/dedupe-progressive-solicitudes.js --window-hours 72
+```
+
 ## Usuarios demo
 
 - ADMIN: `admin@forestal.cl / Admin123!`

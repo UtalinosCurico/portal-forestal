@@ -11,6 +11,8 @@
     "seed": "node database/seed.js",
     "dedupe:preview": "node scripts/dedupe-solicitudes.js",
     "dedupe:apply": "node scripts/dedupe-solicitudes.js --apply",
+    "dedupe:progressive:preview": "node scripts/dedupe-progressive-solicitudes.js",
+    "dedupe:progressive:apply": "node scripts/dedupe-progressive-solicitudes.js --apply",
     "test": "node --test tests/*.test.js"
   },
   "engines": {
