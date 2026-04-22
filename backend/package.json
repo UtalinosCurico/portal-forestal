@@ -9,6 +9,8 @@
     "start": "node server.js",
     "migrate": "node database/migrate.js",
     "seed": "node database/seed.js",
+    "dedupe:preview": "node scripts/dedupe-solicitudes.js",
+    "dedupe:apply": "node scripts/dedupe-solicitudes.js --apply",
     "test": "node --test tests/*.test.js"
   },
   "engines": {

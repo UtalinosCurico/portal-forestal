@@ -81,6 +81,32 @@ Servidor en:
 - API: `http://localhost:3000`
 - Portal web: `http://localhost:3000/web`
 
+## Limpieza de duplicados historicos
+
+El backend ya evita nuevos duplicados con `client_request_id`. Para limpiar solicitudes
+historicas duplicadas en PostgreSQL existe un script seguro con modo preview y backup:
+
+```bash
+npm run dedupe:preview
+```
+
+Para aplicar la consolidacion real:
+
+```bash
+npm run dedupe:apply
+```
+
+Notas:
+
+- El script toma `DATABASE_URL` desde el entorno o desde `.env.production.real`,
+  `.env.production`, `.env` o `backend/.env`.
+- Antes de modificar datos crea un respaldo JSON en `backups/solicitudes-dedupe-<timestamp>/`.
+- Se puede ajustar la ventana de deteccion, por ejemplo:
+
+```bash
+node backend/scripts/dedupe-solicitudes.js --window-minutes 15
+```
+
 ## Usuarios demo
 
 - ADMIN: `admin@forestal.cl / Admin123!`

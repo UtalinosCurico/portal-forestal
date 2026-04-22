@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node backend/server.js",
     "dev": "node backend/server.js",
+    "dedupe:preview": "node backend/scripts/dedupe-solicitudes.js",
+    "dedupe:apply": "node backend/scripts/dedupe-solicitudes.js --apply",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
