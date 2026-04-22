@@ -1,6 +1,13 @@
 {
-  "lastCommit": "d68ed570ff8f5d951d30b21cfefea9962c7706f9",
+  "lastCommit": "bf6f751c83db1d739ba8823da3fa7de9fabfe840",
   "entries": [
+    {
+      "id": "bf6f751c",
+      "tipo": "feature",
+      "titulo": "Add dedupe CLI for historical solicitudes",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-22T19:27:33.000Z"
+    },
     {
       "id": "d68ed570",
       "tipo": "fix",
