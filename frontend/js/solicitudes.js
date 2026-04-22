@@ -1068,6 +1068,19 @@ export async function initSolicitudesView(context) {
   let lastSeenMessageCount = 0;
   let chatUnreadCount = 0;
   let pendingItemsCache = [];
+  let createRequestId = "";
+
+  function generateClientRequestId(prefix = "mutation") {
+    const randomPart =
+      window.crypto?.randomUUID?.() ||
+      `${Date.now()}-${Math.random().toString(16).slice(2)}-${Math.random().toString(16).slice(2)}`;
+    return `${prefix}-${randomPart}`;
+  }
+
+  function renewCreateRequestId() {
+    createRequestId = generateClientRequestId("solicitud");
+    return createRequestId;
+  }
 
   function resetDetailViewport() {
     window.requestAnimationFrame(() => resetModalViewport(detailModal));
@@ -1348,6 +1361,7 @@ export async function initSolicitudesView(context) {
   function resetCreateSolicitudForm() {
     createForm.reset();
     resetCreateItems();
+    renewCreateRequestId();
     if (isGlobalRole && equipoSelect) {
       equipoSelect.value = "";
     }
@@ -1413,6 +1427,7 @@ export async function initSolicitudesView(context) {
       editableBase,
       canManageItem,
       isNew,
+      clientRequestId: isNew ? generateClientRequestId("solicitud-item") : null,
     };
 
     itemModalTitle.textContent = isNew ? "Agregar producto" : `Configurar producto #${item.id}`;
@@ -2034,6 +2049,8 @@ export async function initSolicitudesView(context) {
     }
 
     if (currentItemEditor.isNew) {
+      payload.client_request_id =
+        currentItemEditor.clientRequestId || generateClientRequestId("solicitud-item");
       await context.apiRequest(`/api/solicitudes/${currentSolicitud.id}/items`, {
         method: "POST",
         body: payload,
@@ -2255,6 +2272,7 @@ export async function initSolicitudesView(context) {
       const payload = {
         comentario: String(formData.get("comentario") || "").trim(),
         items,
+        client_request_id: createRequestId || renewCreateRequestId(),
       };
 
       if (isGlobalRole) {

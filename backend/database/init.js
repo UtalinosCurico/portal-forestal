@@ -77,6 +77,7 @@ async function createTables() {
     CREATE TABLE IF NOT EXISTS solicitudes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       solicitante_id INTEGER NOT NULL,
+      client_request_id TEXT,
       equipo TEXT,
       equipo_id INTEGER,
       repuesto TEXT NOT NULL,
@@ -119,6 +120,7 @@ async function createTables() {
     CREATE TABLE IF NOT EXISTS solicitud_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       solicitud_id INTEGER NOT NULL,
+      client_request_id TEXT,
       nombre_item TEXT NOT NULL,
       cantidad INTEGER NOT NULL,
       unidad_medida TEXT,
@@ -304,6 +306,12 @@ async function migrateSolicitudesSchema() {
   }
 
   await ensureColumn("solicitudes", "equipo_id", "equipo_id INTEGER");
+  await ensureColumn("solicitudes", "client_request_id", "client_request_id TEXT");
+  await run(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_solicitudes_client_request_id
+    ON solicitudes(client_request_id)
+    WHERE client_request_id IS NOT NULL
+  `);
 }
 
 async function migrateEnviosStockSchema() {
@@ -326,6 +334,7 @@ async function migrateSolicitudItemsSchema() {
   }
 
   await ensureColumn("solicitud_items", "comentario", "comentario TEXT");
+  await ensureColumn("solicitud_items", "client_request_id", "client_request_id TEXT");
   await ensureColumn("solicitud_items", "unidad_medida", "unidad_medida TEXT");
   await ensureColumn("solicitud_items", "codigo_referencia", "codigo_referencia TEXT");
   await ensureColumn("solicitud_items", "usuario_final", "usuario_final TEXT");
@@ -348,6 +357,11 @@ async function migrateSolicitudItemsSchema() {
     `,
     [SOLICITUD_ITEM_STATUS.POR_GESTIONAR]
   );
+  await run(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_solicitud_items_client_request_id
+    ON solicitud_items(client_request_id)
+    WHERE client_request_id IS NOT NULL
+  `);
 }
 
 async function migrateSolicitudMensajesSchema() {
@@ -636,4 +650,3 @@ async function initDatabase() {
 module.exports = {
   initDatabase,
 };
-

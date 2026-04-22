@@ -21,6 +21,7 @@ const VALID_STATUS = new Set(Object.values(SOLICITUD_STATUS));
 const VALID_ITEM_STATUS = new Set(SOLICITUD_ITEM_STATUS_LIST);
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const IMAGE_DATA_LIMIT = 3_500_000;
+const CLIENT_REQUEST_ID_MAX_LENGTH = 120;
 
 function getActorRole(actor) {
   return actor.rol || actor.role;
@@ -215,6 +216,38 @@ function normalizeItems(payload = {}) {
   }
 
   return [normalizeSingleItem(payload)];
+}
+
+function normalizeClientRequestId(payload = {}) {
+  const raw = payload.client_request_id ?? payload.clientRequestId ?? payload.request_id ?? null;
+  if (raw === null || raw === undefined || raw === "") {
+    return null;
+  }
+
+  const value = String(raw).trim();
+  if (!value) {
+    return null;
+  }
+
+  if (value.length > CLIENT_REQUEST_ID_MAX_LENGTH) {
+    throw new HttpError(400, "client_request_id demasiado largo");
+  }
+
+  return value;
+}
+
+function isSolicitudDuplicateRequestError(error) {
+  return (
+    error?.code === "23505" &&
+    String(error?.constraint || "").includes("solicitudes_client_request_id")
+  );
+}
+
+function isSolicitudItemDuplicateRequestError(error) {
+  return (
+    error?.code === "23505" &&
+    String(error?.constraint || "").includes("solicitud_items_client_request_id")
+  );
 }
 
 function buildSolicitudSummary(items) {
@@ -714,6 +747,33 @@ async function loadSolicitudRecord(solicitudId, client = null) {
   return solicitud || null;
 }
 
+async function findSolicitudIdByClientRequestId(clientRequestId, client = null) {
+  if (!clientRequestId) {
+    return null;
+  }
+
+  const executor = client || getOperationalPool();
+  const { rows } = await executor.query(
+    `
+      SELECT id, solicitante_id
+      FROM solicitudes
+      WHERE client_request_id = $1
+      LIMIT 1
+    `,
+    [clientRequestId]
+  );
+
+  const row = rows[0];
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: Number(row.id),
+    solicitante_id: Number(row.solicitante_id),
+  };
+}
+
 async function getSolicitudById(solicitudId, actor = null) {
   const solicitud = await loadSolicitudRecord(solicitudId);
   if (!solicitud) {
@@ -1024,6 +1084,7 @@ async function applyMassItemStatusUpdate(client, solicitudId, estadoItem, actorI
 
 async function createSolicitud(actor, payload) {
   const actorName = actor.nombre || actor.name || "Sistema";
+  const clientRequestId = normalizeClientRequestId(payload);
   const rawItems = normalizeItems(payload);
   // Roles operativos no pueden poner NO_APLICA al crear — siempre POR_GESTIONAR
   const items = isGlobalRole(getActorRole(actor))
@@ -1055,18 +1116,32 @@ async function createSolicitud(actor, payload) {
   const client = await pg.connect();
   let solicitudId = null;
 
+  if (clientRequestId) {
+    const existing = await findSolicitudIdByClientRequestId(clientRequestId);
+    if (existing) {
+      if (Number(existing.solicitante_id) !== Number(actor.id)) {
+        throw new HttpError(409, "client_request_id ya fue utilizado por otra solicitud");
+      }
+      console.warn(
+        `[FMN] Solicitud duplicada evitada para actor ${actor.id} con client_request_id=${clientRequestId}`
+      );
+      return getSolicitudById(existing.id, actor);
+    }
+  }
+
   try {
     await client.query("BEGIN");
 
     const { rows } = await client.query(
       `
         INSERT INTO solicitudes
-          (solicitante_id, equipo, equipo_id, repuesto, cantidad, comentario, estado, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+          (solicitante_id, client_request_id, equipo, equipo_id, repuesto, cantidad, comentario, estado, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
         RETURNING id
       `,
       [
         Number(actor.id),
+        clientRequestId,
         payload.equipo ? String(payload.equipo) : equipo.nombre_equipo,
         Number(equipoId),
         summary.repuestoResumen,
@@ -1097,6 +1172,15 @@ async function createSolicitud(actor, payload) {
     await client.query("COMMIT");
   } catch (error) {
     await client.query("ROLLBACK");
+    if (clientRequestId && isSolicitudDuplicateRequestError(error)) {
+      const existing = await findSolicitudIdByClientRequestId(clientRequestId);
+      if (existing) {
+        console.warn(
+          `[FMN] Solicitud duplicada evitada por indice unico para actor ${actor.id} con client_request_id=${clientRequestId}`
+        );
+        return getSolicitudById(existing.id, actor);
+      }
+    }
     throw error;
   } finally {
     client.release();
@@ -1421,6 +1505,33 @@ async function loadSolicitudItemRecord(solicitudId, itemId, client = null) {
 
   const [item] = rows.map((row) => mapSolicitudItemRow(row, usersMap));
   return item || null;
+}
+
+async function findSolicitudItemByClientRequestId(clientRequestId, client = null) {
+  if (!clientRequestId) {
+    return null;
+  }
+
+  const executor = client || getOperationalPool();
+  const { rows } = await executor.query(
+    `
+      SELECT id, solicitud_id
+      FROM solicitud_items
+      WHERE client_request_id = $1
+      LIMIT 1
+    `,
+    [clientRequestId]
+  );
+
+  const row = rows[0];
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: Number(row.id),
+    solicitud_id: Number(row.solicitud_id),
+  };
 }
 
 async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
@@ -1765,6 +1876,7 @@ async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
 }
 
 async function createSolicitudItem(actor, solicitudId, payload = {}) {
+  const clientRequestId = normalizeClientRequestId(payload);
   const solicitud = await getSolicitudById(solicitudId, actor);
   if (!solicitud) {
     throw new HttpError(404, "Solicitud no encontrada");
@@ -1789,12 +1901,30 @@ async function createSolicitudItem(actor, solicitudId, payload = {}) {
   const client = await pg.connect();
   let createdId = null;
   let refreshResult = null;
+
+  if (clientRequestId) {
+    const existing = await findSolicitudItemByClientRequestId(clientRequestId);
+    if (existing) {
+      if (Number(existing.solicitud_id) !== Number(solicitudId)) {
+        throw new HttpError(409, "client_request_id ya fue utilizado por otro producto");
+      }
+      console.warn(
+        `[FMN] Producto duplicado evitado en solicitud ${solicitudId} con client_request_id=${clientRequestId}`
+      );
+      return {
+        item: await loadSolicitudItemRecord(solicitudId, existing.id),
+        solicitud: await getSolicitudById(solicitudId, actor),
+      };
+    }
+  }
+
   try {
     await client.query("BEGIN");
     const { rows } = await client.query(
       `
         INSERT INTO solicitud_items (
           solicitud_id,
+          client_request_id,
           nombre_item,
           cantidad,
           unidad_medida,
@@ -1808,11 +1938,12 @@ async function createSolicitudItem(actor, solicitudId, payload = {}) {
           recepcionado_por_id,
           updated_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
         RETURNING id
       `,
       [
         Number(solicitudId),
+        clientRequestId,
         item.nombre_item,
         Number(item.cantidad),
         item.unidad_medida || null,
@@ -1852,6 +1983,18 @@ async function createSolicitudItem(actor, solicitudId, payload = {}) {
     await client.query("COMMIT");
   } catch (error) {
     await client.query("ROLLBACK");
+    if (clientRequestId && isSolicitudItemDuplicateRequestError(error)) {
+      const existing = await findSolicitudItemByClientRequestId(clientRequestId);
+      if (existing && Number(existing.solicitud_id) === Number(solicitudId)) {
+        console.warn(
+          `[FMN] Producto duplicado evitado por indice unico en solicitud ${solicitudId} con client_request_id=${clientRequestId}`
+        );
+        return {
+          item: await loadSolicitudItemRecord(solicitudId, existing.id),
+          solicitud: await getSolicitudById(solicitudId, actor),
+        };
+      }
+    }
     throw error;
   } finally {
     client.release();
