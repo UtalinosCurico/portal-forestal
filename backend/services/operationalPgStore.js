@@ -200,6 +200,127 @@ async function ensureSchema() {
   `);
 }
 
+async function cleanupOrphanOperationalRows() {
+  const pg = getOperationalPool();
+  if (!pg) {
+    return {
+      solicitud_items: 0,
+      solicitud_historial: 0,
+      solicitud_mensajes: 0,
+      notificaciones: 0,
+    };
+  }
+
+  const counters = {
+    solicitud_items: 0,
+    solicitud_historial: 0,
+    solicitud_mensajes: 0,
+    notificaciones: 0,
+  };
+
+  const statements = [
+    {
+      key: "solicitud_items",
+      sql: `
+        DELETE FROM solicitud_items si
+        WHERE NOT EXISTS (
+          SELECT 1
+          FROM solicitudes s
+          WHERE s.id = si.solicitud_id
+        )
+      `,
+    },
+    {
+      key: "solicitud_historial",
+      sql: `
+        DELETE FROM solicitud_historial sh
+        WHERE NOT EXISTS (
+          SELECT 1
+          FROM solicitudes s
+          WHERE s.id = sh.solicitud_id
+        )
+      `,
+    },
+    {
+      key: "solicitud_mensajes",
+      sql: `
+        DELETE FROM solicitud_mensajes sm
+        WHERE NOT EXISTS (
+          SELECT 1
+          FROM solicitudes s
+          WHERE s.id = sm.solicitud_id
+        )
+      `,
+    },
+    {
+      key: "notificaciones",
+      sql: `
+        DELETE FROM notificaciones n
+        WHERE n.tipo LIKE 'SOLICITUD_%'
+          AND n.referencia_id IS NOT NULL
+          AND NOT EXISTS (
+            SELECT 1
+            FROM solicitudes s
+            WHERE s.id = n.referencia_id
+          )
+      `,
+    },
+  ];
+
+  for (const statement of statements) {
+    const result = await pg.query(statement.sql);
+    counters[statement.key] = Number(result.rowCount || 0);
+  }
+
+  return counters;
+}
+
+async function ensureReferentialConstraints() {
+  const pg = getOperationalPool();
+  if (!pg) {
+    return;
+  }
+
+  const constraints = [
+    {
+      name: "solicitud_items_solicitud_fk",
+      table: "solicitud_items",
+      definition:
+        "FOREIGN KEY (solicitud_id) REFERENCES solicitudes(id) ON DELETE CASCADE",
+    },
+    {
+      name: "solicitud_historial_solicitud_fk",
+      table: "solicitud_historial",
+      definition:
+        "FOREIGN KEY (solicitud_id) REFERENCES solicitudes(id) ON DELETE CASCADE",
+    },
+    {
+      name: "solicitud_mensajes_solicitud_fk",
+      table: "solicitud_mensajes",
+      definition:
+        "FOREIGN KEY (solicitud_id) REFERENCES solicitudes(id) ON DELETE CASCADE",
+    },
+  ];
+
+  for (const constraint of constraints) {
+    await pg.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1
+          FROM pg_constraint
+          WHERE conname = '${constraint.name}'
+        ) THEN
+          ALTER TABLE ${constraint.table}
+          ADD CONSTRAINT ${constraint.name}
+          ${constraint.definition};
+        END IF;
+      END
+      $$;
+    `);
+  }
+}
+
 async function syncSequence(client, tableName) {
   await client.query(
     `
@@ -527,6 +648,11 @@ async function initOperationalStore() {
     initPromise = (async () => {
       await ensureSchema();
       await bootstrapFromSqlite();
+      const cleanupSummary = await cleanupOrphanOperationalRows();
+      await ensureReferentialConstraints();
+      if (Object.values(cleanupSummary).some((value) => Number(value) > 0)) {
+        console.warn("[FMN] Se limpiaron registros huerfanos en PostgreSQL:", cleanupSummary);
+      }
       return { provider: "postgres", persistent: true };
     })();
   }
@@ -540,4 +666,6 @@ module.exports = {
   getOperationalPool,
   loadEquiposMap,
   loadUsersMap,
+  cleanupOrphanOperationalRows,
+  ensureReferentialConstraints,
 };
