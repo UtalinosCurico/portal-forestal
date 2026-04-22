@@ -1,6 +1,20 @@
 {
-  "lastCommit": "c0a3422fc8a6e21725e55f2cfcb1db94a5130ab1",
+  "lastCommit": "5c90c2dbb7a91501499e6d4702868fb7a4ddd7a2",
   "entries": [
+    {
+      "id": "5c90c2db",
+      "tipo": "fix",
+      "titulo": "Stop reusing pending solicitudes on create",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-22T20:57:52.000Z"
+    },
+    {
+      "id": "7915ba47",
+      "tipo": "feature",
+      "titulo": "Add progressive historical dedupe script",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-22T20:32:04.000Z"
+    },
     {
       "id": "c0a3422f",
       "tipo": "fix",
