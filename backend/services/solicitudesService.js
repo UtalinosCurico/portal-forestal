@@ -48,6 +48,55 @@ function getSolicitudStatusLabel(status) {
   return labels[normalized] || normalized || "Proceso";
 }
 
+function shouldNotifyManagement(actor) {
+  return !isGlobalRole(getActorRole(actor));
+}
+
+async function notifySolicitudCreatedForActor(actor, solicitud) {
+  if (!shouldNotifyManagement(actor) || !solicitud?.id) {
+    return null;
+  }
+
+  return notificacionesService.createSolicitudNotification({
+    solicitudId: solicitud.id,
+    equipoId: solicitud.equipo_id,
+    equipoNombre: solicitud.nombre_equipo || solicitud.equipo,
+    repuesto: solicitud.resumen_items || solicitud.repuesto,
+    cantidad: solicitud.total_unidades || solicitud.cantidad,
+  });
+}
+
+async function notifySolicitudStatusForActor(actor, solicitud) {
+  if (!solicitud?.id) {
+    return null;
+  }
+
+  return notificacionesService.createSolicitudStatusNotification({
+    solicitudId: solicitud.id,
+    equipoId: solicitud.equipo_id,
+    equipoNombre: solicitud.nombre_equipo || solicitud.equipo,
+    repuesto: solicitud.resumen_items || solicitud.repuesto,
+    estado: solicitud.estado,
+    solicitanteId: solicitud.solicitante_id,
+    audience: shouldNotifyManagement(actor) ? "management" : "requester",
+  });
+}
+
+async function notifySolicitudItemForActor(actor, solicitud, { itemNombre, accion, estadoItem = null }) {
+  if (!shouldNotifyManagement(actor) || !solicitud?.id) {
+    return null;
+  }
+
+  return notificacionesService.createSolicitudItemNotification({
+    solicitudId: solicitud.id,
+    equipoId: solicitud.equipo_id,
+    equipoNombre: solicitud.nombre_equipo || solicitud.equipo,
+    itemNombre,
+    accion,
+    estadoItem,
+  });
+}
+
 function normalizeDate(value, field) {
   if (value === undefined || value === null || value === "") {
     return null;
@@ -1158,25 +1207,11 @@ async function reusePendingSolicitudForCreate(actor, solicitudId, payload, items
 
   const refreshedSolicitud = await getSolicitudById(solicitudId, actor);
   if (refreshResult.statusChanged) {
-    await notificacionesService.createSolicitudStatusNotification({
-      solicitudId: refreshedSolicitud?.id,
-      equipoId: refreshedSolicitud?.equipo_id,
-      equipoNombre: refreshedSolicitud?.nombre_equipo || refreshedSolicitud?.equipo,
-      repuesto: refreshedSolicitud?.resumen_items || refreshedSolicitud?.repuesto,
-      estado: refreshedSolicitud?.estado,
-      solicitanteId: refreshedSolicitud?.solicitante_id,
-    });
+    await notifySolicitudStatusForActor(actor, refreshedSolicitud);
   }
 
   for (const item of itemsToInsert) {
-    await notificacionesService.createSolicitudItemNotification({
-      solicitudId,
-      equipoId: refreshedSolicitud?.equipo_id || current.equipo_id,
-      equipoNombre:
-        refreshedSolicitud?.nombre_equipo ||
-        refreshedSolicitud?.equipo ||
-        current.nombre_equipo ||
-        current.equipo,
+    await notifySolicitudItemForActor(actor, refreshedSolicitud, {
       itemNombre: item.nombre_item,
       accion: "Agregado por reutilizacion",
       estadoItem: item.estado_item || SOLICITUD_ITEM_STATUS.POR_GESTIONAR,
@@ -1321,14 +1356,7 @@ async function createSolicitud(actor, payload) {
   }
 
   const created = await getSolicitudById(solicitudId, actor);
-
-  await notificacionesService.createSolicitudNotification({
-    solicitudId: created?.id,
-    equipoId: created?.equipo_id,
-    equipoNombre: created?.nombre_equipo || created?.equipo,
-    repuesto: created?.resumen_items,
-    cantidad: created?.total_unidades,
-  });
+  await notifySolicitudCreatedForActor(actor, created);
 
   return created;
 }
@@ -1561,13 +1589,7 @@ async function updateSolicitud(actor, solicitudId, payload) {
   const updated = await getSolicitudById(solicitudId, actor);
 
   if (stateChanged) {
-    await notificacionesService.createSolicitudStatusNotification({
-      solicitudId: updated?.id,
-      equipoId: updated?.equipo_id,
-      equipoNombre: updated?.nombre_equipo || updated?.equipo,
-      repuesto: updated?.resumen_items || updated?.repuesto,
-      estado: updated?.estado,
-    });
+    await notifySolicitudStatusForActor(actor, updated);
   }
 
   return updated;
@@ -1989,18 +2011,18 @@ async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
   }
 
   const refreshedSolicitud = await getSolicitudById(solicitudId, actor);
+  const updatedItem = await loadSolicitudItemRecord(solicitudId, itemId);
   if (refreshResult?.statusChanged) {
-    await notificacionesService.createSolicitudStatusNotification({
-      solicitudId: refreshedSolicitud?.id,
-      equipoId: refreshedSolicitud?.equipo_id,
-      equipoNombre: refreshedSolicitud?.nombre_equipo || refreshedSolicitud?.equipo,
-      repuesto: refreshedSolicitud?.resumen_items || refreshedSolicitud?.repuesto,
-      estado: refreshedSolicitud?.estado,
-    });
+    await notifySolicitudStatusForActor(actor, refreshedSolicitud);
   }
+  await notifySolicitudItemForActor(actor, refreshedSolicitud, {
+    itemNombre: updatedItem?.nombre_item || currentItem.nombre_item,
+    accion: "Actualizado",
+    estadoItem: updatedItem?.estado_item || estadoNuevo || currentItem.estado_item,
+  });
 
   return {
-    item: await loadSolicitudItemRecord(solicitudId, itemId),
+    item: updatedItem,
     solicitud: refreshedSolicitud,
   };
 }
@@ -2136,17 +2158,18 @@ async function createSolicitudItem(actor, solicitudId, payload = {}) {
 
   const refreshedSolicitud = await getSolicitudById(solicitudId, actor);
   if (refreshResult?.statusChanged) {
-    await notificacionesService.createSolicitudStatusNotification({
-      solicitudId: refreshedSolicitud?.id,
-      equipoId: refreshedSolicitud?.equipo_id,
-      equipoNombre: refreshedSolicitud?.nombre_equipo || refreshedSolicitud?.equipo,
-      repuesto: refreshedSolicitud?.resumen_items || refreshedSolicitud?.repuesto,
-      estado: refreshedSolicitud?.estado,
-    });
+    await notifySolicitudStatusForActor(actor, refreshedSolicitud);
   }
 
+  const createdItem = await loadSolicitudItemRecord(solicitudId, createdId);
+  await notifySolicitudItemForActor(actor, refreshedSolicitud, {
+    itemNombre: createdItem?.nombre_item || item.nombre_item,
+    accion: "Agregado",
+    estadoItem: createdItem?.estado_item || item.estado_item,
+  });
+
   return {
-    item: await loadSolicitudItemRecord(solicitudId, createdId),
+    item: createdItem,
     solicitud: refreshedSolicitud,
   };
 }
@@ -2202,14 +2225,13 @@ async function deleteSolicitudItem(actor, solicitudId, itemId) {
 
   const refreshedSolicitud = await getSolicitudById(solicitudId, actor);
   if (refreshResult?.statusChanged) {
-    await notificacionesService.createSolicitudStatusNotification({
-      solicitudId: refreshedSolicitud?.id,
-      equipoId: refreshedSolicitud?.equipo_id,
-      equipoNombre: refreshedSolicitud?.nombre_equipo || refreshedSolicitud?.equipo,
-      repuesto: refreshedSolicitud?.resumen_items || refreshedSolicitud?.repuesto,
-      estado: refreshedSolicitud?.estado,
-    });
+    await notifySolicitudStatusForActor(actor, refreshedSolicitud);
   }
+  await notifySolicitudItemForActor(actor, refreshedSolicitud, {
+    itemNombre: currentItem.nombre_item,
+    accion: "Eliminado",
+    estadoItem: currentItem.estado_item,
+  });
 
   return {
     id: itemId,

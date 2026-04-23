@@ -59,6 +59,75 @@ function normalizeLimit(value, fallback = 30) {
   return Math.min(limit, 100);
 }
 
+const MANAGEMENT_NOTIFICATION_ROLES = [ROLES.ADMIN, ROLES.SUPERVISOR];
+
+const REQUESTER_STATUS_LABELS = {
+  EN_REVISION: "esta en gestion",
+  APROBADO: "fue aprobada",
+  EN_DESPACHO: "va en camino",
+  ENTREGADO: "fue entregada",
+  RECHAZADO: "fue rechazada",
+};
+
+function buildSolicitudNotificationMessage({ equipoNombre, repuesto, cantidad }) {
+  const messageParts = [
+    equipoNombre ? `Equipo: ${equipoNombre}` : null,
+    repuesto ? `Repuesto: ${repuesto}` : null,
+    Number.isFinite(Number(cantidad)) ? `Cantidad: ${cantidad}` : null,
+  ].filter(Boolean);
+
+  return messageParts.length ? messageParts.join(" | ") : "Se registro una nueva solicitud";
+}
+
+function buildSolicitudItemMessage({ equipoNombre, itemNombre, accion, estadoItem }) {
+  const parts = [
+    equipoNombre ? `Equipo: ${equipoNombre}` : null,
+    itemNombre ? `Item: ${itemNombre}` : null,
+    accion ? `Accion: ${accion}` : null,
+    estadoItem ? `Estado: ${estadoItem}` : null,
+  ].filter(Boolean);
+
+  return parts.join(" | ") || "Hubo cambios en un producto de la solicitud";
+}
+
+function buildSolicitudStatusMessage({ equipoNombre, repuesto, estado }) {
+  const parts = [
+    equipoNombre ? `Equipo: ${equipoNombre}` : null,
+    repuesto ? `Repuesto: ${repuesto}` : null,
+    estado ? `Estado: ${estado}` : null,
+  ].filter(Boolean);
+
+  return parts.join(" | ") || "La solicitud cambio de estado";
+}
+
+function buildSolicitudStatusTitle({ estado, audience }) {
+  if (audience === "management") {
+    if (estado === "ENTREGADO") {
+      return "Recepcion confirmada en solicitud";
+    }
+    return "Actualizacion desde faena";
+  }
+
+  return REQUESTER_STATUS_LABELS[estado]
+    ? `Tu solicitud ${REQUESTER_STATUS_LABELS[estado]}`
+    : "Actualizacion de solicitud";
+}
+
+async function insertNotificationsForRoles(basePayload, roles = []) {
+  const notifications = [];
+
+  for (const role of roles) {
+    notifications.push(
+      await insertNotification({
+        ...basePayload,
+        rolDestino: role,
+      })
+    );
+  }
+
+  return notifications.filter(Boolean);
+}
+
 async function insertNotification({
   tipo,
   titulo,
@@ -266,48 +335,20 @@ async function createSolicitudNotification({ solicitudId, equipoId, equipoNombre
     return latest;
   }
 
-  const titulo = "Nueva solicitud en faena";
-  const messageParts = [
-    equipoNombre ? `Equipo: ${equipoNombre}` : null,
-    repuesto ? `Repuesto: ${repuesto}` : null,
-    Number.isFinite(Number(cantidad)) ? `Cantidad: ${cantidad}` : null,
-  ].filter(Boolean);
-
-  const mensaje = messageParts.length
-    ? messageParts.join(" | ")
-    : "Se registro una nueva solicitud";
-
-  const supervisorNotification = await insertNotification({
-    tipo: "SOLICITUD_NUEVA",
-    titulo,
-    mensaje,
-    rolDestino: ROLES.SUPERVISOR,
-    equipoId: equipoId || null,
-    referenciaId: solicitudId || null,
-  });
-
-  const notifications = [supervisorNotification];
-  if (equipoId) {
-    notifications.push(await insertNotification({
-      tipo: "SOLICITUD_EQUIPO",
-      titulo: "Nueva solicitud de tu equipo",
-      mensaje,
-      rolDestino: ROLES.JEFE_FAENA,
-      equipoId,
+  const notifications = await insertNotificationsForRoles(
+    {
+      tipo: "SOLICITUD_NUEVA",
+      titulo: "Nueva solicitud en faena",
+      mensaje: buildSolicitudNotificationMessage({ equipoNombre, repuesto, cantidad }),
+      equipoId: equipoId || null,
       referenciaId: solicitudId || null,
-    }));
-  }
+    },
+    MANAGEMENT_NOTIFICATION_ROLES
+  );
 
   dispatchPushNotifications(notifications);
+  return notifications.at(-1) || null;
 }
-
-const ESTADO_LABELS_PUSH = {
-  EN_REVISION: "está en gestión",
-  APROBADO: "fue aprobada",
-  EN_DESPACHO: "va en camino",
-  ENTREGADO: "fue entregada",
-  RECHAZADO: "fue rechazada",
-};
 
 async function createSolicitudStatusNotification({
   solicitudId,
@@ -316,6 +357,7 @@ async function createSolicitudStatusNotification({
   repuesto,
   estado,
   solicitanteId,
+  audience = "requester",
 }) {
   if (isOperationalPgEnabled()) {
     const notifications = await pgService.createSolicitudStatusNotification({
@@ -324,39 +366,43 @@ async function createSolicitudStatusNotification({
       equipoNombre,
       repuesto,
       estado,
+      solicitanteId,
+      audience,
     });
-    emitNotifications(notifications);
+    const latest = emitNotifications(notifications);
     dispatchPushNotifications(notifications);
-  } else {
-    if (!equipoId) return;
-    const parts = [
-      equipoNombre ? `Equipo: ${equipoNombre}` : null,
-      repuesto ? `Repuesto: ${repuesto}` : null,
-      estado ? `Estado: ${estado}` : null,
-    ].filter(Boolean);
-    const statusNotification = await insertNotification({
-      tipo: "SOLICITUD_ESTADO",
-      titulo: "Actualizacion de solicitud",
-      mensaje: parts.join(" | ") || "La solicitud cambio de estado",
-      rolDestino: ROLES.JEFE_FAENA,
-      equipoId,
-      referenciaId: solicitudId || null,
-    });
-    dispatchPushNotifications(statusNotification);
+    return latest;
   }
 
-  // Push notification al solicitante si tiene suscripción activa
-  if (solicitanteId && estado && ESTADO_LABELS_PUSH[estado]) {
-    const label = ESTADO_LABELS_PUSH[estado];
-    const titulo = `Tu solicitud ${label}`;
-    const cuerpo = repuesto ? `Pedido: ${repuesto}` : `Solicitud #${solicitudId}`;
-    pushService.sendPushToUser(solicitanteId, {
-      title: titulo,
-      body: cuerpo,
-      solicitudId: solicitudId || null,
-      url: "/web",
-    }).catch(() => {});
+  const baseNotification = {
+    tipo: "SOLICITUD_ESTADO",
+    titulo: buildSolicitudStatusTitle({ estado, audience }),
+    mensaje: buildSolicitudStatusMessage({ equipoNombre, repuesto, estado }),
+    equipoId: equipoId || null,
+    referenciaId: solicitudId || null,
+  };
+
+  let notifications = [];
+  if (audience === "management") {
+    notifications = await insertNotificationsForRoles(baseNotification, MANAGEMENT_NOTIFICATION_ROLES);
+  } else if (solicitanteId) {
+    notifications = [
+      await insertNotification({
+        ...baseNotification,
+        usuarioDestinoId: solicitanteId,
+      }),
+    ].filter(Boolean);
+  } else if (equipoId) {
+    notifications = [
+      await insertNotification({
+        ...baseNotification,
+        rolDestino: ROLES.JEFE_FAENA,
+      }),
+    ].filter(Boolean);
   }
+
+  dispatchPushNotifications(notifications);
+  return notifications.at(-1) || null;
 }
 
 async function createEnvioNotification({
@@ -464,37 +510,19 @@ async function createSolicitudItemNotification({
     return latest;
   }
 
-  const parts = [
-    equipoNombre ? `Equipo: ${equipoNombre}` : null,
-    itemNombre ? `Item: ${itemNombre}` : null,
-    accion ? `Accion: ${accion}` : null,
-    estadoItem ? `Estado: ${estadoItem}` : null,
-  ].filter(Boolean);
-
-  const mensaje = parts.join(" | ") || "Hubo cambios en un producto de la solicitud";
-
-  const supervisorNotification = await insertNotification({
-    tipo: "SOLICITUD_ITEM",
-    titulo: "Cambio en producto de solicitud",
-    mensaje,
-    rolDestino: ROLES.SUPERVISOR,
-    equipoId: equipoId || null,
-    referenciaId: solicitudId || null,
-  });
-
-  const notifications = [supervisorNotification];
-  if (equipoId) {
-    notifications.push(await insertNotification({
+  const notifications = await insertNotificationsForRoles(
+    {
       tipo: "SOLICITUD_ITEM",
-      titulo: "Cambio en producto de tu equipo",
-      mensaje,
-      rolDestino: ROLES.JEFE_FAENA,
-      equipoId,
+      titulo: "Cambio en producto de solicitud",
+      mensaje: buildSolicitudItemMessage({ equipoNombre, itemNombre, accion, estadoItem }),
+      equipoId: equipoId || null,
       referenciaId: solicitudId || null,
-    }));
-  }
+    },
+    MANAGEMENT_NOTIFICATION_ROLES
+  );
 
   dispatchPushNotifications(notifications);
+  return notifications.at(-1) || null;
 }
 
 module.exports = {
