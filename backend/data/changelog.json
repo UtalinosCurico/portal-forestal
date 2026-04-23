@@ -1,6 +1,13 @@
 {
-  "lastCommit": "52863bce2cba99d00f2620236ac2dffeaff43615",
+  "lastCommit": "7f804884ca4dd7cae3f7a89dcca5080f7c597587",
   "entries": [
+    {
+      "id": "7f804884",
+      "tipo": "fix",
+      "titulo": "Enable mobile push notifications",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-23T13:27:43.000Z"
+    },
     {
       "id": "52863bce",
       "tipo": "fix",
