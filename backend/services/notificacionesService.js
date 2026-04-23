@@ -24,6 +24,22 @@ function emitNotifications(notifications) {
   return safeNotifications.at(-1) || null;
 }
 
+function dispatchPushNotifications(notifications) {
+  const safeNotifications = Array.isArray(notifications)
+    ? notifications.filter(Boolean)
+    : notifications
+      ? [notifications]
+      : [];
+
+  if (!safeNotifications.length) {
+    return;
+  }
+
+  Promise.allSettled(
+    safeNotifications.map((notification) => pushService.sendPushForNotification(notification))
+  ).catch(() => {});
+}
+
 function getActorRole(actor) {
   return actor.rol || actor.role;
 }
@@ -245,7 +261,9 @@ async function createSolicitudNotification({ solicitudId, equipoId, equipoNombre
       repuesto,
       cantidad,
     });
-    return emitNotifications(notifications);
+    const latest = emitNotifications(notifications);
+    dispatchPushNotifications(notifications);
+    return latest;
   }
 
   const titulo = "Nueva solicitud en faena";
@@ -259,7 +277,7 @@ async function createSolicitudNotification({ solicitudId, equipoId, equipoNombre
     ? messageParts.join(" | ")
     : "Se registro una nueva solicitud";
 
-  await insertNotification({
+  const supervisorNotification = await insertNotification({
     tipo: "SOLICITUD_NUEVA",
     titulo,
     mensaje,
@@ -268,16 +286,19 @@ async function createSolicitudNotification({ solicitudId, equipoId, equipoNombre
     referenciaId: solicitudId || null,
   });
 
+  const notifications = [supervisorNotification];
   if (equipoId) {
-    await insertNotification({
+    notifications.push(await insertNotification({
       tipo: "SOLICITUD_EQUIPO",
       titulo: "Nueva solicitud de tu equipo",
       mensaje,
       rolDestino: ROLES.JEFE_FAENA,
       equipoId,
       referenciaId: solicitudId || null,
-    });
+    }));
   }
+
+  dispatchPushNotifications(notifications);
 }
 
 const ESTADO_LABELS_PUSH = {
@@ -305,6 +326,7 @@ async function createSolicitudStatusNotification({
       estado,
     });
     emitNotifications(notifications);
+    dispatchPushNotifications(notifications);
   } else {
     if (!equipoId) return;
     const parts = [
@@ -312,7 +334,7 @@ async function createSolicitudStatusNotification({
       repuesto ? `Repuesto: ${repuesto}` : null,
       estado ? `Estado: ${estado}` : null,
     ].filter(Boolean);
-    await insertNotification({
+    const statusNotification = await insertNotification({
       tipo: "SOLICITUD_ESTADO",
       titulo: "Actualizacion de solicitud",
       mensaje: parts.join(" | ") || "La solicitud cambio de estado",
@@ -320,6 +342,7 @@ async function createSolicitudStatusNotification({
       equipoId,
       referenciaId: solicitudId || null,
     });
+    dispatchPushNotifications(statusNotification);
   }
 
   // Push notification al solicitante si tiene suscripción activa
@@ -353,7 +376,9 @@ async function createEnvioNotification({
       cantidad,
       estadoVisual,
     });
-    return emitNotifications(notifications);
+    const latest = emitNotifications(notifications);
+    dispatchPushNotifications(notifications);
+    return latest;
   }
 
   if (!equipoId) {
@@ -367,7 +392,7 @@ async function createEnvioNotification({
     estadoVisual ? `Tracking: ${estadoVisual}` : null,
   ].filter(Boolean);
 
-  await insertNotification({
+  const envioNotification = await insertNotification({
     tipo: "ENVIO_NUEVO",
     titulo: "Nuevo envio hacia tu equipo",
     mensaje: parts.join(" | ") || "Se registro un nuevo envio",
@@ -375,6 +400,7 @@ async function createEnvioNotification({
     equipoId,
     referenciaId: envioId || null,
   });
+  dispatchPushNotifications(envioNotification);
 }
 
 async function createSolicitudMessageNotification({
@@ -394,7 +420,9 @@ async function createSolicitudMessageNotification({
       destinatarioRol,
       mensaje,
     });
-    return emitNotifications(notifications);
+    const latest = emitNotifications(notifications);
+    dispatchPushNotifications(notifications);
+    return latest;
   }
 
   const preview = String(mensaje || "").trim();
@@ -402,7 +430,7 @@ async function createSolicitudMessageNotification({
     ? `${remitenteNombre || "Nuevo mensaje"}: ${preview.slice(0, 140)}`
     : `${remitenteNombre || "Nuevo mensaje"} envio una imagen o archivo de apoyo.`;
 
-  await insertNotification({
+  const messageNotification = await insertNotification({
     tipo: "SOLICITUD_MENSAJE",
     titulo: "Nuevo mensaje en una solicitud",
     mensaje: body,
@@ -411,6 +439,7 @@ async function createSolicitudMessageNotification({
     equipoId: equipoId || null,
     referenciaId: solicitudId || null,
   });
+  dispatchPushNotifications(messageNotification);
 }
 
 async function createSolicitudItemNotification({
@@ -430,7 +459,9 @@ async function createSolicitudItemNotification({
       accion,
       estadoItem,
     });
-    return emitNotifications(notifications);
+    const latest = emitNotifications(notifications);
+    dispatchPushNotifications(notifications);
+    return latest;
   }
 
   const parts = [
@@ -442,7 +473,7 @@ async function createSolicitudItemNotification({
 
   const mensaje = parts.join(" | ") || "Hubo cambios en un producto de la solicitud";
 
-  await insertNotification({
+  const supervisorNotification = await insertNotification({
     tipo: "SOLICITUD_ITEM",
     titulo: "Cambio en producto de solicitud",
     mensaje,
@@ -451,16 +482,19 @@ async function createSolicitudItemNotification({
     referenciaId: solicitudId || null,
   });
 
+  const notifications = [supervisorNotification];
   if (equipoId) {
-    await insertNotification({
+    notifications.push(await insertNotification({
       tipo: "SOLICITUD_ITEM",
       titulo: "Cambio en producto de tu equipo",
       mensaje,
       rolDestino: ROLES.JEFE_FAENA,
       equipoId,
       referenciaId: solicitudId || null,
-    });
+    }));
   }
+
+  dispatchPushNotifications(notifications);
 }
 
 module.exports = {

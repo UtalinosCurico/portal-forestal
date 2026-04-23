@@ -109,6 +109,9 @@ const state = {
   alertsReconnectTimer: null,
   rememberSession: false,
   sessionEpoch: 0,
+  pushStatus: null,
+  pushStatusLoadedAt: 0,
+  pushBusy: false,
 };
 
 const loginScreen = document.getElementById("login-screen");
@@ -138,6 +141,11 @@ const alertsCloseBtn = document.getElementById("alerts-close-btn");
 const alertsRefreshBtn = document.getElementById("alerts-refresh-btn");
 const alertsList = document.getElementById("alerts-list");
 const alertsStatus = document.getElementById("alerts-status");
+const pushEnableBtn = document.getElementById("push-enable-btn");
+const pushTestBtn = document.getElementById("push-test-btn");
+const pushDisableBtn = document.getElementById("push-disable-btn");
+const pushStatusText = document.getElementById("push-status-text");
+const pushDeviceChip = document.getElementById("push-device-chip");
 
 const offlineQueueModal    = document.getElementById("offline-queue-modal");
 const offlineQueueCloseBtn = document.getElementById("offline-queue-close-btn");
@@ -461,6 +469,9 @@ function clearSession() {
   state.notifications = [];
   state.notificationsLoadedAt = 0;
   state.lastAlertsCount = 0;
+  state.pushStatus = null;
+  state.pushStatusLoadedAt = 0;
+  state.pushBusy = false;
   localStorage.removeItem(SESSION_KEY);
   sessionStorage.removeItem(SESSION_KEY);
 }
@@ -1149,6 +1160,7 @@ async function loadView(viewName, options = {}) {
 
 function openAlertsModal() {
   alertsModal.classList.remove("hidden");
+  refreshPushStatus({ silent: true }).catch(() => {});
   if (state.notifications.length) {
     alertsStatus.textContent = "Usando datos recientes";
     renderAlertsFeed();
@@ -1325,6 +1337,279 @@ async function handleInstallApp() {
   showToast("Si tu navegador lo permite, abre el menu y elige Instalar app.");
 }
 
+function isPushSupported() {
+  return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+}
+
+function getPushPermissionState() {
+  if (!("Notification" in window)) {
+    return "unsupported";
+  }
+  return Notification.permission;
+}
+
+function setPushChip(label, tone = "default") {
+  if (!pushDeviceChip) {
+    return;
+  }
+
+  pushDeviceChip.textContent = label;
+  pushDeviceChip.classList.remove("active", "warning", "danger");
+
+  if (tone === "active") {
+    pushDeviceChip.classList.add("active");
+  } else if (tone === "warning") {
+    pushDeviceChip.classList.add("warning");
+  } else if (tone === "danger") {
+    pushDeviceChip.classList.add("danger");
+  }
+}
+
+function setPushButtonsBusy(isBusy) {
+  state.pushBusy = Boolean(isBusy);
+  [pushEnableBtn, pushTestBtn, pushDisableBtn].forEach((button) => {
+    if (button) {
+      button.disabled = state.pushBusy;
+    }
+  });
+}
+
+function updatePushControls() {
+  if (!pushStatusText || !pushDeviceChip) {
+    return;
+  }
+
+  const permission = getPushPermissionState();
+  const serverStatus = state.pushStatus || {};
+  const configured = Boolean(serverStatus.configured);
+  const subscribed = Boolean(serverStatus.subscribed);
+  const currentDeviceSubscribed = Boolean(serverStatus.currentDeviceSubscribed);
+
+  if (!isPushSupported()) {
+    pushStatusText.textContent = "Este dispositivo o navegador no soporta notificaciones push.";
+    setPushChip("No compatible", "danger");
+    if (pushEnableBtn) pushEnableBtn.disabled = true;
+    if (pushTestBtn) pushTestBtn.disabled = true;
+    if (pushDisableBtn) pushDisableBtn.disabled = true;
+    return;
+  }
+
+  if (isIOSDevice() && !isStandaloneMode()) {
+    pushStatusText.textContent = "En iPhone o iPad primero instala la app en la pantalla de inicio y luego vuelve a activar las notificaciones.";
+    setPushChip("Instala la app", "warning");
+    if (pushEnableBtn) pushEnableBtn.disabled = state.pushBusy;
+    if (pushTestBtn) pushTestBtn.disabled = true;
+    if (pushDisableBtn) pushDisableBtn.disabled = true;
+    return;
+  }
+
+  if (!configured) {
+    pushStatusText.textContent = "El servidor todavia no tiene configuradas las llaves push para enviar avisos al celular.";
+    setPushChip("Servidor sin push", "danger");
+    if (pushEnableBtn) pushEnableBtn.disabled = true;
+    if (pushTestBtn) pushTestBtn.disabled = true;
+    if (pushDisableBtn) pushDisableBtn.disabled = true;
+    return;
+  }
+
+  if (permission === "denied") {
+    pushStatusText.textContent = "El permiso esta bloqueado en este dispositivo. Debes habilitarlo desde la configuracion del navegador o de la app.";
+    setPushChip("Permiso bloqueado", "danger");
+    if (pushEnableBtn) pushEnableBtn.disabled = true;
+    if (pushTestBtn) pushTestBtn.disabled = true;
+    if (pushDisableBtn) pushDisableBtn.disabled = !currentDeviceSubscribed || state.pushBusy;
+    return;
+  }
+
+  if (currentDeviceSubscribed) {
+    const deviceCount = Number(serverStatus.subscriptionCount || 0);
+    pushStatusText.textContent =
+      deviceCount > 1
+        ? `Este usuario tiene ${deviceCount} dispositivos suscritos. Puedes probar este celular o desactivarlo si ya no lo usaras.`
+        : "Este celular ya esta vinculado y deberia recibir avisos del portal.";
+    setPushChip("Activo en este celular", "active");
+    if (pushEnableBtn) pushEnableBtn.disabled = state.pushBusy;
+    if (pushTestBtn) pushTestBtn.disabled = state.pushBusy;
+    if (pushDisableBtn) pushDisableBtn.disabled = state.pushBusy;
+    return;
+  }
+
+  if (permission === "granted") {
+    pushStatusText.textContent = subscribed
+      ? "Otro dispositivo del usuario ya esta suscrito, pero este celular aun no queda vinculado. Activalo para registrar este equipo."
+      : "El permiso ya fue otorgado, pero este celular aun no queda vinculado en el portal. Activalo para terminar la suscripcion.";
+    setPushChip(subscribed ? "Otro equipo activo" : "Falta vincular", "warning");
+    if (pushEnableBtn) pushEnableBtn.disabled = state.pushBusy;
+    if (pushTestBtn) pushTestBtn.disabled = true;
+    if (pushDisableBtn) pushDisableBtn.disabled = true;
+    return;
+  }
+
+  pushStatusText.textContent = "Activa las notificaciones en este celular para recibir avisos reales aunque la app este cerrada.";
+  setPushChip("Pendiente de activar", "warning");
+  if (pushEnableBtn) pushEnableBtn.disabled = state.pushBusy;
+  if (pushTestBtn) pushTestBtn.disabled = true;
+  if (pushDisableBtn) pushDisableBtn.disabled = true;
+}
+
+async function refreshPushStatus({ silent = true } = {}) {
+  if (!state.token || !pushStatusText || !pushDeviceChip) {
+    return null;
+  }
+
+  try {
+    let endpoint = "";
+    if (isPushSupported()) {
+      const sw = await navigator.serviceWorker.ready;
+      const subscription = await sw.pushManager.getSubscription();
+      endpoint = subscription?.endpoint || "";
+    }
+
+    const query = endpoint ? `?endpoint=${encodeURIComponent(endpoint)}` : "";
+    const serverStatus = await apiRequest(`/api/push/status${query}`);
+    state.pushStatus = serverStatus || {};
+    state.pushStatusLoadedAt = Date.now();
+    updatePushControls();
+    return state.pushStatus;
+  } catch (error) {
+    state.pushStatus = { configured: false, subscribed: false, subscriptionCount: 0 };
+    updatePushControls();
+    if (!silent) {
+      throw error;
+    }
+    return null;
+  }
+}
+
+function serializeSubscription(subscription) {
+  const raw = subscription?.toJSON?.() || {};
+  if (raw.endpoint && raw.keys?.p256dh && raw.keys?.auth) {
+    return {
+      endpoint: raw.endpoint,
+      keys: raw.keys,
+    };
+  }
+
+  return {
+    endpoint: subscription.endpoint,
+    keys: {
+      p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey("p256dh")))),
+      auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey("auth")))),
+    },
+  };
+}
+
+async function syncPushSubscription({ prompt = false } = {}) {
+  if (!isPushSupported()) {
+    return null;
+  }
+
+  if (isIOSDevice() && !isStandaloneMode()) {
+    throw new Error("En iPhone o iPad instala primero la app en la pantalla de inicio.");
+  }
+
+  const sw = await navigator.serviceWorker.ready;
+  let permission = getPushPermissionState();
+
+  if (permission === "denied") {
+    throw new Error("Las notificaciones estan bloqueadas en este dispositivo.");
+  }
+
+  if (permission === "default" && prompt) {
+    permission = await Notification.requestPermission();
+  }
+
+  if (permission !== "granted") {
+    return null;
+  }
+
+  const { publicKey } = await apiRequest("/api/push/vapid-public-key");
+  if (!publicKey) {
+    throw new Error("El servidor todavia no tiene configuradas las notificaciones push.");
+  }
+
+  let subscription = await sw.pushManager.getSubscription();
+  if (!subscription) {
+    subscription = await sw.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey),
+    });
+  }
+
+  await apiRequest("/api/push/subscribe", {
+    method: "POST",
+    body: serializeSubscription(subscription),
+  });
+
+  await refreshPushStatus({ silent: true });
+  return subscription;
+}
+
+async function handleEnablePush() {
+  setPushButtonsBusy(true);
+  try {
+    const subscription = await syncPushSubscription({ prompt: true });
+    if (!subscription) {
+      showToast("No se activo el permiso de notificaciones.", true);
+      return;
+    }
+    showToast("Notificaciones activadas en este celular.");
+  } finally {
+    setPushButtonsBusy(false);
+    updatePushControls();
+  }
+}
+
+async function handlePushTest() {
+  setPushButtonsBusy(true);
+  try {
+    let endpoint = "";
+    if (isPushSupported()) {
+      const sw = await navigator.serviceWorker.ready;
+      const subscription = await sw.pushManager.getSubscription();
+      endpoint = subscription?.endpoint || "";
+    }
+
+    await apiRequest("/api/push/test", {
+      method: "POST",
+      body: endpoint ? { endpoint } : {},
+    });
+    showToast("Se envio una notificacion de prueba al celular.");
+  } finally {
+    setPushButtonsBusy(false);
+    updatePushControls();
+  }
+}
+
+async function handleDisablePush() {
+  if (!isPushSupported()) {
+    return;
+  }
+
+  setPushButtonsBusy(true);
+  try {
+    const sw = await navigator.serviceWorker.ready;
+    const subscription = await sw.pushManager.getSubscription();
+    if (!subscription) {
+      await refreshPushStatus({ silent: true });
+      showToast("Este celular ya no tenia una suscripcion activa.");
+      return;
+    }
+
+    const endpoint = subscription.endpoint;
+    await apiRequest("/api/push/subscribe", {
+      method: "DELETE",
+      body: { endpoint },
+    });
+    await subscription.unsubscribe().catch(() => {});
+    await refreshPushStatus({ silent: true });
+    showToast("Notificaciones desactivadas en este celular.");
+  } finally {
+    setPushButtonsBusy(false);
+    updatePushControls();
+  }
+}
+
 async function handleLoginSubmit(event) {
   event.preventDefault();
   loginError.classList.add("hidden");
@@ -1385,49 +1670,12 @@ async function handleLoginSubmit(event) {
     }, 120);
 
     runWhenIdle(() => {
-      subscribeToPush().catch(() => {});
+      syncPushSubscription({ prompt: false }).catch(() => {});
     }, 300);
   } catch (error) {
     loginError.textContent = error.message;
     loginError.classList.remove("hidden");
   }
-}
-
-async function subscribeToPush() {
-  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
-
-  const sw = await navigator.serviceWorker.ready;
-  let permission = Notification.permission;
-  if (permission === "denied") return;
-  if (permission === "default") {
-    permission = await Notification.requestPermission();
-  }
-  if (permission !== "granted") return;
-
-  // Obtener VAPID public key del backend
-  const { publicKey } = await apiRequest("/api/push/vapid-public-key");
-  if (!publicKey) return;
-
-  const existing = await sw.pushManager.getSubscription();
-  if (existing) {
-    // Renovar en el backend por si expiró
-    await apiRequest("/api/push/subscribe", {
-      method: "POST",
-      body: { endpoint: existing.endpoint, keys: { p256dh: btoa(String.fromCharCode(...new Uint8Array(existing.getKey("p256dh")))), auth: btoa(String.fromCharCode(...new Uint8Array(existing.getKey("auth")))) } },
-    }).catch(() => {});
-    return;
-  }
-
-  const subscription = await sw.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(publicKey),
-  });
-
-  const raw = subscription.toJSON();
-  await apiRequest("/api/push/subscribe", {
-    method: "POST",
-    body: { endpoint: raw.endpoint, keys: raw.keys },
-  });
 }
 
 function urlBase64ToUint8Array(base64String) {
@@ -1452,6 +1700,7 @@ function logout() {
   resetRenderedView();
   setAuthenticatedUI(false);
   updateDocumentTitle();
+  updatePushControls();
   showToast("Sesion cerrada");
 }
 
@@ -1501,10 +1750,31 @@ function registerEvents() {
   alertsRefreshBtn.addEventListener("click", async () => {
     try {
       alertsStatus.textContent = "Actualizando...";
-      await Promise.all([loadNotifications(), checkAlerts(false)]);
+      await Promise.all([loadNotifications(), checkAlerts(false), refreshPushStatus({ silent: true })]);
       showToast("Alertas actualizadas");
     } catch (error) {
       alertsStatus.textContent = "Error al cargar";
+      showToast(error.message, true);
+    }
+  });
+  pushEnableBtn?.addEventListener("click", async () => {
+    try {
+      await handleEnablePush();
+    } catch (error) {
+      showToast(error.message, true);
+    }
+  });
+  pushTestBtn?.addEventListener("click", async () => {
+    try {
+      await handlePushTest();
+    } catch (error) {
+      showToast(error.message, true);
+    }
+  });
+  pushDisableBtn?.addEventListener("click", async () => {
+    try {
+      await handleDisablePush();
+    } catch (error) {
       showToast(error.message, true);
     }
   });
@@ -1713,6 +1983,7 @@ async function bootstrap() {
   watchGlobalModalState();
   updateDocumentTitle();
   updateInstallButtonVisibility();
+  updatePushControls();
 
   const isAuthenticated = await restoreSession();
 
@@ -1742,6 +2013,10 @@ async function bootstrap() {
       // Ignorar error silenciosamente en bootstrap diferido.
     });
   }, 120);
+
+  runWhenIdle(() => {
+    syncPushSubscription({ prompt: false }).catch(() => {});
+  }, 300);
 
   // Inicializar asistente IA
   import(`/js/aiAssistant.js?v=${ASSET_VERSION}`)
