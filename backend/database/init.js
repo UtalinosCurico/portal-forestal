@@ -224,6 +224,24 @@ async function createTables() {
   `);
 
   await run(`
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      usuario_id INTEGER NOT NULL,
+      endpoint TEXT NOT NULL UNIQUE,
+      p256dh TEXT NOT NULL,
+      auth TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    )
+  `);
+
+  await run(`
+    CREATE INDEX IF NOT EXISTS idx_push_subscriptions_usuario
+    ON push_subscriptions(usuario_id, updated_at DESC)
+  `);
+
+  await run(`
     CREATE TABLE IF NOT EXISTS equipo_stock (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       equipo_id INTEGER NOT NULL,

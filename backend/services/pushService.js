@@ -1,7 +1,8 @@
 const webpush = require("web-push");
+const { all: sqliteAll, get: sqliteGet, run: sqliteRun } = require("../db/database");
 const { isGlobalRole } = require("../middleware/roles");
 const { listUsers } = require("./userStore");
-const { getOperationalPool } = require("./operationalPgStore");
+const { getOperationalPool, isOperationalPgEnabled } = require("./operationalPgStore");
 
 let initialized = false;
 
@@ -27,44 +28,130 @@ function initWebPush() {
 }
 
 async function saveSubscription(usuarioId, subscription) {
-  const pg = getOperationalPool();
   const { endpoint, keys } = subscription;
-  await pg.query(
+  if (isOperationalPgEnabled()) {
+    const pg = getOperationalPool();
+    await pg.query(
+      `INSERT INTO push_subscriptions (usuario_id, endpoint, p256dh, auth, updated_at)
+       VALUES ($1, $2, $3, $4, NOW())
+       ON CONFLICT (endpoint) DO UPDATE
+       SET usuario_id = $1, p256dh = $3, auth = $4, updated_at = NOW()`,
+      [Number(usuarioId), endpoint, keys.p256dh, keys.auth]
+    );
+    return;
+  }
+
+  await ensureSqlitePushStorage();
+  await sqliteRun(
     `INSERT INTO push_subscriptions (usuario_id, endpoint, p256dh, auth, updated_at)
-     VALUES ($1, $2, $3, $4, NOW())
-     ON CONFLICT (endpoint) DO UPDATE
-     SET usuario_id = $1, p256dh = $3, auth = $4, updated_at = NOW()`,
+     VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+     ON CONFLICT(endpoint) DO UPDATE SET
+       usuario_id = excluded.usuario_id,
+       p256dh = excluded.p256dh,
+       auth = excluded.auth,
+       updated_at = CURRENT_TIMESTAMP`,
     [Number(usuarioId), endpoint, keys.p256dh, keys.auth]
   );
 }
 
 async function removeSubscription(endpoint) {
-  const pg = getOperationalPool();
-  await pg.query("DELETE FROM push_subscriptions WHERE endpoint = $1", [endpoint]);
+  if (isOperationalPgEnabled()) {
+    const pg = getOperationalPool();
+    await pg.query("DELETE FROM push_subscriptions WHERE endpoint = $1", [endpoint]);
+    return;
+  }
+
+  await ensureSqlitePushStorage();
+  await sqliteRun("DELETE FROM push_subscriptions WHERE endpoint = ?", [endpoint]);
 }
 
 async function listSubscriptionsByUser(usuarioId) {
-  const pg = getOperationalPool();
-  const { rows } = await pg.query(
+  if (isOperationalPgEnabled()) {
+    const pg = getOperationalPool();
+    const { rows } = await pg.query(
+      `SELECT endpoint, p256dh, auth
+       FROM push_subscriptions
+       WHERE usuario_id = $1
+       ORDER BY updated_at DESC, id DESC`,
+      [Number(usuarioId)]
+    );
+    return rows;
+  }
+
+  await ensureSqlitePushStorage();
+  return sqliteAll(
     `SELECT endpoint, p256dh, auth
      FROM push_subscriptions
-     WHERE usuario_id = $1
+     WHERE usuario_id = ?
      ORDER BY updated_at DESC, id DESC`,
     [Number(usuarioId)]
   );
-  return rows;
 }
 
 async function findSubscriptionByEndpoint(endpoint) {
-  const pg = getOperationalPool();
-  const { rows } = await pg.query(
+  const normalizedEndpoint = String(endpoint || "").trim();
+  if (isOperationalPgEnabled()) {
+    const pg = getOperationalPool();
+    const { rows } = await pg.query(
+      `SELECT endpoint, p256dh, auth
+       FROM push_subscriptions
+       WHERE endpoint = $1
+       LIMIT 1`,
+      [normalizedEndpoint]
+    );
+    return rows[0] || null;
+  }
+
+  await ensureSqlitePushStorage();
+  return sqliteGet(
     `SELECT endpoint, p256dh, auth
      FROM push_subscriptions
-     WHERE endpoint = $1
+     WHERE endpoint = ?
      LIMIT 1`,
-    [String(endpoint || "").trim()]
+    [normalizedEndpoint]
   );
-  return rows[0] || null;
+}
+
+async function removeDeadSubscriptions(endpoints) {
+  const dead = [...new Set(endpoints.filter(Boolean))];
+  if (!dead.length) {
+    return 0;
+  }
+
+  if (isOperationalPgEnabled()) {
+    const pg = getOperationalPool();
+    const result = await pg.query("DELETE FROM push_subscriptions WHERE endpoint = ANY($1)", [dead]);
+    return Number(result.rowCount || 0);
+  }
+
+  const placeholders = dead.map(() => "?").join(", ");
+  await ensureSqlitePushStorage();
+  const result = await sqliteRun(`DELETE FROM push_subscriptions WHERE endpoint IN (${placeholders})`, dead);
+  return Number(result.changes || 0);
+}
+
+async function ensureSqlitePushStorage() {
+  if (isOperationalPgEnabled()) {
+    return;
+  }
+
+  await sqliteRun(
+    `CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      usuario_id INTEGER NOT NULL,
+      endpoint TEXT NOT NULL UNIQUE,
+      p256dh TEXT NOT NULL,
+      auth TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    )`
+  );
+
+  await sqliteRun(
+    `CREATE INDEX IF NOT EXISTS idx_push_subscriptions_usuario
+     ON push_subscriptions(usuario_id, updated_at DESC)`
+  );
 }
 
 async function getPushStatusForUser(usuarioId, endpoint = "") {
@@ -140,9 +227,7 @@ async function sendPushToSubscriptions(rows, payload, result = null) {
   );
 
   if (dead.length) {
-    const pg = getOperationalPool();
-    await pg.query("DELETE FROM push_subscriptions WHERE endpoint = ANY($1)", [dead]);
-    summary.removed = dead.length;
+    summary.removed = await removeDeadSubscriptions(dead);
   }
 
   return summary;

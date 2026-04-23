@@ -623,7 +623,11 @@ async function apiRequest(path, options = {}, requiresAuth = true) {
     }
 
     if (!response.ok) {
-      throw new Error(payload.mensaje || payload.error?.message || "Error de API");
+      throw new Error(
+        payload.mensaje ||
+        (typeof payload.error === "string" ? payload.error : payload.error?.message) ||
+        "Error de API"
+      );
     }
 
     return payload;
