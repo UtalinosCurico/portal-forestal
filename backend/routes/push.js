@@ -2,6 +2,7 @@ const express = require("express");
 const { asyncHandler } = require("../utils/asyncHandler");
 const { authenticate } = require("../middleware/auth");
 const {
+  buildDeliveryFailureMessage,
   getVapidPublicKey,
   getPushStatusForUser,
   isPushConfigured,
@@ -74,7 +75,10 @@ router.post(
       });
 
       if (!result.delivered) {
-        return res.status(502).json({ error: "No se pudo entregar la notificacion de prueba. Revisa los permisos del dispositivo." });
+        return res.status(502).json({
+          error: buildDeliveryFailureMessage(result),
+          detail: result.failures?.[0] || null,
+        });
       }
 
       return res.json({ ok: true, delivered: result.delivered });
@@ -92,7 +96,10 @@ router.post(
     });
 
     if (!result.delivered) {
-      return res.status(502).json({ error: "No se pudo entregar la notificacion de prueba. Revisa los permisos del dispositivo." });
+      return res.status(502).json({
+        error: buildDeliveryFailureMessage(result),
+        detail: result.failures?.[0] || null,
+      });
     }
 
     res.json({ ok: true, delivered: result.delivered });

@@ -2,6 +2,7 @@
   "name": "Portal Forestal Maule Norte",
   "short_name": "Portal FMN",
   "description": "Solicitudes operativas, seguimiento y trazabilidad para equipos forestales.",
+  "id": "/web",
   "start_url": "/web",
   "scope": "/",
   "display": "standalone",

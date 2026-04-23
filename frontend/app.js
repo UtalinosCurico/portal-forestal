@@ -1503,6 +1503,30 @@ function serializeSubscription(subscription) {
   };
 }
 
+function typedArraysEqual(left, right) {
+  if (!left || !right || left.byteLength !== right.byteLength) {
+    return false;
+  }
+
+  const leftBytes = new Uint8Array(left);
+  const rightBytes = new Uint8Array(right);
+  return leftBytes.every((value, index) => value === rightBytes[index]);
+}
+
+async function ensureSubscriptionMatchesServerKey(subscription, serverKey) {
+  const currentKey = subscription?.options?.applicationServerKey;
+  if (!subscription || !currentKey) {
+    return subscription || null;
+  }
+
+  if (typedArraysEqual(currentKey, serverKey)) {
+    return subscription;
+  }
+
+  await subscription.unsubscribe().catch(() => {});
+  return null;
+}
+
 async function syncPushSubscription({ prompt = false } = {}) {
   if (!isPushSupported()) {
     return null;
@@ -1532,11 +1556,14 @@ async function syncPushSubscription({ prompt = false } = {}) {
     throw new Error("El servidor todavia no tiene configuradas las notificaciones push.");
   }
 
+  const serverKey = urlBase64ToUint8Array(publicKey);
   let subscription = await sw.pushManager.getSubscription();
+  subscription = await ensureSubscriptionMatchesServerKey(subscription, serverKey);
+
   if (!subscription) {
     subscription = await sw.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey),
+      applicationServerKey: serverKey,
     });
   }
 

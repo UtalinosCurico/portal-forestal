@@ -27,6 +27,46 @@ function initWebPush() {
   return initialized;
 }
 
+function normalizePushError(error) {
+  const rawBody = error?.body ? String(error.body).slice(0, 600) : "";
+  let providerMessage = rawBody;
+
+  if (rawBody) {
+    try {
+      const parsed = JSON.parse(rawBody);
+      providerMessage = parsed.error?.message || parsed.message || rawBody;
+    } catch {
+      providerMessage = rawBody;
+    }
+  }
+
+  return {
+    statusCode: error?.statusCode || null,
+    message: providerMessage || error?.message || "El proveedor push rechazo la notificacion.",
+  };
+}
+
+function buildDeliveryFailureMessage(result) {
+  const failure = result?.failures?.[0];
+  if (!failure) {
+    return "No se pudo entregar la notificacion de prueba. Desactiva y vuelve a activar las notificaciones en este celular.";
+  }
+
+  if (failure.statusCode === 401 || failure.statusCode === 403) {
+    return "El proveedor rechazo las llaves push del servidor. Desactiva y vuelve a activar las notificaciones; si sigue igual, revisa que VAPID_PUBLIC_KEY y VAPID_PRIVATE_KEY correspondan al mismo par.";
+  }
+
+  if (failure.statusCode === 404 || failure.statusCode === 410) {
+    return "La suscripcion de este celular expiro. Desactiva y vuelve a activar las notificaciones.";
+  }
+
+  if (failure.statusCode >= 500) {
+    return "El proveedor de notificaciones no acepto el envio en este momento. Intenta nuevamente en unos minutos.";
+  }
+
+  return `No se pudo entregar la notificacion de prueba: ${failure.message}`;
+}
+
 async function saveSubscription(usuarioId, subscription) {
   const { endpoint, keys } = subscription;
   if (isOperationalPgEnabled()) {
@@ -200,7 +240,9 @@ async function sendPushToSubscriptions(rows, payload, result = null) {
     attempted: 0,
     delivered: 0,
     removed: 0,
+    failures: [],
   };
+  summary.failures = summary.failures || [];
 
   if (!configured || !rows.length) {
     return summary;
@@ -219,6 +261,9 @@ async function sendPushToSubscriptions(rows, payload, result = null) {
         );
         summary.delivered += 1;
       } catch (err) {
+        const failure = normalizePushError(err);
+        summary.failures.push(failure);
+        console.warn("[FMN] Fallo envio push:", failure);
         if (err.statusCode === 410 || err.statusCode === 404) {
           dead.push(row.endpoint);
         }
@@ -262,6 +307,7 @@ async function sendPushToEndpoint(endpoint, payload) {
     attempted: 0,
     delivered: 0,
     removed: 0,
+    failures: [],
   });
 }
 
@@ -348,6 +394,7 @@ module.exports = {
   listSubscriptionsByUser,
   findSubscriptionByEndpoint,
   getPushStatusForUser,
+  buildDeliveryFailureMessage,
   sendPushToUser,
   sendPushToEndpoint,
   sendPushForNotification,
