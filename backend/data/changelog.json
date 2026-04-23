@@ -1,6 +1,13 @@
 {
-  "lastCommit": "b7b34fb50a2f4ef7ad0621b95a28c1c3c70a4a0d",
+  "lastCommit": "0dba300fc391fef42686cd62773f5de3ba36bd42",
   "entries": [
+    {
+      "id": "0dba300f",
+      "tipo": "fix",
+      "titulo": "Route solicitud notifications by actor role",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-23T15:07:52.000Z"
+    },
     {
       "id": "b7b34fb5",
       "tipo": "fix",
