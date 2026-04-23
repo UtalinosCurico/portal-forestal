@@ -1,6 +1,13 @@
 {
-  "lastCommit": "7f804884ca4dd7cae3f7a89dcca5080f7c597587",
+  "lastCommit": "d0575d810a74e74aab4ee4a97e99917f232d2175",
   "entries": [
+    {
+      "id": "d0575d81",
+      "tipo": "fix",
+      "titulo": "Support push subscriptions in sqlite",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-23T13:57:13.000Z"
+    },
     {
       "id": "7f804884",
       "tipo": "fix",
