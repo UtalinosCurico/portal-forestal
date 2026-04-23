@@ -35,7 +35,7 @@ const STATUS_OPTIONS = [
 ];
 
 const ITEM_STATUS_LABELS = {
-  NO_APLICA: "N/A",
+  NO_APLICA: "Resuelto en faena",
   POR_GESTIONAR: "Por gestionar",
   GESTIONADO: "Gestionado",
   ENVIADO: "Enviado",
@@ -43,7 +43,11 @@ const ITEM_STATUS_LABELS = {
 };
 
 const ITEM_STATUS_OPTIONS = [
-  { key: "NO_APLICA", label: "N/A", hint: "Sin seguimiento operativo" },
+  {
+    key: "NO_APLICA",
+    label: "Resuelto en faena",
+    hint: "No se despacha, no aparece en pendientes y conserva el registro",
+  },
   { key: "POR_GESTIONAR", label: "Por gestionar", hint: "Aun no se toma el item" },
   { key: "GESTIONADO", label: "Gestionado", hint: "Ya esta siendo trabajado" },
   { key: "ENVIADO", label: "Enviado", hint: "Salio hacia faena" },
@@ -273,7 +277,7 @@ function renderProgressSummary(items = []) {
   const pct = totalTrackable ? Math.round((summary.entregados / totalTrackable) * 100) : 0;
   const progressLabel = totalTrackable
     ? `${summary.entregados} de ${summary.totalTrackable} entregado${summary.entregados !== 1 ? "s" : ""}`
-    : "Sin seguimiento operativo";
+    : "Sin despacho requerido";
   return `
     <div class="progress-bar-wrap">
       <div class="progress-bar-track">
@@ -290,7 +294,7 @@ function renderProgressSummary(items = []) {
       <strong>${summary.porGestionar}</strong>
     </div>
     <div class="progress-summary-card">
-      <span class="progress-summary-label">N/A</span>
+      <span class="progress-summary-label">Resuelto en faena</span>
       <strong>${summary.noAplica}</strong>
     </div>
     <div class="progress-summary-card">
@@ -316,7 +320,7 @@ function renderDeliveryAssistant(solicitud, options = {}) {
     return `
       <div class="delivery-assistant-copy">
         <h5>Seguimiento no requerido</h5>
-        <p class="muted-text">Todos los productos de esta solicitud estan marcados como N/A.</p>
+        <p class="muted-text">Todos los productos de esta solicitud quedaron resueltos en faena o sin despacho.</p>
       </div>
     `;
   }
@@ -452,7 +456,7 @@ function renderItemStatusSnapshot(item) {
     parts.push(`${summary.entregados} entregado(s)`);
   }
   if (summary.noAplica) {
-    parts.push(`${summary.noAplica} N/A`);
+    parts.push(`${summary.noAplica} resuelto(s) en faena`);
   }
   return parts.join(" | ");
 }

@@ -45,7 +45,7 @@ const STATUS_LABEL = {
 };
 
 const ITEM_STATUS_LABEL = {
-  NO_APLICA:     "N/A",
+  NO_APLICA:     "Resuelto en faena",
   POR_GESTIONAR: "Por gestionar",
   GESTIONADO:    "Gestionado",
   ENVIADO:       "Enviado",

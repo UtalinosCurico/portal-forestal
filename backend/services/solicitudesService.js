@@ -1244,9 +1244,15 @@ async function applyMassItemStatusUpdate(solicitudId, estadoItem, actorId) {
           enviado_por_id = COALESCE(enviado_por_id, ?),
           updated_at = CURRENT_TIMESTAMP
         WHERE solicitud_id = ?
-          AND estado_item <> ?
+          AND estado_item NOT IN (?, ?)
       `,
-      [SOLICITUD_ITEM_STATUS.ENVIADO, actorId, solicitudId, SOLICITUD_ITEM_STATUS.ENTREGADO]
+      [
+        SOLICITUD_ITEM_STATUS.ENVIADO,
+        actorId,
+        solicitudId,
+        SOLICITUD_ITEM_STATUS.ENTREGADO,
+        SOLICITUD_ITEM_STATUS.NO_APLICA,
+      ]
     );
     return;
   }
@@ -1261,8 +1267,15 @@ async function applyMassItemStatusUpdate(solicitudId, estadoItem, actorId) {
           recepcionado_por_id = COALESCE(recepcionado_por_id, ?),
           updated_at = CURRENT_TIMESTAMP
         WHERE solicitud_id = ?
+          AND estado_item <> ?
       `,
-      [SOLICITUD_ITEM_STATUS.ENTREGADO, actorId, actorId, solicitudId]
+      [
+        SOLICITUD_ITEM_STATUS.ENTREGADO,
+        actorId,
+        actorId,
+        solicitudId,
+        SOLICITUD_ITEM_STATUS.NO_APLICA,
+      ]
     );
   }
 }

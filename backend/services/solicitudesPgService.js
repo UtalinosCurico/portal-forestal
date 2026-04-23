@@ -424,7 +424,7 @@ function buildItemStatusText(summary = {}) {
     parts.push(`${summary.entregados} entregado(s)`);
   }
   if (Number(summary.no_aplica || 0) > 0) {
-    parts.push(`${summary.no_aplica} N/A`);
+    parts.push(`${summary.no_aplica} resuelto(s) en faena`);
   }
 
   return parts.join(" | ");
@@ -1299,9 +1299,15 @@ async function applyMassItemStatusUpdate(client, solicitudId, estadoItem, actorI
           enviado_por_id = COALESCE(enviado_por_id, $2),
           updated_at = NOW()
         WHERE solicitud_id = $3
-          AND estado_item <> $4
+          AND estado_item NOT IN ($4, $5)
       `,
-      [SOLICITUD_ITEM_STATUS.ENVIADO, Number(actorId), Number(solicitudId), SOLICITUD_ITEM_STATUS.ENTREGADO]
+      [
+        SOLICITUD_ITEM_STATUS.ENVIADO,
+        Number(actorId),
+        Number(solicitudId),
+        SOLICITUD_ITEM_STATUS.ENTREGADO,
+        SOLICITUD_ITEM_STATUS.NO_APLICA,
+      ]
     );
     return;
   }
@@ -1316,8 +1322,15 @@ async function applyMassItemStatusUpdate(client, solicitudId, estadoItem, actorI
           recepcionado_por_id = COALESCE(recepcionado_por_id, $3),
           updated_at = NOW()
         WHERE solicitud_id = $4
+          AND estado_item <> $5
       `,
-      [SOLICITUD_ITEM_STATUS.ENTREGADO, Number(actorId), Number(actorId), Number(solicitudId)]
+      [
+        SOLICITUD_ITEM_STATUS.ENTREGADO,
+        Number(actorId),
+        Number(actorId),
+        Number(solicitudId),
+        SOLICITUD_ITEM_STATUS.NO_APLICA,
+      ]
     );
   }
 }
