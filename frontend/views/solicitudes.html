@@ -489,6 +489,37 @@
     </section>
   </div>
 
+  <!-- Panel de herramientas admin — solo visible para ADMIN -->
+  <section id="admin-tools-card" class="card full hidden">
+    <div class="section-head compact-head">
+      <div>
+        <h4>Herramientas Admin</h4>
+        <p class="muted-text">Diagnóstico y reparación del sistema de solicitudes.</p>
+      </div>
+    </div>
+
+    <div class="admin-tools-grid">
+      <div class="admin-tool-block">
+        <h5>Consistencia de estados</h5>
+        <p class="muted-text">Detecta y corrige solicitudes cuyo estado no coincide con el avance real de sus ítems.</p>
+        <div class="actions-inline">
+          <button id="admin-repair-btn" class="action-btn" type="button">Reparar consistencia</button>
+        </div>
+        <div id="admin-repair-result" class="admin-tool-result hidden"></div>
+      </div>
+
+      <div class="admin-tool-block">
+        <h5>Errores recientes de API</h5>
+        <p class="muted-text">Últimos errores capturados desde que el servidor está activo.</p>
+        <div class="actions-inline">
+          <button id="admin-error-log-btn" class="action-btn secondary" type="button">Ver errores</button>
+          <button id="admin-error-log-clear-btn" class="action-btn secondary" type="button">Ocultar</button>
+        </div>
+        <div id="admin-error-log" class="admin-error-log hidden"></div>
+      </div>
+    </div>
+  </section>
+
   <div id="solicitudes-mobile-bar" class="mobile-action-bar">
     <button id="solicitudes-mobile-primary" class="action-btn large-action-btn" type="button">
       Nueva solicitud

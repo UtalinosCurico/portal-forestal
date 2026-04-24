@@ -5002,3 +5002,60 @@ tbody tr {
 .row-highlight {
   animation: row-highlight-pulse 2s ease-out forwards !important;
 }
+
+/* ── Admin Tools panel ───────────────────────────────────────────────────────── */
+.admin-tools-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+@media (max-width: 680px) {
+  .admin-tools-grid { grid-template-columns: 1fr; }
+}
+
+.admin-tool-block {
+  background: #f8fbf9;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.admin-tool-block h5 {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+}
+
+.admin-tool-result,
+.admin-error-log {
+  margin-top: 10px;
+  font-size: 0.83rem;
+}
+
+.admin-tool-ok  { color: #1a5c38; font-weight: 600; }
+.admin-tool-warn { color: #7a4500; font-weight: 600; display: block; margin-bottom: 6px; }
+
+.admin-tool-row {
+  padding: 4px 0;
+  border-bottom: 1px solid #e8f0ec;
+  color: #354149;
+}
+
+.admin-error-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+  padding: 5px 0;
+  border-bottom: 1px solid #eef2f4;
+  font-size: 0.8rem;
+}
+
+.admin-error-ts   { color: var(--muted); flex-shrink: 0; }
+.admin-error-path { color: #354149; font-family: monospace; }
+.admin-error-msg  { color: #5c2525; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.admin-error-user { color: var(--muted); font-style: italic; }
+
+.status-error { color: #9f2e2e; font-weight: 700; }
+.status-warn  { color: #7a5200; font-weight: 700; }

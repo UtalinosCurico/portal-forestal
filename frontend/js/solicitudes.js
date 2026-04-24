@@ -2371,13 +2371,32 @@ export async function initSolicitudesView(context) {
     }
   });
 
+  const STATUS_RANK = {
+    PENDIENTE: 0, EN_REVISION: 1, APROBADO: 2, EN_DESPACHO: 3, ENTREGADO: 4, RECHAZADO: 5,
+  };
+
   detailStatusActions.addEventListener("click", (event) => {
     const button = event.target.closest("[data-status-value]");
     if (!button || !canManage) {
       return;
     }
 
-    detailStatus.value = button.dataset.statusValue;
+    const targetStatus = button.dataset.statusValue;
+    const currentStatus = currentSolicitud?.estado || "PENDIENTE";
+    const isReversion =
+      (STATUS_RANK[targetStatus] ?? 99) < (STATUS_RANK[currentStatus] ?? 0) &&
+      targetStatus !== currentStatus;
+
+    if (isReversion) {
+      const currentLabel = getStatusLabel(currentStatus);
+      const targetLabel = getStatusLabel(targetStatus);
+      const confirmed = window.confirm(
+        `Vas a revertir el estado de "${currentLabel}" a "${targetLabel}".\n\nEsto puede afectar el seguimiento de ítems. ¿Estás seguro?`
+      );
+      if (!confirmed) return;
+    }
+
+    detailStatus.value = targetStatus;
     detailStatusActions
       .querySelectorAll(".status-action-btn")
       .forEach((actionButton) =>
@@ -2760,4 +2779,68 @@ export async function initSolicitudesView(context) {
 
   // Limpiar intervalo si la vista se destruye (navegacion)
   window.__fmnPendingAutoRefreshId = pendingAutoRefreshId;
+
+  // Panel herramientas admin — solo ADMIN
+  const adminToolsCard = document.getElementById("admin-tools-card");
+  if (role === "ADMIN" && adminToolsCard) {
+    adminToolsCard.classList.remove("hidden");
+
+    const repairBtn = document.getElementById("admin-repair-btn");
+    const repairResult = document.getElementById("admin-repair-result");
+    const errorLogBtn = document.getElementById("admin-error-log-btn");
+    const errorLogClearBtn = document.getElementById("admin-error-log-clear-btn");
+    const errorLogEl = document.getElementById("admin-error-log");
+
+    repairBtn?.addEventListener("click", async () => {
+      try {
+        repairBtn.disabled = true;
+        repairBtn.textContent = "Reparando...";
+        const res = await context.apiRequest("/api/admin/repair-consistency", { method: "POST" });
+        repairResult.classList.remove("hidden");
+        if (res.repaired === 0) {
+          repairResult.innerHTML = `<span class="admin-tool-ok">✓ Todo consistente. ${res.checked} solicitudes revisadas.</span>`;
+        } else {
+          const rows = res.details.map((d) =>
+            `<div class="admin-tool-row">Solicitud #${d.id}: <em>${getStatusLabel(d.from)}</em> → <strong>${getStatusLabel(d.to)}</strong></div>`
+          ).join("");
+          repairResult.innerHTML = `<span class="admin-tool-warn">⚠ ${res.repaired} solicitud(es) corregida(s) de ${res.checked}.</span>${rows}`;
+        }
+      } catch (err) {
+        context.showToast(err.message, true);
+      } finally {
+        repairBtn.disabled = false;
+        repairBtn.textContent = "Reparar consistencia";
+      }
+    });
+
+    errorLogBtn?.addEventListener("click", async () => {
+      try {
+        errorLogBtn.disabled = true;
+        const res = await context.apiRequest("/api/admin/error-log");
+        errorLogEl.classList.remove("hidden");
+        if (!res.data?.length) {
+          errorLogEl.innerHTML = `<div class="admin-tool-ok">Sin errores registrados desde que el servidor inicio.</div>`;
+        } else {
+          errorLogEl.innerHTML = res.data.map((e) => `
+            <div class="admin-error-row">
+              <span class="admin-error-ts">${e.ts?.slice(0, 19).replace("T", " ")}</span>
+              <span class="admin-error-status status-${e.status >= 500 ? "error" : "warn"}">${e.status}</span>
+              <span class="admin-error-path">${e.method} ${e.path}</span>
+              <span class="admin-error-msg">${e.message}</span>
+              ${e.user ? `<span class="admin-error-user">${e.user}</span>` : ""}
+            </div>
+          `).join("");
+        }
+      } catch (err) {
+        context.showToast(err.message, true);
+      } finally {
+        errorLogBtn.disabled = false;
+      }
+    });
+
+    errorLogClearBtn?.addEventListener("click", () => {
+      errorLogEl.classList.add("hidden");
+      errorLogEl.innerHTML = "";
+    });
+  }
 }

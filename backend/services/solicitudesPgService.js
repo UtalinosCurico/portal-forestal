@@ -2616,4 +2616,6 @@ module.exports = {
   removeSolicitudMessageImage,
   deleteSolicitud,
   listPendingItems,
+  buildItemStatusSummary,
+  deriveSolicitudStatusFromItemSummary,
 };
