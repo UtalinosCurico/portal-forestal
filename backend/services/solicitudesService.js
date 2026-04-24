@@ -367,12 +367,17 @@ function buildItemStatusSummary(items = []) {
     enviados: 0,
     entregados: 0,
     no_aplica: 0,
+    resuelto_faena: 0,
   };
 
   for (const item of items) {
     const status = String(item.estado_item || SOLICITUD_ITEM_STATUS.POR_GESTIONAR).toUpperCase();
     if (status === SOLICITUD_ITEM_STATUS.NO_APLICA) {
       summary.no_aplica += 1;
+      continue;
+    }
+    if (status === SOLICITUD_ITEM_STATUS.RESUELTO_FAENA) {
+      summary.resuelto_faena += 1;
       continue;
     }
 
@@ -1244,7 +1249,7 @@ async function applyMassItemStatusUpdate(solicitudId, estadoItem, actorId) {
           enviado_por_id = COALESCE(enviado_por_id, ?),
           updated_at = CURRENT_TIMESTAMP
         WHERE solicitud_id = ?
-          AND estado_item NOT IN (?, ?)
+          AND estado_item NOT IN (?, ?, ?)
       `,
       [
         SOLICITUD_ITEM_STATUS.ENVIADO,
@@ -1252,6 +1257,7 @@ async function applyMassItemStatusUpdate(solicitudId, estadoItem, actorId) {
         solicitudId,
         SOLICITUD_ITEM_STATUS.ENTREGADO,
         SOLICITUD_ITEM_STATUS.NO_APLICA,
+        SOLICITUD_ITEM_STATUS.RESUELTO_FAENA,
       ]
     );
     return;
@@ -1267,7 +1273,7 @@ async function applyMassItemStatusUpdate(solicitudId, estadoItem, actorId) {
           recepcionado_por_id = COALESCE(recepcionado_por_id, ?),
           updated_at = CURRENT_TIMESTAMP
         WHERE solicitud_id = ?
-          AND estado_item <> ?
+          AND estado_item NOT IN (?, ?)
       `,
       [
         SOLICITUD_ITEM_STATUS.ENTREGADO,
@@ -1275,6 +1281,7 @@ async function applyMassItemStatusUpdate(solicitudId, estadoItem, actorId) {
         actorId,
         solicitudId,
         SOLICITUD_ITEM_STATUS.NO_APLICA,
+        SOLICITUD_ITEM_STATUS.RESUELTO_FAENA,
       ]
     );
   }
@@ -1283,7 +1290,18 @@ async function applyMassItemStatusUpdate(solicitudId, estadoItem, actorId) {
 async function createSolicitud(actor, payload) {
   const actorName = actor.nombre || actor.name || "Sistema";
   const clientRequestId = normalizeClientRequestId(payload);
-  const items = normalizeItems(payload);
+  const rawItems = normalizeItems(payload);
+  const items = isGlobalRole(getActorRole(actor))
+    ? rawItems
+    : rawItems.map((item) => ({
+        ...item,
+        estado_item:
+          item.estado_item &&
+          item.estado_item !== SOLICITUD_ITEM_STATUS.NO_APLICA &&
+          item.estado_item !== SOLICITUD_ITEM_STATUS.RESUELTO_FAENA
+            ? item.estado_item
+            : SOLICITUD_ITEM_STATUS.POR_GESTIONAR,
+      }));
   const equipoId = await resolveEquipoForCreation(actor, payload);
   const solicitudContext = { equipo_id: Number(equipoId) };
   for (const item of items) {
@@ -2051,7 +2069,17 @@ async function createSolicitudItem(actor, solicitudId, payload = {}) {
     throw new HttpError(409, "Solo puedes agregar items mientras la solicitud esta pendiente");
   }
 
-  const item = normalizeSingleItem(payload);
+  const rawItem = normalizeSingleItem(payload);
+  const item = isGlobalRole(getActorRole(actor))
+    ? rawItem
+    : {
+        ...rawItem,
+        estado_item:
+          rawItem.estado_item !== SOLICITUD_ITEM_STATUS.NO_APLICA &&
+          rawItem.estado_item !== SOLICITUD_ITEM_STATUS.RESUELTO_FAENA
+            ? rawItem.estado_item
+            : SOLICITUD_ITEM_STATUS.POR_GESTIONAR,
+      };
   if (item.encargado_id) {
     await assertEncargadoAllowed(actor, solicitud, item.encargado_id);
   }

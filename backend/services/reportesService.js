@@ -28,7 +28,8 @@ const STATUS_COLOR = {
 };
 
 const ITEM_STATUS_COLOR = {
-  NO_APLICA:     { bg: "FFF2F4F3", fg: "FF55665E" },
+  NO_APLICA:      { bg: "FFF2F4F3", fg: "FF55665E" },
+  RESUELTO_FAENA: { bg: "FFF9F1E8", fg: "FF8A4C10" },
   POR_GESTIONAR: { bg: "FFFFF8E1", fg: "FF7A5200" },
   GESTIONADO:    { bg: "FFE3F2FD", fg: "FF1565C0" },
   ENVIADO:       { bg: "FFFFF3E0", fg: "FFBf5000" },
@@ -45,7 +46,8 @@ const STATUS_LABEL = {
 };
 
 const ITEM_STATUS_LABEL = {
-  NO_APLICA:     "Resuelto en faena",
+  NO_APLICA:      "N/A",
+  RESUELTO_FAENA: "Resuelto en faena",
   POR_GESTIONAR: "Por gestionar",
   GESTIONADO:    "Gestionado",
   ENVIADO:       "Enviado",

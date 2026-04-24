@@ -35,7 +35,8 @@ const STATUS_OPTIONS = [
 ];
 
 const ITEM_STATUS_LABELS = {
-  NO_APLICA: "Resuelto en faena",
+  RESUELTO_FAENA: "Resuelto en faena",
+  NO_APLICA: "N/A",
   POR_GESTIONAR: "Por gestionar",
   GESTIONADO: "Gestionado",
   ENVIADO: "Enviado",
@@ -43,23 +44,28 @@ const ITEM_STATUS_LABELS = {
 };
 
 const ITEM_STATUS_OPTIONS = [
-  {
-    key: "NO_APLICA",
-    label: "Resuelto en faena",
-    hint: "No se despacha, no aparece en pendientes y conserva el registro",
-  },
   { key: "POR_GESTIONAR", label: "Por gestionar", hint: "Aun no se toma el item" },
   { key: "GESTIONADO", label: "Gestionado", hint: "Ya esta siendo trabajado" },
   { key: "ENVIADO", label: "Enviado", hint: "Salio hacia faena" },
   { key: "ENTREGADO", label: "Entregado", hint: "Producto recibido" },
+  {
+    key: "NO_APLICA",
+    label: "N/A",
+    hint: "No corresponde gestionarlo ni despacharlo, pero queda el registro",
+  },
+  {
+    key: "RESUELTO_FAENA",
+    label: "Resuelto en faena",
+    hint: "Ya se resolvio en terreno: no se despacha y no aparece en pendientes",
+  },
 ];
 
 function getDefaultItemStatus(status) {
   const normalized = String(status || "").trim().toUpperCase();
-  return ITEM_STATUS_OPTIONS.some((option) => option.key === normalized) ? normalized : "NO_APLICA";
+  return ITEM_STATUS_OPTIONS.some((option) => option.key === normalized) ? normalized : "POR_GESTIONAR";
 }
 
-function renderItemStatusOptions(selectedStatus = "NO_APLICA") {
+function renderItemStatusOptions(selectedStatus = "POR_GESTIONAR") {
   const normalizedStatus = getDefaultItemStatus(selectedStatus);
   return ITEM_STATUS_OPTIONS.map(
     (option) => `<option value="${option.key}" ${option.key === normalizedStatus ? "selected" : ""}>${option.label}</option>`
@@ -243,12 +249,17 @@ function summarizeItemStatuses(items = []) {
     enviados: 0,
     entregados: 0,
     noAplica: 0,
+    resueltoFaena: 0,
   };
 
   items.forEach((item) => {
-    const status = getDefaultItemStatus(item.estado_item || "NO_APLICA");
+    const status = getDefaultItemStatus(item.estado_item || "POR_GESTIONAR");
     if (status === "NO_APLICA") {
       summary.noAplica += 1;
+      return;
+    }
+    if (status === "RESUELTO_FAENA") {
+      summary.resueltoFaena += 1;
       return;
     }
 
@@ -294,8 +305,12 @@ function renderProgressSummary(items = []) {
       <strong>${summary.porGestionar}</strong>
     </div>
     <div class="progress-summary-card">
-      <span class="progress-summary-label">Resuelto en faena</span>
+      <span class="progress-summary-label">N/A</span>
       <strong>${summary.noAplica}</strong>
+    </div>
+    <div class="progress-summary-card">
+      <span class="progress-summary-label">Resuelto en faena</span>
+      <strong>${summary.resueltoFaena}</strong>
     </div>
     <div class="progress-summary-card">
       <span class="progress-summary-label">Enviados</span>
@@ -320,7 +335,7 @@ function renderDeliveryAssistant(solicitud, options = {}) {
     return `
       <div class="delivery-assistant-copy">
         <h5>Seguimiento no requerido</h5>
-        <p class="muted-text">Todos los productos de esta solicitud quedaron resueltos en faena o sin despacho.</p>
+        <p class="muted-text">Todos los productos de esta solicitud quedaron en N/A o en resuelto en faena.</p>
       </div>
     `;
   }
@@ -442,6 +457,9 @@ function renderItemStatusSnapshot(item) {
     return "";
   }
 
+  const noAplica = Number(summary.noAplica ?? summary.no_aplica ?? 0);
+  const resueltoFaena = Number(summary.resueltoFaena ?? summary.resuelto_faena ?? 0);
+
   const parts = [];
   if (summary.por_gestionar) {
     parts.push(`${summary.por_gestionar} por gestionar`);
@@ -455,8 +473,11 @@ function renderItemStatusSnapshot(item) {
   if (summary.entregados) {
     parts.push(`${summary.entregados} entregado(s)`);
   }
-  if (summary.noAplica) {
-    parts.push(`${summary.noAplica} resuelto(s) en faena`);
+  if (noAplica) {
+    parts.push(`${noAplica} N/A`);
+  }
+  if (resueltoFaena) {
+    parts.push(`${resueltoFaena} resuelto(s) en faena`);
   }
   return parts.join(" | ");
 }
@@ -1382,7 +1403,7 @@ export async function initSolicitudesView(context) {
   }
 
   function populateItemModalOptions(item = {}) {
-    itemStatusInput.innerHTML = renderItemStatusOptions(item.estado_item || "NO_APLICA");
+    itemStatusInput.innerHTML = renderItemStatusOptions(item.estado_item || "POR_GESTIONAR");
 
     itemOwnerInput.innerHTML = [
       "<option value=''>Sin encargado</option>",
@@ -2045,7 +2066,7 @@ export async function initSolicitudesView(context) {
     }
 
     if (currentItemEditor.canManageItem) {
-      payload.estado_item = itemStatusInput.value || "NO_APLICA";
+      payload.estado_item = itemStatusInput.value || "POR_GESTIONAR";
       payload.comentario_gestion = itemManagementCommentInput.value.trim();
       payload.encargado_id = itemOwnerInput.value ? Number(itemOwnerInput.value) : null;
       payload.enviado_por_id = itemSenderInput.value ? Number(itemSenderInput.value) : null;

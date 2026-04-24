@@ -1489,6 +1489,11 @@ button:disabled:hover {
   color: #5d6f67;
 }
 
+.item-status-resuelto-faena {
+  background: #f6efe6;
+  color: #8a4c10;
+}
+
 .item-status-gestionado {
   background: #e6f3ec;
   color: #0e5b33;

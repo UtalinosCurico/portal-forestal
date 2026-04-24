@@ -102,3 +102,49 @@ test("NO_APLICA conserva el registro y no se pisa al entregar la solicitud compl
   assert.equal(itemResueltoFinal?.estado_item, "NO_APLICA");
   assert.equal(itemDespachoFinal?.estado_item, "ENTREGADO");
 });
+
+test("RESUELTO_FAENA conserva el registro y no se pisa al entregar la solicitud completa", async () => {
+  const { get, solicitudesService } = await setupSqliteScenario();
+  const admin = await getUserByRole(get, "ADMIN");
+  const jefe = await getUserByRole(get, "JEFE_FAENA");
+
+  assert.ok(admin, "Debe existir un admin para la prueba");
+  assert.ok(jefe, "Debe existir un jefe de faena para la prueba");
+
+  const solicitud = await solicitudesService.createSolicitud(jefe, {
+    client_request_id: "resuelto-faena-flow-001",
+    comentario: "Una parte se resolvio directamente en terreno",
+    items: [
+      { nombre_item: "Calcetines", cantidad: 1, comentario: "Se resolvio en faena" },
+      { nombre_item: "Guantes", cantidad: 1, comentario: "Debe enviarse" },
+    ],
+  });
+
+  const [itemResuelto, itemDespacho] = solicitud.items;
+
+  await solicitudesService.updateSolicitudItem(admin, solicitud.id, itemResuelto.id, {
+    estado_item: "RESUELTO_FAENA",
+    comentario_gestion: "Se encontro o resolvio directamente en faena; no se despacha",
+  });
+
+  const pendientesTrasResolver = await solicitudesService.listPendingItems(admin);
+  assert.equal(
+    pendientesTrasResolver.some((item) => Number(item.item_id) === Number(itemResuelto.id)),
+    false
+  );
+
+  await solicitudesService.updateSolicitudItem(admin, solicitud.id, itemDespacho.id, {
+    estado_item: "ENVIADO",
+  });
+
+  const confirmada = await solicitudesService.updateSolicitud(jefe, solicitud.id, {
+    estado: "ENTREGADO",
+  });
+
+  const itemResueltoFinal = confirmada.items.find((item) => Number(item.id) === Number(itemResuelto.id));
+  const itemDespachoFinal = confirmada.items.find((item) => Number(item.id) === Number(itemDespacho.id));
+
+  assert.equal(confirmada.estado, "ENTREGADO");
+  assert.equal(itemResueltoFinal?.estado_item, "RESUELTO_FAENA");
+  assert.equal(itemDespachoFinal?.estado_item, "ENTREGADO");
+});

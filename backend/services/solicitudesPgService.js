@@ -376,6 +376,7 @@ function buildItemStatusSummary(items = []) {
     enviados: 0,
     entregados: 0,
     no_aplica: 0,
+    resuelto_faena: 0,
   };
 
   if (!items.length) {
@@ -386,6 +387,10 @@ function buildItemStatusSummary(items = []) {
     const status = String(item.estado_item || SOLICITUD_ITEM_STATUS.POR_GESTIONAR).toUpperCase();
     if (status === SOLICITUD_ITEM_STATUS.NO_APLICA) {
       baseSummary.no_aplica += 1;
+      continue;
+    }
+    if (status === SOLICITUD_ITEM_STATUS.RESUELTO_FAENA) {
+      baseSummary.resuelto_faena += 1;
       continue;
     }
 
@@ -424,7 +429,10 @@ function buildItemStatusText(summary = {}) {
     parts.push(`${summary.entregados} entregado(s)`);
   }
   if (Number(summary.no_aplica || 0) > 0) {
-    parts.push(`${summary.no_aplica} resuelto(s) en faena`);
+    parts.push(`${summary.no_aplica} N/A`);
+  }
+  if (Number(summary.resuelto_faena || 0) > 0) {
+    parts.push(`${summary.resuelto_faena} resuelto(s) en faena`);
   }
 
   return parts.join(" | ");
@@ -1299,7 +1307,7 @@ async function applyMassItemStatusUpdate(client, solicitudId, estadoItem, actorI
           enviado_por_id = COALESCE(enviado_por_id, $2),
           updated_at = NOW()
         WHERE solicitud_id = $3
-          AND estado_item NOT IN ($4, $5)
+          AND estado_item NOT IN ($4, $5, $6)
       `,
       [
         SOLICITUD_ITEM_STATUS.ENVIADO,
@@ -1307,6 +1315,7 @@ async function applyMassItemStatusUpdate(client, solicitudId, estadoItem, actorI
         Number(solicitudId),
         SOLICITUD_ITEM_STATUS.ENTREGADO,
         SOLICITUD_ITEM_STATUS.NO_APLICA,
+        SOLICITUD_ITEM_STATUS.RESUELTO_FAENA,
       ]
     );
     return;
@@ -1322,7 +1331,7 @@ async function applyMassItemStatusUpdate(client, solicitudId, estadoItem, actorI
           recepcionado_por_id = COALESCE(recepcionado_por_id, $3),
           updated_at = NOW()
         WHERE solicitud_id = $4
-          AND estado_item <> $5
+          AND estado_item NOT IN ($5, $6)
       `,
       [
         SOLICITUD_ITEM_STATUS.ENTREGADO,
@@ -1330,6 +1339,7 @@ async function applyMassItemStatusUpdate(client, solicitudId, estadoItem, actorI
         Number(actorId),
         Number(solicitudId),
         SOLICITUD_ITEM_STATUS.NO_APLICA,
+        SOLICITUD_ITEM_STATUS.RESUELTO_FAENA,
       ]
     );
   }
@@ -1339,13 +1349,15 @@ async function createSolicitud(actor, payload) {
   const actorName = actor.nombre || actor.name || "Sistema";
   const clientRequestId = normalizeClientRequestId(payload);
   const rawItems = normalizeItems(payload);
-  // Roles operativos no pueden poner NO_APLICA al crear — siempre POR_GESTIONAR
+  // Roles operativos no pueden crear items ya cerrados en N/A o resueltos en faena.
   const items = isGlobalRole(getActorRole(actor))
     ? rawItems
     : rawItems.map((item) => ({
         ...item,
         estado_item:
-          item.estado_item && item.estado_item !== SOLICITUD_ITEM_STATUS.NO_APLICA
+          item.estado_item &&
+          item.estado_item !== SOLICITUD_ITEM_STATUS.NO_APLICA &&
+          item.estado_item !== SOLICITUD_ITEM_STATUS.RESUELTO_FAENA
             ? item.estado_item
             : SOLICITUD_ITEM_STATUS.POR_GESTIONAR,
       }));
@@ -2116,7 +2128,17 @@ async function createSolicitudItem(actor, solicitudId, payload = {}) {
     throw new HttpError(409, "Solo puedes agregar items mientras la solicitud esta pendiente");
   }
 
-  const item = normalizeSingleItem(payload);
+  const rawItem = normalizeSingleItem(payload);
+  const item = isGlobalRole(getActorRole(actor))
+    ? rawItem
+    : {
+        ...rawItem,
+        estado_item:
+          rawItem.estado_item !== SOLICITUD_ITEM_STATUS.NO_APLICA &&
+          rawItem.estado_item !== SOLICITUD_ITEM_STATUS.RESUELTO_FAENA
+            ? rawItem.estado_item
+            : SOLICITUD_ITEM_STATUS.POR_GESTIONAR,
+      };
   if (item.encargado_id) {
     await assertEncargadoAllowed(actor, solicitud, item.encargado_id);
   }

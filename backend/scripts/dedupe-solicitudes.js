@@ -207,6 +207,7 @@ function solicitudClusterKey(solicitud, items = []) {
 function getStatusRank(status) {
   const ranks = {
     NO_APLICA: 0,
+    RESUELTO_FAENA: 0,
     POR_GESTIONAR: 1,
     GESTIONADO: 2,
     ENVIADO: 3,
@@ -249,7 +250,7 @@ function buildItemStatusSummary(items = []) {
 
   for (const item of items) {
     const status = String(item.estado_item || "POR_GESTIONAR").trim().toUpperCase();
-    if (status === "NO_APLICA") {
+    if (status === "NO_APLICA" || status === "RESUELTO_FAENA") {
       continue;
     }
     summary.total += 1;
