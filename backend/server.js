@@ -7,6 +7,7 @@ const bodyParser = require("body-parser");
 const { initDatabase } = require("./database/init");
 const { initUserStore } = require("./services/userStore");
 const { initOperationalStore } = require("./services/operationalPgStore");
+const { autoSyncNovedadesFromDeploy } = require("./services/novedadesBootstrap");
 const testRoutes = require("./routes/test");
 const authRoutes = require("./routes/auth");
 const dashboardRoutes = require("./routes/dashboard");
@@ -94,6 +95,7 @@ async function initializeApp() {
       await initDatabase();
       await initUserStore();
       await initOperationalStore();
+      autoSyncNovedadesFromDeploy().catch(() => {});
       const storageState = getStorageState();
       if (storageState.lockUserMutations) {
         console.warn("[FMN] Seguridad activa:", storageState.message);
