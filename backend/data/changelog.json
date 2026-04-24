@@ -1,6 +1,22 @@
 {
-  "lastCommit": "131ebd30257b3d2c70a581eed1946dab6e8a2be1",
+  "lastCommit": "7859404015e6e9ae830428112e3e35b484ccfc45",
   "entries": [
+    {
+      "id": "78594040",
+      "tipo": "feature",
+      "titulo": "Consistencia automática, confirmación reversa de estado y error log",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-24T13:14:45.000Z",
+      "descripcion": "- errorHandlers.js: ring buffer de últimos 100 errores de API (4xx/5xx)\n- consistencyService.js: repara discrepancias estado_solicitud vs ítems\n- solicitudesPgService.js: exporta buildItemStatusSummary y deriveSolicitudStatusFromItemSummary\n- routes/admin.js: endpoints POST /repair-consistency, GET /error-log, GET /check-consistency/:id (ADMIN only)\n- solicitudes.js: confirmación al revertir estad"
+    },
+    {
+      "id": "47671d85",
+      "tipo": "feature",
+      "titulo": "Nuevo estado RESUELTO_FAENA + separar semántica de NO_APLICA",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-24T12:32:25.000Z",
+      "descripcion": "- Agrega RESUELTO_FAENA: ítem resuelto en terreno, no se despacha ni\n  aparece en pendientes, conserva el registro histórico\n- NO_APLICA ahora es literalmente N/A: ítem que no corresponde gestionar\n- applyMassItemStatusUpdate excluye RESUELTO_FAENA del despacho/entrega masiva\n- Frontend: badge naranja para RESUELTO_FAENA, default POR_GESTIONAR en selects\n- Reportes Excel: color y label para el nue"
+    },
     {
       "id": "131ebd30",
       "tipo": "fix",
