@@ -1,6 +1,22 @@
 {
-  "lastCommit": "7859404015e6e9ae830428112e3e35b484ccfc45",
+  "lastCommit": "49ce399c83a15e36eb9b0ac7add0236ce8bbe9db",
   "entries": [
+    {
+      "id": "49ce399c",
+      "tipo": "fix",
+      "titulo": "Corregir rutas API faltando prefijo /api",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-24T13:32:44.000Z",
+      "descripcion": "Todas las llamadas en novedades-ui.js usaban /novedades sin el\nprefijo /api, causando \"Error al cargar novedades\" en producción."
+    },
+    {
+      "id": "3684b82d",
+      "tipo": "feature",
+      "titulo": "Auto-registrar novedad en cada deploy desde variables Vercel",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-24T13:26:29.000Z",
+      "descripcion": "Al arrancar el servidor, lee VERCEL_GIT_COMMIT_SHA y VERCEL_GIT_COMMIT_MESSAGE,\nparsea el prefijo de commit convencional (feat/fix/perf/etc.) y guarda la novedad\nen la DB si no existe aún. Ignora commits [skip ci] y chore/docs/test."
+    },
     {
       "id": "78594040",
       "tipo": "feature",
