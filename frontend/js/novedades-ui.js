@@ -43,7 +43,7 @@ export function initNovedades(ctx) {
     submitBtn.disabled = true;
     submitBtn.textContent = "Publicando…";
     try {
-      await _ctx.apiRequest("/novedades", { method: "POST", body: JSON.stringify({ tipo, titulo, descripcion }) });
+      await _ctx.apiRequest("/api/novedades", { method: "POST", body: { tipo, titulo, descripcion } });
       el("novedades-form").reset();
       el("novedades-form-wrap")?.classList.add("hidden");
       el("novedades-add-btn")?.classList.remove("hidden");
@@ -60,7 +60,7 @@ export function initNovedades(ctx) {
   el("novedades-list")?.addEventListener("click", async (e) => {
     const del = e.target.closest("[data-nov-delete]");
     if (!del) return;
-    await _ctx.apiRequest(`/novedades/${del.dataset.novDelete}`, { method: "DELETE" });
+    await _ctx.apiRequest(`/api/novedades/${del.dataset.novDelete}`, { method: "DELETE" });
     loadNovedades();
   });
 }
@@ -85,7 +85,7 @@ async function loadNovedades() {
   if (!list) return;
   list.innerHTML = "<div class='history-empty'>Cargando…</div>";
   try {
-    const { data } = await _ctx.apiRequest("/novedades");
+    const { data } = await _ctx.apiRequest("/api/novedades");
     const items = Array.isArray(data) ? data : [];
     if (!items.length) {
       list.innerHTML = "<div class='history-empty'>Sin novedades publicadas todavía.</div>";
@@ -120,7 +120,7 @@ export async function refreshNovedadesBadge(apiRequest) {
     const fn = apiRequest || _ctx?.apiRequest;
     if (!fn) return;
     const since = localStorage.getItem(NOVEDADES_LS_KEY) || "1970-01-01T00:00:00Z";
-    const { data } = await fn(`/novedades/count?since=${encodeURIComponent(since)}`);
+    const { data } = await fn(`/api/novedades/count?since=${encodeURIComponent(since)}`);
     const n = data?.count || 0;
     const badge = el("novedades-badge");
     if (badge) { badge.classList.toggle("hidden", n === 0); badge.textContent = n; }
