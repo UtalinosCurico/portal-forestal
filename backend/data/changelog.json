@@ -1,6 +1,14 @@
 {
-  "lastCommit": "49ce399c83a15e36eb9b0ac7add0236ce8bbe9db",
+  "lastCommit": "7a5d494f7808cc32081280f55164ab4d9dbd31d9",
   "entries": [
+    {
+      "id": "7a5d494f",
+      "tipo": "feature",
+      "titulo": "Fondo de video cinematográfico con fallback SVG",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-26T19:17:39.000Z",
+      "descripcion": "Video harvester 1080p comprimido (3.8MB), overlay oscuro degradado,\nfade-in suave al reproducirse, paisaje SVG como fallback si no hay video."
+    },
     {
       "id": "49ce399c",
       "tipo": "fix",
