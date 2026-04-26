@@ -1,6 +1,13 @@
 {
-  "lastCommit": "02d063643885866958ca82c6b36909f2e133dd03",
+  "lastCommit": "60903128f7a4d2bafa6d9c3f5cc0d2ecfbe166ad",
   "entries": [
+    {
+      "id": "60903128",
+      "tipo": "fix",
+      "titulo": "Corrige novedades y consultas postgres",
+      "autor_nombre": "UtalinosCurico",
+      "created_at": "2026-04-26T20:22:49.000Z"
+    },
     {
       "id": "02d06364",
       "tipo": "feature",
