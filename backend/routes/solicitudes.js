@@ -32,6 +32,32 @@ router.get(
 );
 
 router.get(
+  "/:id/historial",
+  authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.JEFE_FAENA, ROLES.MECANICO, ROLES.OPERADOR),
+  asyncHandler(async (req, res) => {
+    const solicitudId = Number(req.params.id);
+    const result = await solicitudesService.getSolicitudHistory(req.user, solicitudId, req.query || {});
+    res.json({
+      status: "ok",
+      data: result.data,
+      meta: result.meta,
+    });
+  })
+);
+
+router.get(
+  "/:id/export-pdf",
+  authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.JEFE_FAENA, ROLES.MECANICO, ROLES.OPERADOR),
+  asyncHandler(async (req, res) => {
+    const solicitudId = Number(req.params.id);
+    const result = await solicitudesService.exportSolicitudHistoryPdf(req.user, solicitudId);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${result.filename}"`);
+    res.send(result.buffer);
+  })
+);
+
+router.get(
   "/:id",
   authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.JEFE_FAENA, ROLES.MECANICO, ROLES.OPERADOR),
   asyncHandler(async (req, res) => {

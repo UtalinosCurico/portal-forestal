@@ -61,6 +61,71 @@ function renderAlertsList(rows, formatDate, container) {
     .join("");
 }
 
+function getUrgencyClass(days = 0) {
+  const value = Number(days || 0);
+  if (value > 7) return "urgencia-rojo";
+  if (value >= 3) return "urgencia-amarillo";
+  return "urgencia-verde";
+}
+
+function getActionTypeLabel(type) {
+  const labels = {
+    SOLICITUD_PENDIENTE: "Aprobar",
+    ITEM_ATRASADO: "Atrasado",
+    ITEM_POR_GESTIONAR: "Gestionar",
+  };
+  return labels[type] || "Accion";
+}
+
+function renderMyActions(rows, container, countEl) {
+  if (!container) {
+    return;
+  }
+
+  if (countEl) {
+    countEl.textContent = `${rows.length} accion${rows.length !== 1 ? "es" : ""}`;
+  }
+
+  if (!rows.length) {
+    container.innerHTML = "<div class='history-empty'>Sin acciones pendientes para hoy.</div>";
+    return;
+  }
+
+  container.innerHTML = rows
+    .map((row) => {
+      const days = Number(row.dias_sin_movimiento || 0);
+      const qty =
+        row.cantidad !== null && row.cantidad !== undefined
+          ? `<span>${row.cantidad} ${row.unidad_medida || ""}</span>`
+          : "";
+      const code = row.codigo_referencia ? `<span>${row.codigo_referencia}</span>` : "";
+      return `
+        <button class="my-action-card" data-open-solicitud="${row.solicitud_id}" type="button">
+          <div class="my-action-top">
+            <span class="mini-chip">${getActionTypeLabel(row.tipo)}</span>
+            <span class="urgencia-badge ${getUrgencyClass(days)}">${days} dia${days !== 1 ? "s" : ""}</span>
+          </div>
+          <strong>${row.titulo || "Accion pendiente"}</strong>
+          <p>${row.descripcion || `Solicitud #${row.solicitud_id}`}</p>
+          <div class="my-action-meta">
+            <span>${row.equipo || "Sin equipo"}</span>
+            ${qty}
+            ${code}
+          </div>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function openSolicitudFromDashboard(solicitudId) {
+  if (!solicitudId) {
+    return;
+  }
+  sessionStorage.setItem("fmn-open-solicitud-id", String(solicitudId));
+  document.querySelector('.nav-item[data-view="solicitudes"]')?.click();
+}
+
 function renderSolicitudesTable(rows, formatDate, bodyEl) {
   if (!rows.length) {
     bodyEl.innerHTML = "<tr><td colspan='8'>Sin solicitudes para mostrar</td></tr>";
@@ -255,6 +320,8 @@ function renderLoadingState(elements) {
     dispatchEl,
     visibleEl,
     alertsList,
+    myActionsList,
+    myActionsCount,
     enviosBody,
     lastUpdateEl,
   } = elements;
@@ -266,6 +333,15 @@ function renderLoadingState(elements) {
     <div class="alert-card loading-line"></div>
     <div class="alert-card loading-line"></div>
   `;
+  if (myActionsList) {
+    myActionsList.innerHTML = `
+      <div class="my-action-card loading-line"></div>
+      <div class="my-action-card loading-line"></div>
+    `;
+  }
+  if (myActionsCount) {
+    myActionsCount.textContent = "Cargando...";
+  }
   enviosBody.innerHTML = "<tr><td colspan='8'>Cargando informacion...</td></tr>";
   lastUpdateEl.textContent = "Actualizando...";
 }
@@ -315,6 +391,8 @@ export async function initDashboardView(context) {
   const dispatchEl = document.getElementById("metric-despachos-pendientes");
   const visibleEl = document.getElementById("metric-dashboard-visible");
   const alertsList = document.getElementById("dashboard-alerts-list");
+  const myActionsList = document.getElementById("dashboard-my-actions-list");
+  const myActionsCount = document.getElementById("dashboard-my-actions-count");
   const solicitudesTitle = document.getElementById("metric-solicitudes-title");
   const solicitudesCaption = document.getElementById("metric-solicitudes-caption");
   const despachosTitle = document.getElementById("metric-despachos-title");
@@ -381,6 +459,8 @@ export async function initDashboardView(context) {
       dispatchEl,
       visibleEl,
       alertsList,
+      myActionsList,
+      myActionsCount,
       enviosBody,
       lastUpdateEl,
     });
@@ -388,13 +468,15 @@ export async function initDashboardView(context) {
 
     try {
       const query = buildQueryString(filters);
-      const [dashboardPayload, notificationsPayload] = await Promise.all([
+      const [dashboardPayload, notificationsPayload, myActionsPayload] = await Promise.all([
         context.apiRequest(`/api/dashboard${query}`),
         context.apiRequest("/api/notificaciones?soloNoLeidas=1&limit=8"),
+        context.apiRequest("/api/dashboard/my-actions?limit=12"),
       ]);
 
       const data = dashboardPayload.data || {};
       const notifications = notificationsPayload.data || [];
+      const myActions = myActionsPayload.data || [];
       const metricas = data.metricas || {};
       const visibleRows = data.solicitudes_enviadas || [];
 
@@ -408,6 +490,7 @@ export async function initDashboardView(context) {
       }
       renderSolicitudesTable(visibleRows, context.formatDate, enviosBody);
       renderAlertsList(notifications, context.formatDate, alertsList);
+      renderMyActions(myActions, myActionsList, myActionsCount);
       renderFilterSummary(filters, filterSummaryEl, equipoSelect, context.formatDateOnly);
 
       if (showToastMessage) {
@@ -415,6 +498,9 @@ export async function initDashboardView(context) {
       }
     } catch (error) {
       alertsList.innerHTML = "<div class='history-empty'>No se pudieron cargar las novedades.</div>";
+      if (myActionsList) {
+        myActionsList.innerHTML = "<div class='history-empty'>No se pudo cargar tu agenda.</div>";
+      }
       enviosBody.innerHTML = "<tr><td colspan='8'>No se pudo cargar la informacion.</td></tr>";
       lastUpdateEl.textContent = "Error al actualizar";
       context.showToast(error.message, true);
@@ -464,6 +550,14 @@ export async function initDashboardView(context) {
 
   refreshBtn.addEventListener("click", async () => {
     await loadDashboard("Dashboard actualizado");
+  });
+
+  myActionsList?.addEventListener("click", (event) => {
+    const card = event.target.closest("[data-open-solicitud]");
+    if (!card) {
+      return;
+    }
+    openSolicitudFromDashboard(Number(card.dataset.openSolicitud));
   });
 
   exportBtn.addEventListener("click", async () => {

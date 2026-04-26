@@ -9,6 +9,7 @@ const {
 } = require("../config/solicitudItemFlow");
 const { HttpError } = require("../utils/httpError");
 const { getChileDayBounds } = require("../utils/dateTime");
+const { buildHistoryPdf } = require("../utils/simplePdf");
 const notificacionesService = require("./notificacionesService");
 const { isOperationalPgEnabled } = require("./operationalPgStore");
 const pgService = require("./solicitudesPgService");
@@ -115,8 +116,12 @@ function normalizeFilters(actor, filters = {}) {
   const normalized = {
     estado: null,
     equipoId: null,
-    fechaDesde: normalizeDate(filters.fechaDesde, "fechaDesde"),
-    fechaHasta: normalizeDate(filters.fechaHasta, "fechaHasta"),
+    usuarioId: null,
+    texto: "",
+    soloUrgentes: false,
+    diasUrgencia: 3,
+    fechaDesde: normalizeDate(filters.fechaDesde || filters.fecha_desde, "fechaDesde"),
+    fechaHasta: normalizeDate(filters.fechaHasta || filters.fecha_hasta, "fechaHasta"),
   };
 
   if (filters.estado) {
@@ -133,6 +138,30 @@ function normalizeFilters(actor, filters = {}) {
       throw new HttpError(400, "equipoId invalido");
     }
     normalized.equipoId = equipoId;
+  }
+
+  if (filters.usuarioId || filters.usuario_id || filters.solicitanteId || filters.solicitante_id) {
+    const usuarioId = Number(
+      filters.usuarioId || filters.usuario_id || filters.solicitanteId || filters.solicitante_id
+    );
+    if (!Number.isInteger(usuarioId) || usuarioId <= 0) {
+      throw new HttpError(400, "usuarioId invalido");
+    }
+    normalized.usuarioId = usuarioId;
+  }
+
+  const texto = String(filters.texto || filters.search || filters.q || "").trim();
+  if (texto) {
+    normalized.texto = texto.slice(0, 120);
+  }
+
+  const urgentFlag = filters.soloUrgentes ?? filters.solo_urgentes ?? filters.urgentes;
+  normalized.soloUrgentes = ["1", "true", "si", "yes"].includes(
+    String(urgentFlag || "").trim().toLowerCase()
+  );
+  const diasUrgencia = Number(filters.diasUrgencia || filters.dias_urgencia || 3);
+  if (Number.isInteger(diasUrgencia) && diasUrgencia > 0 && diasUrgencia <= 90) {
+    normalized.diasUrgencia = diasUrgencia;
   }
 
   if (normalized.fechaDesde && normalized.fechaHasta && normalized.fechaDesde > normalized.fechaHasta) {
@@ -164,6 +193,11 @@ function buildWhereClause(actor, filters = {}, alias = "s") {
     params.push(normalized.estado);
   }
 
+  if (normalized.usuarioId) {
+    conditions.push(`${alias}.solicitante_id = ?`);
+    params.push(normalized.usuarioId);
+  }
+
   if (normalized.fechaDesde) {
     const bounds = getChileDayBounds(normalized.fechaDesde);
     conditions.push(`${alias}.created_at >= ?`);
@@ -174,6 +208,48 @@ function buildWhereClause(actor, filters = {}, alias = "s") {
     const bounds = getChileDayBounds(normalized.fechaHasta);
     conditions.push(`${alias}.created_at < ?`);
     params.push(bounds.endUtcSql);
+  }
+
+  if (normalized.texto) {
+    const like = `%${normalized.texto.toLowerCase()}%`;
+    const idLike = `%${normalized.texto.replaceAll("%", "")}%`;
+    conditions.push(`(
+      LOWER(COALESCE(${alias}.repuesto, '')) LIKE ?
+      OR LOWER(COALESCE(${alias}.comentario, '')) LIKE ?
+      OR LOWER(COALESCE(${alias}.equipo, '')) LIKE ?
+      OR CAST(${alias}.id AS TEXT) LIKE ?
+      OR EXISTS (
+        SELECT 1
+        FROM solicitud_items si_filter
+        WHERE si_filter.solicitud_id = ${alias}.id
+          AND (
+            LOWER(COALESCE(si_filter.nombre_item, '')) LIKE ?
+            OR LOWER(COALESCE(si_filter.codigo_referencia, '')) LIKE ?
+            OR LOWER(COALESCE(si_filter.comentario, '')) LIKE ?
+            OR LOWER(COALESCE(si_filter.usuario_final, '')) LIKE ?
+          )
+      )
+      OR EXISTS (
+        SELECT 1
+        FROM usuarios u_filter
+        WHERE u_filter.id = ${alias}.solicitante_id
+          AND LOWER(COALESCE(u_filter.nombre, '')) LIKE ?
+      )
+      OR EXISTS (
+        SELECT 1
+        FROM equipos e_filter
+        WHERE e_filter.id = ${alias}.equipo_id
+          AND LOWER(COALESCE(e_filter.nombre_equipo, '')) LIKE ?
+      )
+    )`);
+    params.push(like, like, like, idLike, like, like, like, like, like, like);
+  }
+
+  if (normalized.soloUrgentes) {
+    conditions.push(
+      `CAST((julianday('now') - julianday(COALESCE(${alias}.updated_at, ${alias}.created_at))) AS INTEGER) >= ?`
+    );
+    params.push(normalized.diasUrgencia);
   }
 
   return {
@@ -515,8 +591,25 @@ function applyStatusMetadata(updates, params, estadoNuevo, actorId) {
   }
 }
 
-async function getHistorialBySolicitudId(solicitudId) {
-  return all(
+function normalizeHistoryPagination(filters = {}) {
+  const limitRaw = Number(filters.limit || filters.pageSize || 20);
+  const pageRaw = Number(filters.page || 1);
+  const limit = Math.min(50, Math.max(5, Number.isInteger(limitRaw) ? limitRaw : 20));
+  const page = Math.max(1, Number.isInteger(pageRaw) ? pageRaw : 1);
+  return {
+    limit,
+    page,
+    offset: (page - 1) * limit,
+  };
+}
+
+async function getHistorialPageBySolicitudId(solicitudId, filters = {}) {
+  const pagination = normalizeHistoryPagination(filters);
+  const [{ total }] = await all(
+    `SELECT COUNT(*) AS total FROM solicitud_historial WHERE solicitud_id = ?`,
+    [solicitudId]
+  );
+  const rows = await all(
     `
       SELECT
         id,
@@ -530,9 +623,20 @@ async function getHistorialBySolicitudId(solicitudId) {
       FROM solicitud_historial
       WHERE solicitud_id = ?
       ORDER BY id ASC
+      LIMIT ? OFFSET ?
     `,
-    [solicitudId]
+    [solicitudId, pagination.limit, pagination.offset]
   );
+
+  return {
+    data: rows,
+    meta: {
+      total: Number(total || 0),
+      page: pagination.page,
+      limit: pagination.limit,
+      pages: Math.ceil(Number(total || 0) / pagination.limit),
+    },
+  };
 }
 
 async function getSolicitudItemsBySolicitudId(solicitudId) {
@@ -749,6 +853,7 @@ async function loadSolicitudRecord(solicitudId) {
     `
       SELECT
         s.*,
+        CAST((julianday('now') - julianday(COALESCE(s.updated_at, s.created_at))) AS INTEGER) AS dias_sin_movimiento,
         su.nombre AS solicitante_name,
         eq.nombre_equipo,
         rv.nombre AS reviewed_by_name,
@@ -803,7 +908,7 @@ async function getSolicitudById(solicitudId, actor = null) {
 
   const [items, historial, mensajes] = await Promise.all([
     getSolicitudItemsBySolicitudId(solicitudId),
-    getHistorialBySolicitudId(solicitudId),
+    getHistorialPageBySolicitudId(solicitudId),
     getSolicitudMensajesBySolicitudId(solicitudId),
   ]);
 
@@ -812,7 +917,8 @@ async function getSolicitudById(solicitudId, actor = null) {
   return {
     ...solicitud,
     items,
-    historial,
+    historial: historial.data,
+    historial_meta: historial.meta,
     mensajes,
     total_items: summary.totalItems,
     total_unidades: summary.totalUnidades,
@@ -829,6 +935,48 @@ async function getSolicitudDetail(actor, solicitudId) {
   return {
     ...solicitud,
     contactos: await getContactosForSolicitud(actor, solicitud),
+  };
+}
+
+async function getSolicitudHistory(actor, solicitudId, filters = {}) {
+  const solicitud = await loadSolicitudRecord(solicitudId);
+  if (!solicitud) {
+    throw new HttpError(404, "Solicitud no encontrada");
+  }
+  assertSolicitudVisible(actor, solicitud);
+  return getHistorialPageBySolicitudId(solicitudId, filters);
+}
+
+async function collectSolicitudHistory(solicitudId) {
+  const historial = [];
+  let page = 1;
+  let pages = 1;
+
+  do {
+    const result = await getHistorialPageBySolicitudId(solicitudId, { page, limit: 50 });
+    historial.push(...result.data);
+    pages = Number(result.meta.pages || 1);
+    page += 1;
+  } while (page <= pages);
+
+  return historial;
+}
+
+async function exportSolicitudHistoryPdf(actor, solicitudId) {
+  const solicitud = await loadSolicitudRecord(solicitudId);
+  if (!solicitud) {
+    throw new HttpError(404, "Solicitud no encontrada");
+  }
+  assertSolicitudVisible(actor, solicitud);
+  const historial = await collectSolicitudHistory(solicitudId);
+  const buffer = buildHistoryPdf({
+    solicitud,
+    historial,
+    generatedAt: new Date().toISOString(),
+  });
+  return {
+    buffer,
+    filename: `solicitud-${Number(solicitudId)}-historial.pdf`,
   };
 }
 
@@ -887,7 +1035,13 @@ async function listSolicitudes(actor, filters = {}) {
           totalUnidades: Number(row.cantidad || 0),
           repuestoResumen: row.repuesto || "Solicitud",
         };
-    return { ...row, total_items: summary.totalItems, total_unidades: summary.totalUnidades, resumen_items: summary.repuestoResumen };
+    return {
+      ...row,
+      dias_sin_movimiento: Math.max(0, Number(row.dias_sin_movimiento || 0)),
+      total_items: summary.totalItems,
+      total_unidades: summary.totalUnidades,
+      resumen_items: summary.repuestoResumen,
+    };
   });
 
   return { data: decorated, total: Number(total), page, pages: Math.ceil(Number(total) / limit) };
@@ -2522,6 +2676,12 @@ module.exports = {
       : listSolicitudesForExport(...args),
   getSolicitudDetail: (...args) =>
     isOperationalPgEnabled() ? pgService.getSolicitudDetail(...args) : getSolicitudDetail(...args),
+  getSolicitudHistory: (...args) =>
+    isOperationalPgEnabled() ? pgService.getSolicitudHistory(...args) : getSolicitudHistory(...args),
+  exportSolicitudHistoryPdf: (...args) =>
+    isOperationalPgEnabled()
+      ? pgService.exportSolicitudHistoryPdf(...args)
+      : exportSolicitudHistoryPdf(...args),
   createSolicitud: (...args) =>
     isOperationalPgEnabled() ? pgService.createSolicitud(...args) : createSolicitud(...args),
   updateSolicitud: (...args) =>

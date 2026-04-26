@@ -9,6 +9,7 @@ const {
 } = require("../config/solicitudItemFlow");
 const { HttpError } = require("../utils/httpError");
 const { getChileDayBounds } = require("../utils/dateTime");
+const { buildHistoryPdf } = require("../utils/simplePdf");
 const {
   getOperationalPool,
   loadEquiposMap,
@@ -119,8 +120,12 @@ function normalizeFilters(actor, filters = {}) {
   const normalized = {
     estado: null,
     equipoId: null,
-    fechaDesde: normalizeDate(filters.fechaDesde, "fechaDesde"),
-    fechaHasta: normalizeDate(filters.fechaHasta, "fechaHasta"),
+    usuarioId: null,
+    texto: "",
+    soloUrgentes: false,
+    diasUrgencia: 3,
+    fechaDesde: normalizeDate(filters.fechaDesde || filters.fecha_desde, "fechaDesde"),
+    fechaHasta: normalizeDate(filters.fechaHasta || filters.fecha_hasta, "fechaHasta"),
   };
 
   if (filters.estado) {
@@ -137,6 +142,30 @@ function normalizeFilters(actor, filters = {}) {
       throw new HttpError(400, "equipoId invalido");
     }
     normalized.equipoId = equipoId;
+  }
+
+  if (filters.usuarioId || filters.usuario_id || filters.solicitanteId || filters.solicitante_id) {
+    const usuarioId = Number(
+      filters.usuarioId || filters.usuario_id || filters.solicitanteId || filters.solicitante_id
+    );
+    if (!Number.isInteger(usuarioId) || usuarioId <= 0) {
+      throw new HttpError(400, "usuarioId invalido");
+    }
+    normalized.usuarioId = usuarioId;
+  }
+
+  const texto = String(filters.texto || filters.search || filters.q || "").trim();
+  if (texto) {
+    normalized.texto = texto.slice(0, 120);
+  }
+
+  const urgentFlag = filters.soloUrgentes ?? filters.solo_urgentes ?? filters.urgentes;
+  normalized.soloUrgentes = ["1", "true", "si", "yes"].includes(
+    String(urgentFlag || "").trim().toLowerCase()
+  );
+  const diasUrgencia = Number(filters.diasUrgencia || filters.dias_urgencia || 3);
+  if (Number.isInteger(diasUrgencia) && diasUrgencia > 0 && diasUrgencia <= 90) {
+    normalized.diasUrgencia = diasUrgencia;
   }
 
   if (normalized.fechaDesde && normalized.fechaHasta && normalized.fechaDesde > normalized.fechaHasta) {
@@ -169,6 +198,10 @@ function buildWhereClause(actor, filters = {}, alias = "s") {
     conditions.push(`${alias}.estado = ${push(normalized.estado)}`);
   }
 
+  if (normalized.usuarioId) {
+    conditions.push(`${alias}.solicitante_id = ${push(normalized.usuarioId)}`);
+  }
+
   if (normalized.fechaDesde) {
     const bounds = getChileDayBounds(normalized.fechaDesde);
     conditions.push(`${alias}.created_at >= ${push(bounds.startUtcSql)}`);
@@ -177,6 +210,46 @@ function buildWhereClause(actor, filters = {}, alias = "s") {
   if (normalized.fechaHasta) {
     const bounds = getChileDayBounds(normalized.fechaHasta);
     conditions.push(`${alias}.created_at < ${push(bounds.endUtcSql)}`);
+  }
+
+  if (normalized.texto) {
+    const like = `%${normalized.texto.toLowerCase()}%`;
+    const idSearch = `%${normalized.texto.replaceAll("%", "")}%`;
+    conditions.push(`(
+      LOWER(COALESCE(${alias}.repuesto, '')) LIKE ${push(like)}
+      OR LOWER(COALESCE(${alias}.comentario, '')) LIKE ${push(like)}
+      OR LOWER(COALESCE(${alias}.equipo, '')) LIKE ${push(like)}
+      OR ${alias}.id::text LIKE ${push(idSearch)}
+      OR EXISTS (
+        SELECT 1
+        FROM solicitud_items si_filter
+        WHERE si_filter.solicitud_id = ${alias}.id
+          AND (
+            LOWER(COALESCE(si_filter.nombre_item, '')) LIKE ${push(like)}
+            OR LOWER(COALESCE(si_filter.codigo_referencia, '')) LIKE ${push(like)}
+            OR LOWER(COALESCE(si_filter.comentario, '')) LIKE ${push(like)}
+            OR LOWER(COALESCE(si_filter.usuario_final, '')) LIKE ${push(like)}
+          )
+      )
+      OR EXISTS (
+        SELECT 1
+        FROM usuarios u_filter
+        WHERE u_filter.id = ${alias}.solicitante_id
+          AND LOWER(COALESCE(u_filter.nombre, '')) LIKE ${push(like)}
+      )
+      OR EXISTS (
+        SELECT 1
+        FROM equipos e_filter
+        WHERE e_filter.id = ${alias}.equipo_id
+          AND LOWER(COALESCE(e_filter.nombre_equipo, '')) LIKE ${push(like)}
+      )
+    )`);
+  }
+
+  if (normalized.soloUrgentes) {
+    conditions.push(
+      `GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (NOW() - COALESCE(${alias}.updated_at, ${alias}.created_at))) / 86400))::int >= ${push(normalized.diasUrgencia)}`
+    );
   }
 
   return {
@@ -569,8 +642,26 @@ async function ensureEquipoExists(equipoId) {
   };
 }
 
-async function getHistorialBySolicitudId(solicitudId) {
+function normalizeHistoryPagination(filters = {}) {
+  const limitRaw = Number(filters.limit || filters.pageSize || 20);
+  const pageRaw = Number(filters.page || 1);
+  const limit = Math.min(50, Math.max(5, Number.isInteger(limitRaw) ? limitRaw : 20));
+  const page = Math.max(1, Number.isInteger(pageRaw) ? pageRaw : 1);
+  return {
+    limit,
+    page,
+    offset: (page - 1) * limit,
+  };
+}
+
+async function getHistorialPageBySolicitudId(solicitudId, filters = {}) {
   const pg = getOperationalPool();
+  const pagination = normalizeHistoryPagination(filters);
+  const { rows: countRows } = await pg.query(
+    `SELECT COUNT(*)::int AS total FROM solicitud_historial WHERE solicitud_id = $1`,
+    [Number(solicitudId)]
+  );
+  const total = Number(countRows[0]?.total || 0);
   const { rows } = await pg.query(
     `
       SELECT
@@ -585,14 +676,23 @@ async function getHistorialBySolicitudId(solicitudId) {
       FROM solicitud_historial
       WHERE solicitud_id = $1
       ORDER BY id ASC
+      LIMIT $2 OFFSET $3
     `,
-    [Number(solicitudId)]
+    [Number(solicitudId), pagination.limit, pagination.offset]
   );
-  return rows.map((row) => ({
-    ...row,
-    id: Number(row.id),
-    actor_id: Number(row.actor_id),
-  }));
+  return {
+    data: rows.map((row) => ({
+      ...row,
+      id: Number(row.id),
+      actor_id: Number(row.actor_id),
+    })),
+    meta: {
+      total,
+      page: pagination.page,
+      limit: pagination.limit,
+      pages: Math.ceil(total / pagination.limit),
+    },
+  };
 }
 
 async function getSolicitudItemsBySolicitudId(solicitudId) {
@@ -809,6 +909,10 @@ async function decorateSolicitudes(rows) {
     reviewed_by: row.reviewed_by === null || row.reviewed_by === undefined ? null : Number(row.reviewed_by),
     dispatched_by: row.dispatched_by === null || row.dispatched_by === undefined ? null : Number(row.dispatched_by),
     received_by: row.received_by === null || row.received_by === undefined ? null : Number(row.received_by),
+    dias_sin_movimiento:
+      row.dias_sin_movimiento === null || row.dias_sin_movimiento === undefined
+        ? 0
+        : Number(row.dias_sin_movimiento),
     solicitante_name: usersMap.get(Number(row.solicitante_id))?.nombre || "Usuario",
     nombre_equipo:
       row.equipo_id === null || row.equipo_id === undefined ? null : equiposMap.get(Number(row.equipo_id)) || null,
@@ -897,7 +1001,7 @@ async function getSolicitudById(solicitudId, actor = null) {
 
   const [items, historial, mensajes] = await Promise.all([
     getSolicitudItemsBySolicitudId(solicitudId),
-    getHistorialBySolicitudId(solicitudId),
+    getHistorialPageBySolicitudId(solicitudId),
     getSolicitudMensajesBySolicitudId(solicitudId),
   ]);
 
@@ -907,7 +1011,8 @@ async function getSolicitudById(solicitudId, actor = null) {
   return {
     ...solicitud,
     items,
-    historial,
+    historial: historial.data,
+    historial_meta: historial.meta,
     mensajes,
     total_items: summary.totalItems,
     total_unidades: summary.totalUnidades,
@@ -926,6 +1031,48 @@ async function getSolicitudDetail(actor, solicitudId) {
   return {
     ...solicitud,
     contactos: await getContactosForSolicitud(actor, solicitud),
+  };
+}
+
+async function getSolicitudHistory(actor, solicitudId, filters = {}) {
+  const solicitud = await loadSolicitudRecord(solicitudId);
+  if (!solicitud) {
+    throw new HttpError(404, "Solicitud no encontrada");
+  }
+  assertSolicitudVisible(actor, solicitud);
+  return getHistorialPageBySolicitudId(solicitudId, filters);
+}
+
+async function collectSolicitudHistory(solicitudId) {
+  const historial = [];
+  let page = 1;
+  let pages = 1;
+
+  do {
+    const result = await getHistorialPageBySolicitudId(solicitudId, { page, limit: 50 });
+    historial.push(...result.data);
+    pages = Number(result.meta.pages || 1);
+    page += 1;
+  } while (page <= pages);
+
+  return historial;
+}
+
+async function exportSolicitudHistoryPdf(actor, solicitudId) {
+  const solicitud = await loadSolicitudRecord(solicitudId);
+  if (!solicitud) {
+    throw new HttpError(404, "Solicitud no encontrada");
+  }
+  assertSolicitudVisible(actor, solicitud);
+  const historial = await collectSolicitudHistory(solicitudId);
+  const buffer = buildHistoryPdf({
+    solicitud,
+    historial,
+    generatedAt: new Date().toISOString(),
+  });
+  return {
+    buffer,
+    filename: `solicitud-${Number(solicitudId)}-historial.pdf`,
   };
 }
 
@@ -948,7 +1095,8 @@ async function listSolicitudes(actor, filters = {}) {
         id, solicitante_id, equipo, equipo_id, repuesto, cantidad,
         comentario, estado, reviewed_at, reviewed_by,
         dispatched_at, dispatched_by, received_at, received_by,
-        created_at, updated_at
+        created_at, updated_at,
+        GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (NOW() - COALESCE(updated_at, created_at))) / 86400))::int AS dias_sin_movimiento
       FROM solicitudes s
       ${scope.where}
       ORDER BY s.id DESC
@@ -986,7 +1134,16 @@ async function listSolicitudes(actor, filters = {}) {
 }
 
 async function listSolicitudesForExport(actor, filters = {}) {
-  const baseRows = await listSolicitudes(actor, filters);
+  const baseRows = [];
+  let page = 1;
+  let pages = 1;
+  do {
+    const result = await listSolicitudes(actor, { ...filters, limit: 100, page });
+    baseRows.push(...(result.data || []));
+    pages = Number(result.pages || 1);
+    page += 1;
+  } while (page <= pages);
+
   if (!baseRows.length) return [];
 
   const solicitudIds = baseRows.map((r) => Number(r.id));
@@ -2606,6 +2763,8 @@ module.exports = {
   listSolicitudes,
   listSolicitudesForExport,
   getSolicitudDetail,
+  getSolicitudHistory,
+  exportSolicitudHistoryPdf,
   createSolicitud,
   updateSolicitud,
   addSolicitudProcessComment,

@@ -141,6 +141,18 @@ function renderStatusBadge(status) {
   return `<span class="${getStatusClass(status)}">${getStatusLabel(status)}</span>`;
 }
 
+function getUrgencyClass(days = 0) {
+  const value = Number(days || 0);
+  if (value > 7) return "urgencia-rojo";
+  if (value >= 3) return "urgencia-amarillo";
+  return "urgencia-verde";
+}
+
+function renderUrgencyBadge(days = 0) {
+  const value = Math.max(0, Number(days || 0));
+  return `<span class="urgencia-badge ${getUrgencyClass(value)}">${value} dia${value !== 1 ? "s" : ""} sin movimiento</span>`;
+}
+
 function getItemStatusLabel(status) {
   return ITEM_STATUS_LABELS[status] || status || "-";
 }
@@ -238,6 +250,20 @@ function renderHistory(historial = [], formatDate) {
       `
     )
     .join("");
+}
+
+function renderHistoryMore(meta = {}) {
+  const page = Number(meta.page || 1);
+  const pages = Number(meta.pages || 1);
+  const total = Number(meta.total || 0);
+  if (!total || page >= pages) {
+    return "";
+  }
+  return `
+    <button class="action-btn secondary history-load-more-btn" data-history-next-page="${page + 1}" type="button">
+      Ver mas historial (${page} de ${pages})
+    </button>
+  `;
 }
 
 function summarizeItemStatuses(items = []) {
@@ -592,6 +618,7 @@ function renderRows(rows, tableBody, mobileList, formatDate, role) {
         const primaryAction = getSolicitudPrimaryAction(item, role);
         const itemStatusSnapshot = renderItemStatusSnapshot(item);
         const solicitante = item.solicitante_name || item.solicitante_nombre || item.solicitante || "-";
+        const urgencyBadge = renderUrgencyBadge(item.dias_sin_movimiento || 0);
         const rowDelay = Math.min(i * 0.03, 0.28);
         return `
         <tr data-id="${item.id}" style="animation-delay:${rowDelay}s">
@@ -611,6 +638,7 @@ function renderRows(rows, tableBody, mobileList, formatDate, role) {
           <td>
             <span class="table-subline">${renderStatusSnapshot(item, formatDate)}</span>
             <div class="table-subline strong-subline">${primaryAction.hint}</div>
+            <div class="table-subline">${urgencyBadge}</div>
           </td>
           <td>${formatDate(item.created_at)}</td>
           <td>
@@ -632,6 +660,7 @@ function renderRows(rows, tableBody, mobileList, formatDate, role) {
       const primaryAction = getSolicitudPrimaryAction(item, role);
       const itemStatusSnapshot = renderItemStatusSnapshot(item);
       const solicitante = item.solicitante_name || item.solicitante_nombre || item.solicitante || "-";
+      const urgencyBadge = renderUrgencyBadge(item.dias_sin_movimiento || 0);
       const cardDelay = Math.min(i * 0.04, 0.32);
       return `
         <article class="solicitud-mobile-card" data-id="${item.id}" style="animation-delay:${cardDelay}s" data-status="${item.estado}">
@@ -649,6 +678,7 @@ function renderRows(rows, tableBody, mobileList, formatDate, role) {
             <span>${item.total_unidades || item.cantidad || 0} unidades</span>
             <span>${renderStatusSnapshot(item, formatDate)}</span>
           </div>
+          <div class="solicitud-mobile-urgency">${urgencyBadge}</div>
           ${itemStatusSnapshot ? `<div class="solicitud-mobile-flow">${itemStatusSnapshot}</div>` : ""}
           <div class="solicitud-mobile-next-step">${primaryAction.hint}</div>
           <button class="action-btn solicitud-mobile-open ${primaryAction.emphasis ? "cta-emphasis" : ""}" data-action="open" data-id="${item.id}" type="button">
@@ -974,6 +1004,7 @@ export async function initSolicitudesView(context) {
   const searchSummary = document.getElementById("solicitudes-search-summary");
   const tableBody = document.getElementById("solicitudes-table-body");
   const mobileList = document.getElementById("solicitudes-mobile-list");
+  const solicitudesRoot = tableBody?.closest(".view-grid");
   const quickFilters = document.getElementById("solicitudes-quick-filters");
   const mobilePrimaryBtn = document.getElementById("solicitudes-mobile-primary");
   const mobileSecondaryBtn = document.getElementById("solicitudes-mobile-secondary");
@@ -1014,6 +1045,8 @@ export async function initSolicitudesView(context) {
   const processCommentInput = document.getElementById("solicitud-process-comment-input");
   const processCommentBtn = document.getElementById("solicitud-process-comment-btn");
   const detailHistory = document.getElementById("solicitud-history");
+  const detailHistoryMore = document.getElementById("solicitud-history-more");
+  const historyPdfBtn = document.getElementById("solicitud-history-pdf-btn");
   const detailItemsList = document.getElementById("detail-items-list");
   const detailAddItemBtn = document.getElementById("detail-add-item-btn");
   const saveBtn = document.getElementById("solicitud-save-btn");
@@ -1073,6 +1106,9 @@ export async function initSolicitudesView(context) {
     fechaDesde: "",
     fechaHasta: "",
     equipoId: "",
+    texto: "",
+    usuarioId: "",
+    soloUrgentes: "",
   };
 
   let solicitudesCache = [];
@@ -1089,6 +1125,7 @@ export async function initSolicitudesView(context) {
   let availableEquipos = [];
   let activeDetailTab = "items";
   let lastNonChatDetailTab = "items";
+  let currentHistoryMeta = null;
   let chatHistoryEntryActive = false;
   let lastSeenMessageCount = 0;
   let chatUnreadCount = 0;
@@ -1201,6 +1238,32 @@ export async function initSolicitudesView(context) {
 
   function isPhoneLayout() {
     return window.matchMedia("(max-width: 900px)").matches;
+  }
+
+  function isDockedDetailLayout() {
+    return window.matchMedia("(min-width: 1101px)").matches;
+  }
+
+  function syncDetailSurfaceMode() {
+    const shouldDock = isDockedDetailLayout() && !detailModal.classList.contains("hidden");
+    detailModal.classList.toggle("docked-detail", shouldDock);
+    solicitudesRoot?.classList.toggle("solicitudes-master-detail", shouldDock);
+  }
+
+  function openDetailSurface() {
+    detailModal.classList.remove("hidden");
+    syncDetailSurfaceMode();
+    if (!detailModal.classList.contains("docked-detail")) {
+      window.requestAnimationFrame(() => resetModalViewport(detailModal));
+    }
+  }
+
+  function closeDetailSurface() {
+    closeChatDrawer({ syncTab: false });
+    closeItemModal();
+    detailModal.classList.add("hidden");
+    detailModal.classList.remove("docked-detail");
+    solicitudesRoot?.classList.remove("solicitudes-master-detail");
   }
 
   function syncDetailTabButtons() {
@@ -1798,7 +1861,11 @@ export async function initSolicitudesView(context) {
     processCommentInput.disabled = !canProcessComment;
     processCommentInput.placeholder = `Agregar comentario sobre ${getStatusLabel(solicitud.estado).toLowerCase()}`;
     processCommentBtn.disabled = !canProcessComment;
+    currentHistoryMeta = solicitud.historial_meta || null;
     detailHistory.innerHTML = renderHistory(solicitud.historial || [], context.formatDate);
+    if (detailHistoryMore) {
+      detailHistoryMore.innerHTML = renderHistoryMore(currentHistoryMeta || {});
+    }
     updateChatView(solicitud);
 
     const editable = isDetailEditable(solicitud);
@@ -1894,6 +1961,9 @@ export async function initSolicitudesView(context) {
     processCommentBtn.disabled = true;
     detailStatusActions.innerHTML = "";
     detailHistory.innerHTML = "<div class='history-empty'>Cargando historial...</div>";
+    if (detailHistoryMore) {
+      detailHistoryMore.innerHTML = "";
+    }
     detailItemsList.innerHTML = "<div class='history-empty'>Cargando items...</div>";
     messagesList.innerHTML = "<div class='history-empty'>Cargando mensajes...</div>";
     detailAddItemBtn.classList.add("hidden");
@@ -1914,6 +1984,63 @@ export async function initSolicitudesView(context) {
       throw new Error("No se pudo cargar la solicitud");
     }
     fillDetailModal(currentSolicitud, options);
+  }
+
+  async function loadMoreHistory(page) {
+    if (!currentSolicitud || !page) {
+      return;
+    }
+    const payload = await context.apiRequest(
+      `/api/solicitudes/${currentSolicitud.id}/historial${buildQueryString({ page, limit: 20 })}`
+    );
+    const nextRows = payload.data || [];
+    currentSolicitud.historial = [...(currentSolicitud.historial || []), ...nextRows];
+    currentSolicitud.historial_meta = payload.meta || currentSolicitud.historial_meta || null;
+    currentHistoryMeta = currentSolicitud.historial_meta;
+    detailHistory.innerHTML = renderHistory(currentSolicitud.historial, context.formatDate);
+    if (detailHistoryMore) {
+      detailHistoryMore.innerHTML = renderHistoryMore(currentHistoryMeta || {});
+    }
+  }
+
+  async function downloadSolicitudHistoryPdf() {
+    if (!currentSolicitud) {
+      return;
+    }
+
+    const response = await fetch(`/api/solicitudes/${currentSolicitud.id}/export-pdf`, {
+      headers: {
+        Authorization: `Bearer ${context.state.token}`,
+      },
+    });
+
+    if (!response.ok) {
+      let message = "No se pudo exportar PDF";
+      try {
+        const payload = await response.json();
+        message = payload.mensaje || payload.error?.message || message;
+      } catch {
+        // Ignorar parseo.
+      }
+      throw new Error(message);
+    }
+
+    const blob = await response.blob();
+    const fileName =
+      response.headers
+        .get("content-disposition")
+        ?.split("filename=")
+        ?.at(1)
+        ?.replaceAll('"', "") || `solicitud-${currentSolicitud.id}-historial.pdf`;
+
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
   }
 
   async function saveSolicitudChanges() {
@@ -2096,7 +2223,7 @@ export async function initSolicitudesView(context) {
     await Promise.all([loadSolicitudes({ showLoading: false }), loadSolicitudDetail(currentSolicitud.id)]);
     // loadSolicitudDetail ya cierra itemModal — solo animar si detailModal estaba oculto
     if (detailModal.classList.contains("hidden")) {
-      openModal(detailModal);
+      openDetailSurface();
     }
     // Al agregar un producto nuevo, scroll al final para que sea visible
     if (wasNew && isPhoneLayout()) {
@@ -2126,7 +2253,7 @@ export async function initSolicitudesView(context) {
 
     await Promise.all([loadSolicitudes({ showLoading: false }), loadSolicitudDetail(currentSolicitud.id)]);
     if (detailModal.classList.contains("hidden")) {
-      openModal(detailModal);
+      openDetailSurface();
     }
     context.showToast("Producto eliminado");
   }
@@ -2150,20 +2277,22 @@ export async function initSolicitudesView(context) {
     closeModal(createModal);
   });
   detailCloseBtn.addEventListener("click", () => {
-    closeChatDrawer({ syncTab: false });
-    closeItemModal();
-    closeModal(detailModal);
+    closeDetailSurface();
   });
   detailCancelBtn.addEventListener("click", () => {
-    closeChatDrawer({ syncTab: false });
-    closeItemModal();
-    closeModal(detailModal);
+    closeDetailSurface();
   });
   itemCloseBtn.addEventListener("click", closeItemModal);
   itemCancelBtn.addEventListener("click", closeItemModal);
   closeOnBackdrop(createModal);
   closeOnBackdrop(detailModal);
   closeOnBackdrop(itemModal);
+  detailModal.addEventListener("click", (event) => {
+    if (event.target.matches(".modal-backdrop") || event.target.dataset.close === "true") {
+      solicitudesRoot?.classList.remove("solicitudes-master-detail");
+      detailModal.classList.remove("docked-detail");
+    }
+  });
   createModal.addEventListener("click", (event) => {
     if (event.target.matches(".modal-backdrop") || event.target.dataset.close === "true") {
       resetCreateSolicitudForm();
@@ -2343,10 +2472,10 @@ export async function initSolicitudesView(context) {
       }
       applyDetailTabLayout();
       showDetailLoading(solicitudId);
-      openModal(detailModal);
+      openDetailSurface();
       await loadSolicitudDetail(solicitudId);
     } catch (error) {
-      closeModal(detailModal);
+      closeDetailSurface();
       context.showToast(error.message, true);
     }
   });
@@ -2363,10 +2492,10 @@ export async function initSolicitudesView(context) {
       lastNonChatDetailTab = "items";
       applyDetailTabLayout();
       showDetailLoading(solicitudId);
-      openModal(detailModal);
+      openDetailSurface();
       await loadSolicitudDetail(solicitudId);
     } catch (error) {
-      closeModal(detailModal);
+      closeDetailSurface();
       context.showToast(error.message, true);
     }
   });
@@ -2512,6 +2641,32 @@ export async function initSolicitudesView(context) {
     }
   });
 
+  detailHistoryMore?.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-history-next-page]");
+    if (!button) {
+      return;
+    }
+    try {
+      button.disabled = true;
+      await loadMoreHistory(Number(button.dataset.historyNextPage));
+    } catch (error) {
+      context.showToast(error.message, true);
+      button.disabled = false;
+    }
+  });
+
+  historyPdfBtn?.addEventListener("click", async () => {
+    try {
+      historyPdfBtn.disabled = true;
+      await downloadSolicitudHistoryPdf();
+      context.showToast("PDF exportado correctamente");
+    } catch (error) {
+      context.showToast(error.message, true);
+    } finally {
+      historyPdfBtn.disabled = false;
+    }
+  });
+
   confirmBtn.addEventListener("click", async () => {
     if (!currentSolicitud) {
       return;
@@ -2539,7 +2694,7 @@ export async function initSolicitudesView(context) {
         method: "DELETE",
       });
       closeChatDrawer();
-      closeModal(detailModal);
+      closeDetailSurface();
       await loadSolicitudes();
       context.showToast("Solicitud eliminada");
     } catch (error) {
@@ -2656,6 +2811,7 @@ export async function initSolicitudesView(context) {
     window.removeEventListener("resize", window.__fmnSolicitudesResizeHandler);
   }
   window.__fmnSolicitudesResizeHandler = () => {
+    syncDetailSurfaceMode();
     applyDetailTabLayout();
   };
   window.addEventListener("resize", window.__fmnSolicitudesResizeHandler);
@@ -2689,6 +2845,9 @@ export async function initSolicitudesView(context) {
     filters.fechaDesde = String(formData.get("fechaDesde") || "");
     filters.fechaHasta = String(formData.get("fechaHasta") || "");
     filters.equipoId = String(formData.get("equipoId") || "");
+    filters.texto = String(formData.get("texto") || "");
+    filters.usuarioId = String(formData.get("usuarioId") || "");
+    filters.soloUrgentes = formData.get("soloUrgentes") ? "1" : "";
 
     try {
       await loadSolicitudes();
@@ -2704,6 +2863,9 @@ export async function initSolicitudesView(context) {
     filters.fechaDesde = "";
     filters.fechaHasta = "";
     filters.equipoId = "";
+    filters.texto = "";
+    filters.usuarioId = "";
+    filters.soloUrgentes = "";
 
     try {
       await loadSolicitudes();
@@ -2759,10 +2921,10 @@ export async function initSolicitudesView(context) {
       lastNonChatDetailTab = "items";
       applyDetailTabLayout();
       showDetailLoading(solicitudId);
-      openModal(detailModal);
+      openDetailSurface();
       await loadSolicitudDetail(solicitudId);
     } catch (err) {
-      closeModal(detailModal);
+      closeDetailSurface();
       context.showToast(err.message, true);
     }
   });
@@ -2771,6 +2933,22 @@ export async function initSolicitudesView(context) {
   configureRoleActions();
   resetCreateSolicitudForm();
   await Promise.all([loadSolicitudes(), loadAndRenderPendingItems()]);
+
+  const initialSolicitudId = Number(sessionStorage.getItem("fmn-open-solicitud-id") || 0);
+  if (initialSolicitudId) {
+    sessionStorage.removeItem("fmn-open-solicitud-id");
+    try {
+      activeDetailTab = "items";
+      lastNonChatDetailTab = "items";
+      applyDetailTabLayout();
+      showDetailLoading(initialSolicitudId);
+      openDetailSurface();
+      await loadSolicitudDetail(initialSolicitudId);
+    } catch (error) {
+      closeDetailSurface();
+      context.showToast(error.message, true);
+    }
+  }
 
   // Auto-refresh pendientes cada 2 minutos
   const pendingAutoRefreshId = window.setInterval(() => {

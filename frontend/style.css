@@ -626,6 +626,68 @@ button:disabled:hover {
   gap: 0.6rem;
 }
 
+.global-search {
+  position: relative;
+  width: min(360px, 100%);
+}
+
+.global-search input {
+  width: 100%;
+  min-height: 38px;
+  padding: 0.58rem 0.75rem;
+  border-radius: 10px;
+}
+
+.global-search-results {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  left: 0;
+  right: 0;
+  z-index: 260;
+  display: grid;
+  gap: 0.35rem;
+  max-height: min(420px, 70vh);
+  overflow: auto;
+  padding: 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 16px 34px rgba(11, 36, 25, 0.18);
+}
+
+.global-search-item {
+  display: grid;
+  gap: 0.2rem;
+  width: 100%;
+  min-height: 0;
+  padding: 0.55rem;
+  text-align: left;
+  border-radius: 8px;
+  background: #f8fbf9;
+  border: 1px solid #e2ece6;
+  color: var(--text);
+  box-shadow: none;
+}
+
+.global-search-item:hover {
+  background: #eef7f2;
+  transform: none;
+}
+
+.global-search-item strong {
+  font-size: 0.9rem;
+}
+
+.global-search-item small,
+.global-search-empty {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.global-search-empty {
+  padding: 0.65rem;
+}
+
 .topbar-action {
   width: auto;
   min-width: 116px;
@@ -1047,6 +1109,79 @@ button:disabled:hover {
 
 .dashboard-hero-card {
   border-color: #d6e6de;
+}
+
+.my-actions-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.65rem;
+}
+
+.my-action-card {
+  display: grid;
+  gap: 0.38rem;
+  min-height: 132px;
+  padding: 0.75rem;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--text);
+  box-shadow: 0 6px 16px rgba(11, 36, 25, 0.07);
+}
+
+.my-action-card:hover {
+  background: #f4faf7;
+  transform: translateY(-1px);
+}
+
+.my-action-top,
+.my-action-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.my-action-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.my-action-meta {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.urgencia-badge {
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  min-height: 24px;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  border: 1px solid transparent;
+}
+
+.urgencia-verde {
+  background: #e6f4ec;
+  color: #17603e;
+  border-color: #b7dec9;
+}
+
+.urgencia-amarillo {
+  background: #fff4d8;
+  color: #7a5300;
+  border-color: #f1d48a;
+}
+
+.urgencia-rojo {
+  background: #fde7e2;
+  color: #8a2617;
+  border-color: #f3b0a3;
 }
 
 .dashboard-last-update {
@@ -1602,9 +1737,20 @@ button:disabled:hover {
   font-size: 0.88rem;
 }
 
+.compact-toggle {
+  align-self: end;
+  min-height: 60px;
+  margin: 0;
+}
+
 .solicitudes-mobile-list {
   display: none;
   gap: 0.8rem;
+}
+
+.solicitud-mobile-urgency {
+  display: flex;
+  margin-top: 0.35rem;
 }
 
 .mobile-action-bar {
@@ -1872,6 +2018,43 @@ body.modal-active {
   font-size: 0.98rem;
 }
 
+@media (min-width: 1101px) {
+  .view-grid.solicitudes-master-detail .solicitudes-list-card {
+    grid-column: span 7;
+    align-self: start;
+  }
+
+  #solicitudes-detail-modal.docked-detail {
+    position: sticky;
+    top: 0.85rem;
+    inset: auto;
+    z-index: 1;
+    display: block;
+    grid-column: span 5;
+    align-self: start;
+    place-items: unset;
+    max-height: calc(100vh - 1.7rem);
+  }
+
+  #solicitudes-detail-modal.docked-detail .modal-backdrop {
+    display: none;
+  }
+
+  #solicitudes-detail-modal.docked-detail .modal-content {
+    width: 100%;
+    max-width: none;
+    max-height: calc(100vh - 1.7rem);
+    padding: 0.9rem;
+    border-radius: 14px;
+    box-shadow: var(--shadow-card);
+    animation: slide-up-fade 0.2s ease both;
+  }
+
+  #solicitudes-detail-modal.docked-detail .detail-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 .status-stepper {
   margin-bottom: 1rem;
 }
@@ -2035,6 +2218,12 @@ body.modal-active {
 .history-content span {
   color: var(--muted);
   font-size: 0.82rem;
+}
+
+.history-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.75rem;
 }
 
 .chat-list {
@@ -3189,6 +3378,15 @@ tbody tr {
 }
 
 @media (max-width: 1100px) {
+  .topbar-main {
+    flex-wrap: wrap;
+  }
+
+  .global-search {
+    order: 3;
+    width: 100%;
+  }
+
   .quick-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

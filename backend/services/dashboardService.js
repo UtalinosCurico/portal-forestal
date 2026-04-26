@@ -311,6 +311,148 @@ async function getStockCritico(actor) {
   );
 }
 
+function mapActionUrgency(days) {
+  const value = Number(days || 0);
+  if (value > 7) return "alta";
+  if (value >= 3) return "media";
+  return "normal";
+}
+
+async function getMyActions(actor, filters = {}) {
+  if (isOperationalPgEnabled()) {
+    return pgService.getMyActions(actor, filters);
+  }
+
+  const role = getActorRole(actor);
+  const limit = Math.min(30, Math.max(5, Number(filters.limit) || 12));
+
+  if (!isGlobalRole(role)) {
+    requireTeamAssigned(actor);
+    const rows = await all(
+      `
+        SELECT
+          'ITEM_POR_GESTIONAR' AS tipo,
+          si.id AS item_id,
+          si.solicitud_id,
+          si.nombre_item,
+          si.cantidad,
+          si.unidad_medida,
+          si.codigo_referencia,
+          si.updated_at,
+          s.estado AS solicitud_estado,
+          s.equipo_id,
+          COALESCE(e.nombre_equipo, s.equipo, 'Sin equipo') AS equipo,
+          su.nombre AS solicitante,
+          CAST((julianday('now') - julianday(COALESCE(si.updated_at, si.created_at, s.updated_at, s.created_at))) AS INTEGER) AS dias_sin_movimiento
+        FROM solicitud_items si
+        INNER JOIN solicitudes s ON s.id = si.solicitud_id
+        INNER JOIN usuarios su ON su.id = s.solicitante_id
+        LEFT JOIN equipos e ON e.id = s.equipo_id
+        WHERE si.estado_item = 'POR_GESTIONAR'
+          AND s.estado NOT IN ('ENTREGADO', 'RECHAZADO')
+          AND s.equipo_id = ?
+        ORDER BY dias_sin_movimiento DESC, si.id ASC
+        LIMIT ?
+      `,
+      [actor.equipo_id, limit]
+    );
+
+    return rows.map((row) => {
+      const days = Math.max(0, Number(row.dias_sin_movimiento || 0));
+      return {
+        tipo: row.tipo,
+        prioridad: mapActionUrgency(days),
+        dias_sin_movimiento: days,
+        solicitud_id: Number(row.solicitud_id),
+        item_id: Number(row.item_id),
+        titulo: row.nombre_item || "Producto por gestionar",
+        descripcion: `Solicitud #${row.solicitud_id} | ${row.equipo || "Sin equipo"}`,
+        equipo: row.equipo,
+        solicitante: row.solicitante,
+        estado: row.solicitud_estado,
+        cantidad: Number(row.cantidad || 0),
+        unidad_medida: row.unidad_medida || null,
+        codigo_referencia: row.codigo_referencia || null,
+      };
+    });
+  }
+
+  const pendingRows = await all(
+    `
+      SELECT
+        'SOLICITUD_PENDIENTE' AS tipo,
+        s.id AS solicitud_id,
+        NULL AS item_id,
+        COALESCE(s.repuesto, 'Solicitud pendiente') AS titulo,
+        s.estado,
+        s.equipo_id,
+        COALESCE(e.nombre_equipo, s.equipo, 'Sin equipo') AS equipo,
+        su.nombre AS solicitante,
+        CAST((julianday('now') - julianday(COALESCE(s.updated_at, s.created_at))) AS INTEGER) AS dias_sin_movimiento
+      FROM solicitudes s
+      INNER JOIN usuarios su ON su.id = s.solicitante_id
+      LEFT JOIN equipos e ON e.id = s.equipo_id
+      WHERE s.estado = ?
+      ORDER BY dias_sin_movimiento DESC, s.id ASC
+      LIMIT ?
+    `,
+    [SOLICITUD_STATUS.PENDIENTE, limit]
+  );
+
+  const staleRows = await all(
+    `
+      SELECT
+        'ITEM_ATRASADO' AS tipo,
+        si.solicitud_id,
+        si.id AS item_id,
+        si.nombre_item AS titulo,
+        s.estado,
+        s.equipo_id,
+        COALESCE(e.nombre_equipo, s.equipo, 'Sin equipo') AS equipo,
+        su.nombre AS solicitante,
+        si.cantidad,
+        si.unidad_medida,
+        si.codigo_referencia,
+        CAST((julianday('now') - julianday(COALESCE(si.updated_at, si.created_at, s.updated_at, s.created_at))) AS INTEGER) AS dias_sin_movimiento
+      FROM solicitud_items si
+      INNER JOIN solicitudes s ON s.id = si.solicitud_id
+      INNER JOIN usuarios su ON su.id = s.solicitante_id
+      LEFT JOIN equipos e ON e.id = s.equipo_id
+      WHERE si.estado_item = 'POR_GESTIONAR'
+        AND s.estado NOT IN ('ENTREGADO', 'RECHAZADO')
+        AND CAST((julianday('now') - julianday(COALESCE(si.updated_at, si.created_at, s.updated_at, s.created_at))) AS INTEGER) >= 3
+      ORDER BY dias_sin_movimiento DESC, si.id ASC
+      LIMIT ?
+    `,
+    [limit]
+  );
+
+  return [...pendingRows, ...staleRows]
+    .map((row) => {
+      const days = Math.max(0, Number(row.dias_sin_movimiento || 0));
+      return {
+        tipo: row.tipo,
+        prioridad: mapActionUrgency(days),
+        dias_sin_movimiento: days,
+        solicitud_id: Number(row.solicitud_id),
+        item_id: row.item_id ? Number(row.item_id) : null,
+        titulo: row.titulo || "Accion pendiente",
+        descripcion:
+          row.tipo === "SOLICITUD_PENDIENTE"
+            ? `Revisar solicitud de ${row.solicitante || "usuario"}`
+            : `Producto sin gestionar en solicitud #${row.solicitud_id}`,
+        equipo: row.equipo,
+        solicitante: row.solicitante,
+        estado: row.estado,
+        cantidad: row.cantidad === undefined || row.cantidad === null ? null : Number(row.cantidad),
+        unidad_medida: row.unidad_medida || null,
+        codigo_referencia: row.codigo_referencia || null,
+      };
+    })
+    .sort((a, b) => b.dias_sin_movimiento - a.dias_sin_movimiento)
+    .slice(0, limit);
+}
+
 async function getDashboardData(actor, filters = {}) {
   if (isOperationalPgEnabled()) {
     return pgService.getDashboardData(actor, filters);
@@ -383,4 +525,5 @@ async function getDashboardMetrics(actor, filters = {}) {
 module.exports = {
   getDashboardData,
   getDashboardMetrics,
+  getMyActions,
 };

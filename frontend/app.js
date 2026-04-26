@@ -128,6 +128,7 @@ const state = {
   pushStatus: null,
   pushStatusLoadedAt: 0,
   pushBusy: false,
+  globalSearchTimer: null,
 };
 
 const loginScreen = document.getElementById("login-screen");
@@ -143,6 +144,8 @@ const sidebarNav = document.getElementById("sidebar-nav");
 const viewContainer = document.getElementById("view-container");
 const pageTitle = document.getElementById("page-title");
 const pageSubtitle = document.getElementById("page-subtitle");
+const globalSearchInput = document.getElementById("global-search-input");
+const globalSearchResults = document.getElementById("global-search-results");
 const userBadge = document.getElementById("user-badge");
 const logoutBtn = document.getElementById("logout-btn");
 const menuToggle = document.getElementById("menu-toggle");
@@ -225,6 +228,92 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function closeGlobalSearch() {
+  globalSearchResults?.classList.add("hidden");
+  if (globalSearchResults) {
+    globalSearchResults.innerHTML = "";
+  }
+}
+
+function flattenGlobalSearchResults(payload = {}) {
+  return [
+    ...(payload.solicitudes || []),
+    ...(payload.inventario || []),
+    ...(payload.usuarios || []),
+  ];
+}
+
+function renderGlobalSearchResults(payload = {}) {
+  if (!globalSearchResults) {
+    return;
+  }
+
+  const rows = flattenGlobalSearchResults(payload);
+  if (!rows.length) {
+    globalSearchResults.innerHTML = "<div class='global-search-empty'>Sin resultados</div>";
+    globalSearchResults.classList.remove("hidden");
+    return;
+  }
+
+  const typeLabel = {
+    solicitud: "Solicitud",
+    inventario: "Inventario",
+    usuario: "Usuario",
+  };
+
+  globalSearchResults.innerHTML = rows
+    .map(
+      (row) => `
+        <button class="global-search-item" data-search-type="${row.tipo}" data-search-id="${row.id}" type="button">
+          <span class="mini-chip">${typeLabel[row.tipo] || "Resultado"}</span>
+          <strong>${escapeHtml(row.titulo)}</strong>
+          <small>${escapeHtml(row.descripcion || "")}</small>
+          ${row.meta ? `<small>${escapeHtml(row.meta)}</small>` : ""}
+        </button>
+      `
+    )
+    .join("");
+  globalSearchResults.classList.remove("hidden");
+}
+
+async function runGlobalSearch() {
+  const query = globalSearchInput?.value.trim() || "";
+  if (query.length < 2) {
+    closeGlobalSearch();
+    return;
+  }
+
+  globalSearchResults.classList.remove("hidden");
+  globalSearchResults.innerHTML = "<div class='global-search-empty'>Buscando...</div>";
+
+  try {
+    const payload = await apiRequest(`/api/search?q=${encodeURIComponent(query)}&limit=5`);
+    renderGlobalSearchResults(payload.data || {});
+  } catch (error) {
+    globalSearchResults.innerHTML = `<div class='global-search-empty'>${escapeHtml(error.message)}</div>`;
+  }
+}
+
+async function openGlobalSearchResult(type, id) {
+  closeGlobalSearch();
+  globalSearchInput.value = "";
+
+  if (type === "solicitud") {
+    sessionStorage.setItem("fmn-open-solicitud-id", String(id));
+    await loadView("solicitudes");
+    return;
+  }
+
+  if (type === "usuario" && isViewAllowed("usuarios")) {
+    await loadView("usuarios");
+    return;
+  }
+
+  if (type === "inventario") {
+    showToast("Resultado encontrado en inventario");
+  }
 }
 
 function normalizeEmailInput(value) {
@@ -1744,6 +1833,7 @@ function logout() {
   }
   updateAlertsBadge(0);
   closeAlertsModal();
+  closeGlobalSearch();
   resetRenderedView();
   setAuthenticatedUI(false);
   updateDocumentTitle();
@@ -1781,6 +1871,34 @@ function refreshFeedbackBadge()  { return _refreshFeedbackBadge(apiRequest); }
 function registerEvents() {
   loginForm.addEventListener("submit", handleLoginSubmit);
   logoutBtn.addEventListener("click", logout);
+  globalSearchInput?.addEventListener("input", () => {
+    if (state.globalSearchTimer) {
+      window.clearTimeout(state.globalSearchTimer);
+    }
+    state.globalSearchTimer = window.setTimeout(runGlobalSearch, 220);
+  });
+  globalSearchInput?.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeGlobalSearch();
+      globalSearchInput.blur();
+    }
+  });
+  globalSearchResults?.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-search-type]");
+    if (!button) {
+      return;
+    }
+    try {
+      await openGlobalSearchResult(button.dataset.searchType, Number(button.dataset.searchId));
+    } catch (error) {
+      showToast(error.message, true);
+    }
+  });
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest("#global-search")) {
+      closeGlobalSearch();
+    }
+  });
   helpBtn.addEventListener("click", async () => {
     await loadView("como-usar");
     closeSidebar();

@@ -29,6 +29,25 @@ router.get(
 );
 
 router.get(
+  "/my-actions",
+  authorize(
+    ROLES.ADMIN,
+    ROLES.SUPERVISOR,
+    ROLES.SECRETARIA,
+    ROLES.JEFE_FAENA,
+    ROLES.MECANICO,
+    ROLES.OPERADOR
+  ),
+  asyncHandler(async (req, res) => {
+    const actions = await dashboardService.getMyActions(req.user, req.query || {});
+    res.json({
+      status: "ok",
+      data: actions,
+    });
+  })
+);
+
+router.get(
   "/metrics",
   authorize(
     ROLES.ADMIN,

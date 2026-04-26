@@ -110,10 +110,30 @@
         <label for="solicitud-filter-equipo">Equipo</label>
         <select id="solicitud-filter-equipo" name="equipoId"></select>
       </div>
+      <div>
+        <label for="solicitud-filter-texto">Texto libre</label>
+        <input
+          id="solicitud-filter-texto"
+          name="texto"
+          type="search"
+          placeholder="Producto, codigo, equipo o comentario"
+        />
+      </div>
+      <div>
+        <label for="solicitud-filter-usuario">Solicitante ID</label>
+        <input id="solicitud-filter-usuario" name="usuarioId" type="number" min="1" />
+      </div>
+      <label class="toggle-label compact-toggle" for="solicitud-filter-urgentes">
+        <input id="solicitud-filter-urgentes" name="soloUrgentes" type="checkbox" value="1" />
+        <span>
+          <strong>Solo urgentes</strong>
+          <small>3 o mas dias sin movimiento</small>
+        </span>
+      </label>
     </form>
   </section>
 
-  <section class="card full">
+  <section id="solicitudes-list-card" class="card full solicitudes-list-card">
     <div class="section-head">
       <div>
         <h4>Bandeja de solicitudes</h4>
@@ -338,8 +358,14 @@
             class="detail-panel-segment detail-tab-active"
             data-detail-tab-panel="historial"
           >
-            <h5>Linea de tiempo</h5>
+            <div class="section-head compact-head">
+              <h5>Linea de tiempo</h5>
+              <button id="solicitud-history-pdf-btn" class="action-btn secondary" type="button">
+                Exportar PDF
+              </button>
+            </div>
             <div id="solicitud-history" class="history-list"></div>
+            <div id="solicitud-history-more" class="history-more"></div>
           </div>
         </section>
       </div>

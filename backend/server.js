@@ -8,6 +8,7 @@ const { initDatabase } = require("./database/init");
 const { initUserStore } = require("./services/userStore");
 const { initOperationalStore } = require("./services/operationalPgStore");
 const { autoSyncNovedadesFromDeploy } = require("./services/novedadesBootstrap");
+const { startStaleSolicitudesJob } = require("./services/staleSolicitudesJob");
 const testRoutes = require("./routes/test");
 const authRoutes = require("./routes/auth");
 const dashboardRoutes = require("./routes/dashboard");
@@ -24,6 +25,7 @@ const adminRoutes = require("./routes/admin");
 const aiRoutes = require("./routes/ai");
 const feedbackRoutes = require("./routes/feedback");
 const novedadesRoutes = require("./routes/novedades");
+const searchRoutes = require("./routes/search");
 const { notFoundHandler, errorHandler } = require("./middleware/errorHandlers");
 const { getStorageState } = require("./utils/storageMode");
 
@@ -61,6 +63,7 @@ function createApp() {
   app.use("/api/ai", aiRoutes);
   app.use("/api/feedback", feedbackRoutes);
   app.use("/api/novedades", novedadesRoutes);
+  app.use("/api/search", searchRoutes);
 
   // Frontend estático.
   app.use(express.static(FRONTEND_DIR));
@@ -96,6 +99,7 @@ async function initializeApp() {
       await initUserStore();
       await initOperationalStore();
       autoSyncNovedadesFromDeploy().catch(() => {});
+      startStaleSolicitudesJob();
       const storageState = getStorageState();
       if (storageState.lockUserMutations) {
         console.warn("[FMN] Seguridad activa:", storageState.message);
