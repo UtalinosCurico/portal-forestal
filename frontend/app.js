@@ -68,6 +68,22 @@ const ASSET_VERSION = window.__APP_VERSION__ || "dev";
   }, lastDelay);
 })();
 
+// ── Login video background ────────────────────────────────────────────────────
+(function initLoginVideo() {
+  const screen = document.querySelector(".login-screen");
+  const video  = document.getElementById("login-bg-video");
+  if (!screen || !video) return;
+
+  // Fade-in cuando el video arranca; paisaje SVG queda como fallback si falla
+  video.addEventListener("playing", () => {
+    screen.classList.add("has-video");
+  }, { once: true });
+
+  video.addEventListener("error", () => {
+    video.remove();
+  });
+})();
+
 // ── Button ripple ────────────────────────────────────────────────────────────
 document.addEventListener("pointerdown", (e) => {
   const btn = e.target.closest(
