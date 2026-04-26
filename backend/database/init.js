@@ -274,6 +274,7 @@ async function createTables() {
       titulo TEXT NOT NULL,
       descripcion TEXT NOT NULL,
       autor_nombre TEXT,
+      referencia_sha TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -329,6 +330,19 @@ async function migrateSolicitudesSchema() {
     CREATE UNIQUE INDEX IF NOT EXISTS idx_solicitudes_client_request_id
     ON solicitudes(client_request_id)
     WHERE client_request_id IS NOT NULL
+  `);
+}
+
+async function migrateNovedadesSchema() {
+  if (!(await tableExists("novedades"))) {
+    return;
+  }
+
+  await ensureColumn("novedades", "referencia_sha", "referencia_sha TEXT");
+  await run(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_novedades_referencia_sha
+    ON novedades(referencia_sha)
+    WHERE referencia_sha IS NOT NULL
   `);
 }
 
@@ -653,6 +667,7 @@ async function initDatabase() {
   await createTables();
   await migrateUsuariosSchema();
   await migrateSolicitudesSchema();
+  await migrateNovedadesSchema();
   await migrateEnviosStockSchema();
   await migrateSolicitudItemsSchema();
   await migrateSolicitudMensajesSchema();

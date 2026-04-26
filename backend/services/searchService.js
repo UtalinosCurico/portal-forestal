@@ -23,6 +23,11 @@ function normalizeLimit(value) {
   return Math.min(limit, 12);
 }
 
+async function pgTableExists(pg, tableName) {
+  const { rows } = await pg.query("SELECT to_regclass($1) AS table_name", [tableName]);
+  return Boolean(rows[0]?.table_name);
+}
+
 async function searchSqlite(actor, filters = {}) {
   const q = normalizeQuery(filters.q || filters.texto || filters.search);
   const limit = normalizeLimit(filters.limit);
@@ -162,7 +167,7 @@ async function searchPg(actor, filters = {}) {
         su.nombre AS solicitante,
         s.created_at
       FROM solicitudes s
-      INNER JOIN usuarios su ON su.id = s.solicitante_id
+      INNER JOIN usuarios_auth su ON su.id = s.solicitante_id
       WHERE (
         LOWER(COALESCE(s.repuesto, '')) LIKE $1
         OR LOWER(COALESCE(s.comentario, '')) LIKE $2
@@ -187,24 +192,28 @@ async function searchPg(actor, filters = {}) {
     solicitudParams
   );
 
-  const { rows: inventarioRows } = await pg.query(
-    `
-      SELECT id, codigo, nombre, stock_central, stock_faena, unidad_medida
-      FROM inventario
-      WHERE LOWER(COALESCE(codigo, '')) LIKE $1
-         OR LOWER(COALESCE(nombre, '')) LIKE $2
-      ORDER BY nombre ASC
-      LIMIT $3
-    `,
-    [like, like, limit]
-  );
+  let inventarioRows = [];
+  if (await pgTableExists(pg, "inventario")) {
+    const result = await pg.query(
+      `
+        SELECT id, codigo, nombre, stock_central, stock_faena, unidad_medida
+        FROM inventario
+        WHERE LOWER(COALESCE(codigo, '')) LIKE $1
+           OR LOWER(COALESCE(nombre, '')) LIKE $2
+        ORDER BY nombre ASC
+        LIMIT $3
+      `,
+      [like, like, limit]
+    );
+    inventarioRows = result.rows;
+  }
 
   let usuariosRows = [];
   if (isGlobalRole(role)) {
     const result = await pg.query(
       `
         SELECT u.id, u.nombre, u.email, u.rol, u.equipo_id
-        FROM usuarios u
+        FROM usuarios_auth u
         WHERE COALESCE(u.archivado, FALSE) = FALSE
           AND (
             LOWER(COALESCE(u.nombre, '')) LIKE $1

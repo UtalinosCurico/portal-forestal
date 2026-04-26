@@ -27,14 +27,23 @@ function readChangelogEntries() {
   }
 }
 
+function normalizeNovedadRow(row) {
+  if (!row) return row;
+  return {
+    ...row,
+    created_at: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+  };
+}
+
 async function getDbRows(fields = "*") {
   if (isOperationalPgEnabled()) {
     const pg = getOperationalPool();
     const { rows } = await pg.query(`SELECT ${fields} FROM novedades ORDER BY created_at DESC`);
-    return rows;
+    return rows.map(normalizeNovedadRow);
   }
   try {
-    return await all(`SELECT ${fields} FROM novedades ORDER BY created_at DESC`);
+    const rows = await all(`SELECT ${fields} FROM novedades ORDER BY created_at DESC`);
+    return rows.map(normalizeNovedadRow);
   } catch {
     return [];
   }

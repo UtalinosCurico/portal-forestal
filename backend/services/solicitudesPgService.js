@@ -233,7 +233,7 @@ function buildWhereClause(actor, filters = {}, alias = "s") {
       )
       OR EXISTS (
         SELECT 1
-        FROM usuarios u_filter
+        FROM usuarios_auth u_filter
         WHERE u_filter.id = ${alias}.solicitante_id
           AND LOWER(COALESCE(u_filter.nombre, '')) LIKE ${push(like)}
       )

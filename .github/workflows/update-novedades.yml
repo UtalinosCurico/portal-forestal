@@ -29,6 +29,7 @@ jobs:
         run: node scripts/update-novedades.js
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Commit si hay cambios
         run: |

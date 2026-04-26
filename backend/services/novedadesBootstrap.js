@@ -10,6 +10,8 @@ const TIPO_MAP = {
   refactor: "mejora",
   improve:  "mejora",
   mejora:   "mejora",
+  update:   "mejora",
+  enhancement: "mejora",
   chore:    null, // ignorar
   ci:       null,
   docs:     null,
@@ -40,6 +42,13 @@ function parseCommitMessage(raw) {
   return { tipo: "mejora", titulo: msg.slice(0, 120) };
 }
 
+async function ensureNovedadesSchema(pg) {
+  await pg.query("ALTER TABLE novedades ADD COLUMN IF NOT EXISTS referencia_sha TEXT");
+  await pg.query(
+    "CREATE UNIQUE INDEX IF NOT EXISTS novedades_referencia_sha_idx ON novedades (referencia_sha) WHERE referencia_sha IS NOT NULL"
+  );
+}
+
 async function autoSyncNovedadesFromDeploy() {
   const sha = String(process.env.VERCEL_GIT_COMMIT_SHA || "").trim();
   const rawMsg = String(process.env.VERCEL_GIT_COMMIT_MESSAGE || "").trim();
@@ -54,6 +63,7 @@ async function autoSyncNovedadesFromDeploy() {
   try {
     if (isOperationalPgEnabled()) {
       const pg = getOperationalPool();
+      await ensureNovedadesSchema(pg);
 
       // Verificar si ya existe esta entrada
       const { rows } = await pg.query(

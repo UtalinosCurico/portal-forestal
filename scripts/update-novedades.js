@@ -1,7 +1,7 @@
 /**
  * Obtiene commits nuevos via GitHub API y los agrega a backend/data/changelog.json
  * Se ejecuta automáticamente via GitHub Actions en cada push a main.
- * Requiere: GH_PAT secret + GITHUB_REPOSITORY env var (auto-set en Actions)
+ * Requiere: GH_PAT o GITHUB_TOKEN + GITHUB_REPOSITORY env var (auto-set en Actions)
  */
 const fs = require("fs");
 const path = require("path");

@@ -218,9 +218,15 @@ async function ensureSchema() {
       titulo TEXT NOT NULL,
       descripcion TEXT,
       autor_nombre TEXT NOT NULL DEFAULT 'Admin',
+      referencia_sha TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
+
+  await pg.query("ALTER TABLE novedades ADD COLUMN IF NOT EXISTS referencia_sha TEXT");
+  await pg.query(
+    "CREATE UNIQUE INDEX IF NOT EXISTS novedades_referencia_sha_idx ON novedades (referencia_sha) WHERE referencia_sha IS NOT NULL"
+  );
 }
 
 async function cleanupOrphanOperationalRows() {

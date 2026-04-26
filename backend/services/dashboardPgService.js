@@ -283,7 +283,7 @@ async function getMyActions(actor, filters = {}) {
           GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (NOW() - COALESCE(si.updated_at, si.created_at, s.updated_at, s.created_at))) / 86400))::int AS dias_sin_movimiento
         FROM solicitud_items si
         INNER JOIN solicitudes s ON s.id = si.solicitud_id
-        INNER JOIN usuarios su ON su.id = s.solicitante_id
+        INNER JOIN usuarios_auth su ON su.id = s.solicitante_id
         WHERE si.estado_item = 'POR_GESTIONAR'
           AND s.estado NOT IN ('ENTREGADO', 'RECHAZADO')
           AND s.equipo_id = $1
@@ -327,7 +327,7 @@ async function getMyActions(actor, filters = {}) {
         su.nombre AS solicitante,
         GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (NOW() - COALESCE(s.updated_at, s.created_at))) / 86400))::int AS dias_sin_movimiento
       FROM solicitudes s
-      INNER JOIN usuarios su ON su.id = s.solicitante_id
+      INNER JOIN usuarios_auth su ON su.id = s.solicitante_id
       WHERE s.estado = $1
       ORDER BY dias_sin_movimiento DESC, s.id ASC
       LIMIT $2
@@ -352,7 +352,7 @@ async function getMyActions(actor, filters = {}) {
         GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (NOW() - COALESCE(si.updated_at, si.created_at, s.updated_at, s.created_at))) / 86400))::int AS dias_sin_movimiento
       FROM solicitud_items si
       INNER JOIN solicitudes s ON s.id = si.solicitud_id
-      INNER JOIN usuarios su ON su.id = s.solicitante_id
+      INNER JOIN usuarios_auth su ON su.id = s.solicitante_id
       WHERE si.estado_item = 'POR_GESTIONAR'
         AND s.estado NOT IN ('ENTREGADO', 'RECHAZADO')
         AND GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (NOW() - COALESCE(si.updated_at, si.created_at, s.updated_at, s.created_at))) / 86400))::int >= 3
