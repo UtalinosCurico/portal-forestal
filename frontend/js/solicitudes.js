@@ -34,6 +34,17 @@ const STATUS_OPTIONS = [
   { key: "RECHAZADO", label: "Rechazada", hint: "No sigue adelante" },
 ];
 
+const STATUS_RANK = {
+  PENDIENTE: 0,
+  EN_REVISION: 1,
+  APROBADO: 2,
+  EN_DESPACHO: 3,
+  ENTREGADO: 4,
+  RECHAZADO: 5,
+};
+
+const CLOSED_SOLICITUD_STATUSES = new Set(["ENTREGADO", "RECHAZADO"]);
+
 const ITEM_STATUS_LABELS = {
   RESUELTO_FAENA: "Resuelto en faena",
   NO_APLICA: "N/A",
@@ -167,17 +178,38 @@ function renderItemStatusBadge(status) {
 }
 
 function renderSolicitudStepper(status) {
+  const currentRank = STATUS_RANK[status] ?? 0;
+  const isRejected = status === "RECHAZADO";
+  const visibleSteps = STATUS_OPTIONS.filter((option) => option.key !== "RECHAZADO");
+
   return `
-    <div class="status-overview-grid">
-      ${STATUS_OPTIONS.map((option) => {
-        const className = option.key === status ? "status-node current" : "status-node";
+    <div class="status-flow" aria-label="Avance de solicitud">
+      ${visibleSteps.map((option, index) => {
+        const rank = STATUS_RANK[option.key] ?? index;
+        const stateClass = option.key === status
+          ? "current"
+          : !isRejected && rank < currentRank
+            ? "done"
+            : "pending";
         return `
-          <article class="${className}">
-            <strong>${option.label}</strong>
-            <span>${option.hint}</span>
+          <article class="status-flow-step ${stateClass}">
+            <span class="status-flow-dot">${index + 1}</span>
+            <span class="status-flow-copy">
+              <strong>${option.label}</strong>
+              <small>${option.hint}</small>
+            </span>
           </article>
         `;
       }).join("")}
+      ${isRejected ? `
+        <article class="status-flow-step current rejected">
+          <span class="status-flow-dot">!</span>
+          <span class="status-flow-copy">
+            <strong>Rechazada</strong>
+            <small>No sigue adelante</small>
+          </span>
+        </article>
+      ` : ""}
     </div>
   `;
 }
@@ -216,6 +248,7 @@ function formatHistoryActionLabel(action) {
     ITEM_ELIMINADO: "Producto eliminado",
     ESTADO_ITEM_REVERTIDO: "Producto revertido",
     MENSAJE_ENVIADO: "Mensaje enviado",
+    MENSAJE: "Mensaje enviado",
   };
 
   if (map[value]) {
@@ -226,6 +259,23 @@ function formatHistoryActionLabel(action) {
     .toLowerCase()
     .replaceAll("_", " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function renderHistoryDetail(detail) {
+  const parts = String(detail || "Sin detalle")
+    .split("|")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts.length <= 1) {
+    return `<p>${parts[0] || "Sin detalle"}</p>`;
+  }
+
+  return `
+    <div class="history-detail-grid">
+      ${parts.map((part) => `<span>${part}</span>`).join("")}
+    </div>
+  `;
 }
 
 function renderHistory(historial = [], formatDate) {
@@ -243,7 +293,7 @@ function renderHistory(historial = [], formatDate) {
               <strong>${formatHistoryActionLabel(item.accion)}</strong>
               <span class="mini-chip">${formatDate(item.created_at)}</span>
             </div>
-            <p>${item.detalle || "Sin detalle"}</p>
+            ${renderHistoryDetail(item.detalle)}
             <span>${item.actor_name || "Sistema"}</span>
           </div>
         </article>
@@ -755,11 +805,12 @@ function buildDetailItemRow(item = {}, options = {}) {
   } = options;
   const canConfigure = editableBase || canManageItem;
   const summaryLine = [
-    `${item.cantidad || 1} - ${item.unidad_medida || "Sin unidad o talla"}`,
-    `Numero de parte: ${item.codigo_referencia || "Sin numero de parte"}`,
-    `Detalle: ${item.detalle || item.comentario || "Sin detalle"}`,
-    `Usuario final: ${item.usuario_final || "Sin usuario final"}`,
-  ].join(" | ");
+    ["Cantidad", item.cantidad || 1],
+    ["Unidad / talla", item.unidad_medida || "Sin unidad o talla"],
+    ["Numero de parte", item.codigo_referencia || "Sin numero de parte"],
+    ["Usuario final", item.usuario_final || "Sin usuario final"],
+  ];
+  const detailText = item.detalle || item.comentario || "Sin detalle";
   const gestion = item.comentario_gestion
     ? `<div class="table-subline">Comentario de gestion: ${item.comentario_gestion}</div>`
     : "";
@@ -780,7 +831,12 @@ function buildDetailItemRow(item = {}, options = {}) {
       <div class="item-tracking-head">
         <div class="item-tracking-title">
           <strong>${item.nombre_item || "Nuevo producto"}</strong>
-          <div class="table-subline">${summaryLine}</div>
+          <div class="item-meta-grid">
+            ${summaryLine.map(([label, value]) => `
+              <span class="item-meta-pill"><b>${label}</b>${value}</span>
+            `).join("")}
+          </div>
+          <div class="table-subline item-detail-line">Detalle: ${detailText}</div>
           <div class="table-subline">Solicitado por: ${solicitanteNombre}</div>
           <div class="item-status-preview">${renderItemStatusBadge(item.estado_item || "POR_GESTIONAR")}</div>
           ${encargado}
@@ -796,7 +852,9 @@ function buildDetailItemRow(item = {}, options = {}) {
         </div>
         ${
           canConfigure
-            ? `<button class="table-btn solicitud-configure-item-btn" type="button">Configurar</button>`
+            ? `<button class="table-btn solicitud-configure-item-btn" type="button">${
+                canManageItem ? "Configurar" : "Editar producto"
+              }</button>`
             : ""
         }
       </div>
@@ -1506,9 +1564,9 @@ export async function initSolicitudesView(context) {
   }
 
   function fillItemModal(item = null) {
-    const editableBase = Boolean(currentSolicitud && (currentSolicitud.estado === "PENDIENTE" || canManage));
-    const canManageItem = canManage;
     const isNew = !item?.id;
+    const editableBase = Boolean(currentSolicitud && (isNew ? isDetailEditable(currentSolicitud) : canEditProductBase(currentSolicitud)));
+    const canManageItem = canManage;
 
     currentItemEditor = {
       itemId: item?.id ? Number(item.id) : null,
@@ -1521,7 +1579,9 @@ export async function initSolicitudesView(context) {
     itemModalTitle.textContent = isNew ? "Agregar producto" : `Configurar producto #${item.id}`;
     itemModalSubtitle.textContent = isNew
       ? "Registra un nuevo producto dentro de esta solicitud."
-      : "Configura este producto sin mezclarlo con el resto de la solicitud.";
+      : canManageItem
+        ? "Configura el producto y su seguimiento sin mezclarlo con el resto de la solicitud."
+        : "Edita solo los datos del producto. El seguimiento queda a cargo de administracion o supervision.";
 
     itemNameInput.value = item?.nombre_item || "";
     itemCodeInput.value = item?.codigo_referencia || item?.codigo || "";
@@ -1799,6 +1859,10 @@ export async function initSolicitudesView(context) {
     return Boolean(solicitud && (solicitud.estado === "PENDIENTE" || canManage));
   }
 
+  function canEditProductBase(solicitud) {
+    return Boolean(solicitud && (canManage || !CLOSED_SOLICITUD_STATUSES.has(solicitud.estado)));
+  }
+
   function canConfirmSolicitud(solicitud) {
     return Boolean(solicitud && canOperationalConfirm && solicitud.estado === "EN_DESPACHO");
   }
@@ -1806,7 +1870,7 @@ export async function initSolicitudesView(context) {
   function fillContactOptions(contactos = []) {
     currentContactOptions = contactos;
     destinatarioSelect.innerHTML = [
-      "<option value=''>Seleccione a quien hablarle</option>",
+      "<option value=''>Elige destinatario para notificar</option>",
       ...contactos.map(
         (contacto) =>
           `<option value="${contacto.id}">${contacto.nombre} - ${contacto.rol}${
@@ -1876,7 +1940,7 @@ export async function initSolicitudesView(context) {
     detailItemsList.innerHTML = "";
     (solicitud.items || []).forEach((item) =>
       addDetailItem(item, {
-        editableBase: editable,
+        editableBase: canEditProductBase(solicitud),
         canManageItem: canManage,
         contactos: solicitud.contactos || [],
         solicitante: solicitud.solicitante_name || solicitud.solicitante,
@@ -2500,10 +2564,6 @@ export async function initSolicitudesView(context) {
     }
   });
 
-  const STATUS_RANK = {
-    PENDIENTE: 0, EN_REVISION: 1, APROBADO: 2, EN_DESPACHO: 3, ENTREGADO: 4, RECHAZADO: 5,
-  };
-
   detailStatusActions.addEventListener("click", (event) => {
     const button = event.target.closest("[data-status-value]");
     if (!button || !canManage) {
@@ -2736,10 +2796,15 @@ export async function initSolicitudesView(context) {
     }
 
     try {
+      const destinatarioId = destinatarioSelect.value ? Number(destinatarioSelect.value) : 0;
+      if (!destinatarioId) {
+        throw new Error("Selecciona un destinatario para que el mensaje genere notificacion.");
+      }
+
       await context.apiRequest(`/api/solicitudes/${currentSolicitud.id}/mensajes`, {
         method: "POST",
         body: {
-          destinatario_id: destinatarioSelect.value ? Number(destinatarioSelect.value) : undefined,
+          destinatario_id: destinatarioId,
           mensaje: messageText.value.trim(),
           imagen_nombre: pendingImageName || undefined,
           imagen_data: pendingImageData || undefined,
@@ -2747,7 +2812,7 @@ export async function initSolicitudesView(context) {
       });
       await loadSolicitudDetail(currentSolicitud.id, { preserveChat: true });
       openChatDrawer();
-      context.showToast("Mensaje enviado");
+      context.showToast("Mensaje enviado y notificado");
     } catch (error) {
       context.showToast(error.message, true);
     }

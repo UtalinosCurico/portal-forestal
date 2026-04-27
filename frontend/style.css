@@ -1608,6 +1608,7 @@ button:disabled:hover {
   background: #ffffff;
   padding: 0.8rem;
   box-shadow: 0 6px 16px rgba(11, 36, 25, 0.06);
+  min-width: 0;
 }
 
 .item-row-actions {
@@ -1631,11 +1632,41 @@ button:disabled:hover {
   justify-content: space-between;
   gap: 0.8rem;
   align-items: flex-start;
+  min-width: 0;
 }
 
 .item-tracking-title {
   display: grid;
   gap: 0.35rem;
+  min-width: 0;
+}
+
+.item-meta-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.item-meta-pill {
+  display: inline-grid;
+  gap: 0.05rem;
+  min-width: min(150px, 100%);
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #dce9e2;
+  border-radius: 10px;
+  background: #f6fbf8;
+  color: #2f4b3f;
+  font-size: 0.8rem;
+}
+
+.item-meta-pill b {
+  color: #5b7167;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.item-detail-line {
+  overflow-wrap: anywhere;
 }
 
 .item-readonly-field {
@@ -1977,12 +2008,18 @@ body.modal-active {
 
 #solicitudes-detail-modal .modal-content {
   width: min(1180px, calc(100vw - 2rem));
+  overflow-x: hidden;
+}
+
+#solicitudes-create-modal .modal-content {
+  width: min(900px, calc(100vw - 2rem));
 }
 
 .detail-layout {
   display: grid;
   grid-template-columns: 1.2fr 0.9fr;
   gap: 0.9rem;
+  min-width: 0;
 }
 
 .detail-mobile-tabs {
@@ -2011,6 +2048,7 @@ body.modal-active {
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 0.9rem;
+  min-width: 0;
 }
 
 .detail-panel-segment + .detail-panel-segment {
@@ -2061,6 +2099,78 @@ body.modal-active {
 
 .status-stepper {
   margin-bottom: 1rem;
+}
+
+.status-flow {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.status-flow-step {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.62rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.status-flow-step.done {
+  border-color: #bcdccc;
+  background: #f1faf5;
+}
+
+.status-flow-step.current {
+  border-color: #2f7d5a;
+  background: #dff1e7;
+  box-shadow: inset 0 0 0 1px rgba(47, 125, 90, 0.12);
+}
+
+.status-flow-step.rejected {
+  border-color: #e7b8b8;
+  background: #fff1f1;
+}
+
+.status-flow-dot {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #edf3ef;
+  color: #587064;
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+
+.status-flow-step.done .status-flow-dot,
+.status-flow-step.current .status-flow-dot {
+  background: var(--forest-700);
+  color: #ffffff;
+}
+
+.status-flow-step.rejected .status-flow-dot {
+  background: #b13a3a;
+  color: #ffffff;
+}
+
+.status-flow-copy {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.status-flow-copy strong {
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.status-flow-copy small {
+  color: var(--muted);
+  font-size: 0.78rem;
 }
 
 .status-overview-grid {
@@ -2219,7 +2329,23 @@ body.modal-active {
   color: var(--text);
 }
 
-.history-content span {
+.history-detail-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.45rem 0;
+}
+
+.history-detail-grid span {
+  color: #2f4b3f;
+  background: #eef6f2;
+  border: 1px solid #d7e8df;
+  border-radius: 999px;
+  padding: 0.18rem 0.5rem;
+  font-size: 0.78rem;
+}
+
+.history-content > span {
   color: var(--muted);
   font-size: 0.82rem;
 }

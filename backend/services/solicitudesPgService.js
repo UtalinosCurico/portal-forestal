@@ -57,6 +57,13 @@ function shouldNotifyManagement(actor) {
   return !isGlobalRole(getActorRole(actor));
 }
 
+function canEditItemBaseFields(actorRole, solicitud) {
+  return (
+    isGlobalRole(actorRole) ||
+    ![SOLICITUD_STATUS.ENTREGADO, SOLICITUD_STATUS.RECHAZADO].includes(solicitud?.estado)
+  );
+}
+
 async function notifySolicitudCreatedForActor(actor, solicitud) {
   if (!shouldNotifyManagement(actor) || !solicitud?.id) {
     return null;
@@ -1961,7 +1968,7 @@ async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
     params.push(value);
     return `$${params.length}`;
   };
-  const canEditBase = solicitud.estado === SOLICITUD_STATUS.PENDIENTE || isGlobalRole(actorRole);
+  const canEditBase = canEditItemBaseFields(actorRole, solicitud);
   const canManageTracking = isGlobalRole(actorRole);
 
   let estadoNuevo = currentItem.estado_item;
@@ -1979,7 +1986,7 @@ async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
 
   if (payload.nombre_item !== undefined || payload.nombreItem !== undefined || payload.nombre !== undefined) {
     if (!canEditBase) {
-      throw new HttpError(409, "Solo puedes editar el item base mientras la solicitud esta pendiente");
+      throw new HttpError(409, "No se pueden editar datos del producto en solicitudes cerradas");
     }
     nombreNuevo = String(payload.nombre_item ?? payload.nombreItem ?? payload.nombre ?? "").trim();
     if (!nombreNuevo) {
@@ -1990,7 +1997,7 @@ async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
 
   if (payload.cantidad !== undefined) {
     if (!canEditBase) {
-      throw new HttpError(409, "Solo puedes editar el item base mientras la solicitud esta pendiente");
+      throw new HttpError(409, "No se pueden editar datos del producto en solicitudes cerradas");
     }
     cantidadNueva = Number(payload.cantidad);
     if (!Number.isInteger(cantidadNueva) || cantidadNueva <= 0) {
@@ -2006,7 +2013,7 @@ async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
     payload.unidad !== undefined
   ) {
     if (!canEditBase) {
-      throw new HttpError(409, "Solo puedes editar el item base mientras la solicitud esta pendiente");
+      throw new HttpError(409, "No se pueden editar datos del producto en solicitudes cerradas");
     }
     unidadMedidaNueva = String(
       payload.unidad_medida ?? payload.unidadMedida ?? payload.talla ?? payload.unidad ?? ""
@@ -2023,7 +2030,7 @@ async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
     payload.codigo !== undefined
   ) {
     if (!canEditBase) {
-      throw new HttpError(409, "Solo puedes editar el item base mientras la solicitud esta pendiente");
+      throw new HttpError(409, "No se pueden editar datos del producto en solicitudes cerradas");
     }
     codigoReferenciaNueva = String(
       payload.codigo_referencia ?? payload.codigoReferencia ?? payload.codigo ?? ""
@@ -2036,7 +2043,7 @@ async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
 
   if (payload.usuario_final !== undefined || payload.usuarioFinal !== undefined) {
     if (!canEditBase) {
-      throw new HttpError(409, "Solo puedes editar el item base mientras la solicitud esta pendiente");
+      throw new HttpError(409, "No se pueden editar datos del producto en solicitudes cerradas");
     }
     usuarioFinalNuevo = String(payload.usuario_final ?? payload.usuarioFinal ?? "").trim();
     if (!usuarioFinalNuevo) {
@@ -2047,7 +2054,7 @@ async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
 
   if (payload.comentario !== undefined || payload.detalle !== undefined) {
     if (!canEditBase) {
-      throw new HttpError(409, "Solo puedes editar el item base mientras la solicitud esta pendiente");
+      throw new HttpError(409, "No se pueden editar datos del producto en solicitudes cerradas");
     }
     detalleNuevo = String(payload.detalle ?? payload.comentario ?? "").trim();
     if (!detalleNuevo) {
@@ -2580,7 +2587,7 @@ async function createSolicitudMessage(actor, solicitudId, payload = {}) {
     `
       INSERT INTO solicitud_historial
         (solicitud_id, accion, estado_anterior, estado_nuevo, detalle, actor_id, actor_name)
-      VALUES ($1, 'MENSAJE', $2, $3, $4, $5, $6)
+      VALUES ($1, 'MENSAJE_ENVIADO', $2, $3, $4, $5, $6)
     `,
     [
       Number(solicitudId),
@@ -2592,6 +2599,8 @@ async function createSolicitudMessage(actor, solicitudId, payload = {}) {
     ]
   );
 
+  const actorIsGlobal = isGlobalRole(getActorRole(actor));
+
   if (destinatarioId) {
     await notificacionesService.createSolicitudMessageNotification({
       solicitudId,
@@ -2600,7 +2609,15 @@ async function createSolicitudMessage(actor, solicitudId, payload = {}) {
       destinatarioId,
       mensaje,
     });
-  } else if (!isGlobalRole(getActorRole(actor))) {
+  } else if (actorIsGlobal && solicitud.solicitante_id && Number(solicitud.solicitante_id) !== Number(actor.id)) {
+    await notificacionesService.createSolicitudMessageNotification({
+      solicitudId,
+      equipoId: solicitud.equipo_id,
+      remitenteNombre: actor.nombre || actor.name,
+      destinatarioId: Number(solicitud.solicitante_id),
+      mensaje,
+    });
+  } else if (!actorIsGlobal) {
     await notificacionesService.createSolicitudMessageNotification({
       solicitudId,
       equipoId: solicitud.equipo_id,

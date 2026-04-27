@@ -183,7 +183,10 @@
     <div class="modal-backdrop" data-close="true"></div>
     <section class="modal-content">
       <header class="modal-header">
-        <h4>Nueva solicitud</h4>
+        <div>
+          <h4>Nueva solicitud</h4>
+          <p class="muted-text">Completa los datos generales y luego agrega los productos necesarios.</p>
+        </div>
         <button id="solicitudes-create-close" class="icon-btn" type="button">x</button>
       </header>
 
@@ -201,7 +204,10 @@
 
         <div class="full">
           <div class="section-head">
-            <h5>Productos solicitados</h5>
+            <div>
+              <h5>Productos solicitados</h5>
+              <p class="muted-text">Cada producto conserva su propio detalle y seguimiento.</p>
+            </div>
           </div>
           <div id="create-items-list" class="item-list"></div>
           <div class="item-list-footer">
@@ -248,8 +254,7 @@
           <h5>Productos de la solicitud</h5>
           <div class="section-head compact-head">
             <p class="muted-text">
-              Ajusta el detalle mientras este pendiente. El seguimiento de cada producto se registra
-              producto por producto desde este bloque.
+              Revisa y ajusta cada producto sin mezclar su seguimiento con el resto de la solicitud.
             </p>
             <button id="detail-add-item-btn" class="action-btn secondary" type="button">
               Agregar producto
@@ -395,8 +400,8 @@
         <form id="solicitud-message-form" class="chat-composer" autocomplete="off">
           <div>
             <label for="solicitud-message-destinatario">Enviar a</label>
-            <select id="solicitud-message-destinatario" name="destinatario_id">
-              <option value="">Seleccione a quien hablarle</option>
+            <select id="solicitud-message-destinatario" name="destinatario_id" required>
+              <option value="">Elige destinatario para notificar</option>
             </select>
           </div>
           <div>
