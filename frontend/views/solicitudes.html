@@ -21,8 +21,8 @@
     </div>
 
     <div class="quick-strip" id="solicitudes-quick-filters" aria-label="Filtros rapidos de solicitudes">
-      <button class="quick-tile active" data-quick-filter="ALL" type="button">
-        <span class="quick-label">Todas</span>
+      <button class="quick-tile active" data-quick-filter="ACTIVE" type="button">
+        <span class="quick-label">Activas</span>
         <strong id="summary-total" class="quick-value">0</strong>
       </button>
       <button class="quick-tile" data-quick-filter="PENDIENTE" type="button">
@@ -37,12 +37,12 @@
         <span class="quick-label">En despacho</span>
         <strong id="summary-despacho" class="quick-value">0</strong>
       </button>
-      <button class="quick-tile" data-quick-filter="ENTREGADO" type="button">
-        <span class="quick-label">Entregadas</span>
+      <button class="quick-tile" data-quick-filter="ARCHIVED" type="button">
+        <span class="quick-label">Archivadas</span>
         <strong id="summary-entregadas" class="quick-value">0</strong>
       </button>
     </div>
-    <p class="quick-strip-hint muted-text">Toca una tarjeta para filtrar la bandeja sin abrir mas opciones.</p>
+    <p class="quick-strip-hint muted-text">La bandeja muestra solicitudes activas. Las entregadas quedan en Archivadas para consulta.</p>
   </section>
 
   <section class="card full pending-inline-card" id="solicitudes-inline-pending-card">

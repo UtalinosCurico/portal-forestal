@@ -1161,6 +1161,7 @@ export async function initSolicitudesView(context) {
 
   const filters = {
     estado: "",
+    archivo: "activas",
     fechaDesde: "",
     fechaHasta: "",
     equipoId: "",
@@ -1659,7 +1660,8 @@ export async function initSolicitudesView(context) {
     }
 
     if (!searchText) {
-      searchSummary.textContent = `Mostrando ${solicitudesCache.length} solicitud(es) cargadas.`;
+      const scopeLabel = filters.archivo === "entregadas" ? "archivada(s)" : "activa(s)";
+      searchSummary.textContent = `Mostrando ${solicitudesCache.length} solicitud(es) ${scopeLabel}.`;
       return;
     }
 
@@ -1711,7 +1713,12 @@ export async function initSolicitudesView(context) {
   function syncQuickFilterUI() {
     quickFilters.querySelectorAll("[data-quick-filter]").forEach((button) => {
       const target = button.dataset.quickFilter;
-      const selected = target === "ALL" ? !filters.estado : filters.estado === target;
+      const selected =
+        target === "ACTIVE"
+          ? filters.archivo === "activas" && !filters.estado
+          : target === "ARCHIVED"
+            ? filters.archivo === "entregadas" && !filters.estado
+            : filters.estado === target;
       button.classList.toggle("active", selected);
       button.setAttribute("aria-pressed", selected ? "true" : "false");
     });
@@ -1723,7 +1730,16 @@ export async function initSolicitudesView(context) {
   }
 
   async function applyQuickFilter(status, successMessage = "") {
-    filters.estado = status || "";
+    if (status === "ACTIVE") {
+      filters.estado = "";
+      filters.archivo = "activas";
+    } else if (status === "ARCHIVED") {
+      filters.estado = "";
+      filters.archivo = "entregadas";
+    } else {
+      filters.estado = status || "";
+      filters.archivo = status === "ENTREGADO" ? "entregadas" : "activas";
+    }
     const selectEstado = filterForm.querySelector("[name='estado']");
     if (selectEstado) {
       selectEstado.value = filters.estado;
@@ -1799,11 +1815,31 @@ export async function initSolicitudesView(context) {
       renderCurrentSolicitudes();
       syncQuickFilterUI();
       renderLoadMoreBtn();
+      refreshArchiveCounters().catch(() => {});
     } finally {
       if (showLoading) {
         setListBusy(false);
       }
     }
+  }
+
+  async function refreshArchiveCounters() {
+    const baseFilters = {
+      ...currentFilters,
+      estado: "",
+      limit: 1,
+      page: 1,
+    };
+
+    const [activePayload, archivedPayload] = await Promise.all([
+      context.apiRequest(`/api/solicitudes${buildQueryString({ ...baseFilters, archivo: "activas" })}`),
+      context.apiRequest(`/api/solicitudes${buildQueryString({ ...baseFilters, archivo: "entregadas" })}`),
+    ]);
+
+    const activeTotal = activePayload?.meta?.total ?? 0;
+    const archivedTotal = archivedPayload?.meta?.total ?? 0;
+    animateCount(document.getElementById("summary-total"), activeTotal);
+    animateCount(document.getElementById("summary-entregadas"), archivedTotal);
   }
 
   async function refreshSolicitudesFromRealtime(notification) {
@@ -2866,7 +2902,7 @@ export async function initSolicitudesView(context) {
 
     try {
       const quickFilter = button.dataset.quickFilter;
-      await applyQuickFilter(quickFilter === "ALL" ? "" : quickFilter);
+      await applyQuickFilter(quickFilter);
     } catch (error) {
       context.showToast(error.message, true);
     }
@@ -2907,6 +2943,7 @@ export async function initSolicitudesView(context) {
   filterBtn.addEventListener("click", async () => {
     const formData = new FormData(filterForm);
     filters.estado = String(formData.get("estado") || "");
+    filters.archivo = filters.estado === "ENTREGADO" ? "entregadas" : "activas";
     filters.fechaDesde = String(formData.get("fechaDesde") || "");
     filters.fechaHasta = String(formData.get("fechaHasta") || "");
     filters.equipoId = String(formData.get("equipoId") || "");
@@ -2925,6 +2962,7 @@ export async function initSolicitudesView(context) {
   clearFiltersBtn.addEventListener("click", async () => {
     filterForm.reset();
     filters.estado = "";
+    filters.archivo = "activas";
     filters.fechaDesde = "";
     filters.fechaHasta = "";
     filters.equipoId = "";

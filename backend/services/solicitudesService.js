@@ -124,6 +124,7 @@ function normalizeFilters(actor, filters = {}) {
     estado: null,
     equipoId: null,
     usuarioId: null,
+    archivo: "todas",
     texto: "",
     soloUrgentes: false,
     diasUrgencia: 3,
@@ -137,6 +138,19 @@ function normalizeFilters(actor, filters = {}) {
       throw new HttpError(400, "estado invalido");
     }
     normalized.estado = estado;
+  }
+
+  const archivo = String(filters.archivo || filters.archived || filters.modo || "todas")
+    .trim()
+    .toLowerCase();
+  if (["activas", "activa", "active"].includes(archivo)) {
+    normalized.archivo = "activas";
+  } else if (["archivadas", "archivada", "entregadas", "entregada", "archived"].includes(archivo)) {
+    normalized.archivo = "entregadas";
+  } else if (["todas", "todos", "all", ""].includes(archivo)) {
+    normalized.archivo = "todas";
+  } else {
+    throw new HttpError(400, "archivo invalido");
   }
 
   if (isGlobalRole(role) && (filters.equipoId || filters.equipo_id)) {
@@ -198,6 +212,12 @@ function buildWhereClause(actor, filters = {}, alias = "s") {
   if (normalized.estado) {
     conditions.push(`${alias}.estado = ?`);
     params.push(normalized.estado);
+  } else if (normalized.archivo === "activas") {
+    conditions.push(`${alias}.estado <> ?`);
+    params.push(SOLICITUD_STATUS.ENTREGADO);
+  } else if (normalized.archivo === "entregadas") {
+    conditions.push(`${alias}.estado = ?`);
+    params.push(SOLICITUD_STATUS.ENTREGADO);
   }
 
   if (normalized.usuarioId) {
