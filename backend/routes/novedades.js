@@ -17,11 +17,16 @@ const ALL_ROLES = [
 ];
 
 const CHANGELOG_PATH = path.join(__dirname, "../../backend/data/changelog.json");
+const NOVEDADES_RESET_AT = "2026-04-27T00:00:00.000Z";
+
+function isVisibleNovedad(entry) {
+  return !entry?.created_at || entry.created_at >= NOVEDADES_RESET_AT;
+}
 
 function readChangelogEntries() {
   try {
     const data = JSON.parse(fs.readFileSync(CHANGELOG_PATH, "utf8"));
-    return Array.isArray(data.entries) ? data.entries : [];
+    return Array.isArray(data.entries) ? data.entries.filter(isVisibleNovedad) : [];
   } catch {
     return [];
   }
@@ -39,11 +44,11 @@ async function getDbRows(fields = "*") {
   if (isOperationalPgEnabled()) {
     const pg = getOperationalPool();
     const { rows } = await pg.query(`SELECT ${fields} FROM novedades ORDER BY created_at DESC`);
-    return rows.map(normalizeNovedadRow);
+    return rows.map(normalizeNovedadRow).filter(isVisibleNovedad);
   }
   try {
     const rows = await all(`SELECT ${fields} FROM novedades ORDER BY created_at DESC`);
-    return rows.map(normalizeNovedadRow);
+    return rows.map(normalizeNovedadRow).filter(isVisibleNovedad);
   } catch {
     return [];
   }

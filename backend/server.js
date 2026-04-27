@@ -7,7 +7,6 @@ const bodyParser = require("body-parser");
 const { initDatabase } = require("./database/init");
 const { initUserStore } = require("./services/userStore");
 const { initOperationalStore } = require("./services/operationalPgStore");
-const { autoSyncNovedadesFromDeploy } = require("./services/novedadesBootstrap");
 const { startStaleSolicitudesJob } = require("./services/staleSolicitudesJob");
 const testRoutes = require("./routes/test");
 const authRoutes = require("./routes/auth");
@@ -98,7 +97,6 @@ async function initializeApp() {
       await initDatabase();
       await initUserStore();
       await initOperationalStore();
-      autoSyncNovedadesFromDeploy().catch(() => {});
       startStaleSolicitudesJob();
       const storageState = getStorageState();
       if (storageState.lockUserMutations) {

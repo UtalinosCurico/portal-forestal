@@ -1241,7 +1241,7 @@ export async function initSolicitudesView(context) {
   }
 
   function isDockedDetailLayout() {
-    return window.matchMedia("(min-width: 1101px)").matches;
+    return false;
   }
 
   function syncDetailSurfaceMode() {

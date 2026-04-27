@@ -105,7 +105,7 @@ async function loadNovedades() {
         </div>
         ${n.descripcion ? `<p class="novedades-card-desc">${n.descripcion}</p>` : ""}
         <div class="novedades-card-meta">
-          <span>👤 ${n.autor_nombre || "Admin"} · 📅 ${fecha}</span>
+          <span>Publicado ${fecha}</span>
           ${isAdmin ? `<button class="action-btn secondary" style="font-size:0.78rem;min-height:28px;padding:0.15rem 0.6rem;color:#c62828" data-nov-delete="${n.id}">Eliminar</button>` : ""}
         </div>
       </div>`;
