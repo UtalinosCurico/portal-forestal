@@ -1,14 +1,11 @@
 name: Actualizar Novedades
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
   novedades:
     runs-on: ubuntu-latest
-    # Evitar bucle infinito con el commit automático del bot
-    if: "!contains(github.event.head_commit.message, '[skip ci]')"
 
     permissions:
       contents: write
