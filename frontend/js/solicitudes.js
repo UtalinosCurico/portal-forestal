@@ -613,6 +613,7 @@ function renderSummary(rows) {
     revision: 0,
     despacho: 0,
     entregadas: 0,
+    urgentes: 0,
   };
 
   for (const row of rows) {
@@ -628,6 +629,9 @@ function renderSummary(rows) {
     if (row.estado === "ENTREGADO") {
       summary.entregadas += 1;
     }
+    if (Number(row.dias_sin_movimiento || 0) > 7 && !CLOSED_SOLICITUD_STATUSES.has(row.estado)) {
+      summary.urgentes += 1;
+    }
   }
 
   animateCount(document.getElementById("summary-total"), rows.length);
@@ -635,6 +639,7 @@ function renderSummary(rows) {
   animateCount(document.getElementById("summary-revision"), summary.revision);
   animateCount(document.getElementById("summary-despacho"), summary.despacho);
   animateCount(document.getElementById("summary-entregadas"), summary.entregadas);
+  animateCount(document.getElementById("summary-urgentes"), summary.urgentes);
 
   const activeCount = summary.pendientes + summary.revision + summary.despacho;
   document.title = activeCount > 0
@@ -1714,11 +1719,13 @@ export async function initSolicitudesView(context) {
     quickFilters.querySelectorAll("[data-quick-filter]").forEach((button) => {
       const target = button.dataset.quickFilter;
       const selected =
-        target === "ACTIVE"
-          ? filters.archivo === "activas" && !filters.estado
-          : target === "ARCHIVED"
-            ? filters.archivo === "entregadas" && !filters.estado
-            : filters.estado === target;
+        target === "URGENTES"
+          ? filters.soloUrgentes === "1"
+          : target === "ACTIVE"
+            ? filters.archivo === "activas" && !filters.estado && filters.soloUrgentes !== "1"
+            : target === "ARCHIVED"
+              ? filters.archivo === "entregadas" && !filters.estado
+              : filters.estado === target && filters.soloUrgentes !== "1";
       button.classList.toggle("active", selected);
       button.setAttribute("aria-pressed", selected ? "true" : "false");
     });
@@ -1730,13 +1737,20 @@ export async function initSolicitudesView(context) {
   }
 
   async function applyQuickFilter(status, successMessage = "") {
-    if (status === "ACTIVE") {
+    if (status === "URGENTES") {
+      filters.soloUrgentes = "1";
+      filters.estado = "";
+      filters.archivo = "activas";
+    } else if (status === "ACTIVE") {
+      filters.soloUrgentes = "";
       filters.estado = "";
       filters.archivo = "activas";
     } else if (status === "ARCHIVED") {
+      filters.soloUrgentes = "";
       filters.estado = "";
       filters.archivo = "entregadas";
     } else {
+      filters.soloUrgentes = "";
       filters.estado = status || "";
       filters.archivo = status === "ENTREGADO" ? "entregadas" : "activas";
     }
@@ -2823,6 +2837,17 @@ export async function initSolicitudesView(context) {
 
   messageRemoveImageBtn.addEventListener("click", () => {
     resetMessageComposer();
+  });
+
+  messageText?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      if (messageForm.requestSubmit) {
+        messageForm.requestSubmit();
+      } else {
+        messageForm.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+      }
+    }
   });
 
   messageForm.addEventListener("submit", async (event) => {

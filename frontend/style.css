@@ -1500,6 +1500,10 @@ button:disabled:hover {
 .quick-tile[data-quick-filter="EN_DESPACHO"].active .quick-value { color: #42188a; }
 .quick-tile[data-quick-filter="ENTREGADO"].active    { border-color: #28a05a; border-left-color: #28a05a; background: #f0faf4; box-shadow: 0 6px 16px rgba(40,160,90,0.18); }
 .quick-tile[data-quick-filter="ENTREGADO"].active .quick-value { color: #0b5c2a; }
+.quick-tile[data-quick-filter="URGENTES"]           { border-left: 3px solid #ef4444; }
+.quick-tile[data-quick-filter="URGENTES"].active    { border-color: #dc2626; border-left-color: #dc2626; background: #fff5f5; box-shadow: 0 6px 16px rgba(220,38,38,0.18); }
+.quick-tile[data-quick-filter="URGENTES"].active .quick-value  { color: #7f1d1d; }
+.quick-tile[data-quick-filter="URGENTES"].active .quick-label  { color: #991b1b; font-weight: 600; }
 
 .quick-label {
   display: block;
@@ -5271,7 +5275,9 @@ tbody tr {
   font-weight: 500;
   white-space: nowrap;
   box-shadow: 0 4px 16px rgba(0,0,0,0.28);
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: default;
+  user-select: none;
 }
 
 /* ── Install banner ──────────────────────────────────────────────────────────── */

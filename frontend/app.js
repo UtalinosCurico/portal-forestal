@@ -129,6 +129,9 @@ const state = {
   pushStatusLoadedAt: 0,
   pushBusy: false,
   globalSearchTimer: null,
+  notifBatchTimer: null,
+  notifBatchCount: 0,
+  notifBatchLastNotif: null,
 };
 
 const loginScreen = document.getElementById("login-screen");
@@ -627,15 +630,25 @@ function getDefaultView() {
 }
 
 function formatDate(dateText) {
-  if (!dateText) {
-    return "-";
-  }
-
+  if (!dateText) return "-";
   const date = parseDateValue(dateText);
-  if (!date) {
-    return String(dateText);
-  }
+  if (!date) return String(dateText);
 
+  const diffMs = Date.now() - date.getTime();
+  if (diffMs < 0) return formatChileParts(date, true);
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHrs = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMin < 1)  return "hace un momento";
+  if (diffMin < 60) return `hace ${diffMin} min`;
+  if (diffHrs < 2)  return "hace 1 hora";
+  if (diffHrs < 24) return `hace ${diffHrs}h`;
+  if (diffDays === 1) {
+    const time = formatChileParts(date, true).split(" ").pop();
+    return `ayer ${time}`;
+  }
+  if (diffDays < 7) return `hace ${diffDays} días`;
   return formatChileParts(date, true);
 }
 
@@ -946,9 +959,27 @@ function handleRealtimeNotification(notification) {
     );
   }
 
-  if (!exists && Number(notification.leida) !== 1) {
+  const isNew = !exists && Number(notification.leida) !== 1;
+  if (isNew) {
     state.lastAlertsCount += 1;
-    playNotificationSound();
+    state.notifBatchCount += 1;
+    state.notifBatchLastNotif = notification;
+    if (state.notifBatchTimer) window.clearTimeout(state.notifBatchTimer);
+    state.notifBatchTimer = window.setTimeout(() => {
+      const count = state.notifBatchCount;
+      const last  = state.notifBatchLastNotif;
+      state.notifBatchCount = 0;
+      state.notifBatchTimer = null;
+      state.notifBatchLastNotif = null;
+      playNotificationSound();
+      const isSolicitudNotif = String(last?.tipo || "").startsWith("SOLICITUD_");
+      if (!isPhoneLayout() || isUrgentNotification(last) || isSolicitudNotif) {
+        showToast(count === 1
+          ? (last?.titulo || "Nueva alerta recibida")
+          : `${count} nuevas alertas recibidas`
+        );
+      }
+    }, 1200);
   } else {
     state.lastAlertsCount = Math.max(
       state.lastAlertsCount,
@@ -958,10 +989,6 @@ function handleRealtimeNotification(notification) {
 
   renderAlertsFeed();
   updateAlertsBadge(state.lastAlertsCount);
-  const isSolicitudNotif = String(notification.tipo || "").startsWith("SOLICITUD_");
-  if (!isPhoneLayout() || isUrgentNotification(notification) || isSolicitudNotif) {
-    showToast(notification.titulo || "Nueva alerta recibida");
-  }
   window.dispatchEvent(new CustomEvent("fmn:notification", { detail: notification }));
 }
 
