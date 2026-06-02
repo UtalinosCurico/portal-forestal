@@ -24,6 +24,21 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const IMAGE_DATA_LIMIT = 3_500_000;
 const CLIENT_REQUEST_ID_MAX_LENGTH = 120;
 
+let _archivadoExists = null;
+async function hasArchivadoColumn() {
+  if (_archivadoExists !== null) return _archivadoExists;
+  try {
+    const pool = getOperationalPool();
+    const { rows } = await pool.query(
+      `SELECT 1 FROM information_schema.columns WHERE table_name = 'solicitudes' AND column_name = 'archivado'`
+    );
+    _archivadoExists = rows.length > 0;
+  } catch {
+    _archivadoExists = false;
+  }
+  return _archivadoExists;
+}
+
 function getActorRole(actor) {
   return actor.rol || actor.role;
 }
@@ -196,7 +211,7 @@ function normalizeFilters(actor, filters = {}) {
   return normalized;
 }
 
-function buildWhereClause(actor, filters = {}, alias = "s") {
+function buildWhereClause(actor, filters = {}, alias = "s", { archivadoEnabled = true } = {}) {
   const role = getActorRole(actor);
   const normalized = normalizeFilters(actor, filters);
   const conditions = [];
@@ -219,9 +234,15 @@ function buildWhereClause(actor, filters = {}, alias = "s") {
     conditions.push(`${alias}.estado = ${push(normalized.estado)}`);
   } else if (normalized.archivo === "activas") {
     conditions.push(`${alias}.estado <> ${push(SOLICITUD_STATUS.ENTREGADO)}`);
-    conditions.push(`COALESCE(${alias}.archivado, FALSE) = FALSE`);
+    if (archivadoEnabled) {
+      conditions.push(`COALESCE(${alias}.archivado, FALSE) = FALSE`);
+    }
   } else if (normalized.archivo === "entregadas") {
-    conditions.push(`(${alias}.estado = ${push(SOLICITUD_STATUS.ENTREGADO)} OR COALESCE(${alias}.archivado, FALSE) = TRUE)`);
+    if (archivadoEnabled) {
+      conditions.push(`(${alias}.estado = ${push(SOLICITUD_STATUS.ENTREGADO)} OR COALESCE(${alias}.archivado, FALSE) = TRUE)`);
+    } else {
+      conditions.push(`${alias}.estado = ${push(SOLICITUD_STATUS.ENTREGADO)}`);
+    }
   }
 
   if (normalized.usuarioId) {
@@ -958,7 +979,9 @@ async function decorateSolicitudes(rows) {
 }
 
 async function loadSolicitudRecord(solicitudId, client = null) {
+  const archivadoEnabled = await hasArchivadoColumn();
   const executor = client || getOperationalPool();
+  const archivadoCol = archivadoEnabled ? "archivado," : "NULL::boolean AS archivado,";
   const { rows } = await executor.query(
     `
       SELECT
@@ -970,7 +993,7 @@ async function loadSolicitudRecord(solicitudId, client = null) {
         cantidad,
         comentario,
         estado,
-        archivado,
+        ${archivadoCol}
         reviewed_at,
         reviewed_by,
         dispatched_at,
@@ -1104,7 +1127,8 @@ async function exportSolicitudHistoryPdf(actor, solicitudId) {
 }
 
 async function listSolicitudes(actor, filters = {}) {
-  const scope = buildWhereClause(actor, filters, "s");
+  const archivadoEnabled = await hasArchivadoColumn();
+  const scope = buildWhereClause(actor, filters, "s", { archivadoEnabled });
   const pg = getOperationalPool();
   const limit = Math.min(100, Math.max(10, Number(filters.limit) || 50));
   const page  = Math.max(1, Number(filters.page) || 1);
@@ -1116,11 +1140,12 @@ async function listSolicitudes(actor, filters = {}) {
   );
   const total = Number(countRows[0]?.total || 0);
 
+  const archivadoCol = archivadoEnabled ? "archivado," : "NULL::boolean AS archivado,";
   const { rows } = await pg.query(
     `
       SELECT
         id, solicitante_id, equipo, equipo_id, repuesto, cantidad,
-        comentario, estado, archivado, reviewed_at, reviewed_by,
+        comentario, estado, ${archivadoCol} reviewed_at, reviewed_by,
         dispatched_at, dispatched_by, received_at, received_by,
         created_at, updated_at,
         GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (NOW() - COALESCE(updated_at, created_at))) / 86400))::int AS dias_sin_movimiento

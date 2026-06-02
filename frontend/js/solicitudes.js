@@ -1851,6 +1851,10 @@ export async function initSolicitudesView(context) {
       syncQuickFilterUI();
       renderLoadMoreBtn();
       refreshArchiveCounters().catch(() => {});
+    } catch (err) {
+      mobileList.innerHTML = `<div class="history-empty">Error al cargar solicitudes</div>`;
+      tableBody.innerHTML = `<tr><td colspan="7">Error al cargar solicitudes</td></tr>`;
+      context.showToast(err.message || "Error al cargar solicitudes", true);
     } finally {
       if (showLoading) {
         setListBusy(false);
