@@ -719,26 +719,28 @@ function renderRows(rows, tableBody, mobileList, formatDate, role) {
       const cardDelay = Math.min(i * 0.04, 0.32);
       return `
         <article class="solicitud-mobile-card" data-id="${item.id}" style="animation-delay:${cardDelay}s" data-status="${item.estado}">
-          <div class="solicitud-mobile-top">
-            <div>
-              <strong>Solicitud #${item.id}</strong>
-              <div class="table-subline">${item.nombre_equipo || item.equipo || "-"}</div>
-              <div class="table-subline">Solicita: ${solicitante}</div>
+          <div class="smc-accent"></div>
+          <div class="smc-body">
+            <div class="solicitud-mobile-top">
+              <div>
+                <span class="smc-id-label">#${item.id}</span>
+                <div class="smc-equipo">${item.nombre_equipo || item.equipo || "-"}</div>
+                <div class="smc-solicitante">${solicitante}</div>
+              </div>
+              ${renderStatusBadge(item.estado)}
             </div>
-            ${renderStatusBadge(item.estado)}
+            <p class="solicitud-mobile-summary">${item.resumen_items || item.repuesto || "-"}</p>
+            <div class="solicitud-mobile-meta">
+              <span>${item.total_items || 1} prod. · ${item.total_unidades || item.cantidad || 0} uds</span>
+              <span>${renderStatusSnapshot(item, formatDate)}</span>
+            </div>
+            <div class="solicitud-mobile-urgency">${urgencyBadge}</div>
+            ${itemStatusSnapshot ? `<div class="solicitud-mobile-flow">${itemStatusSnapshot}</div>` : ""}
+            <div class="solicitud-mobile-next-step">${primaryAction.hint}</div>
+            <button class="action-btn solicitud-mobile-open ${primaryAction.emphasis ? "cta-emphasis" : ""}" data-action="open" data-id="${item.id}" type="button">
+              ${primaryAction.label}
+            </button>
           </div>
-          <p class="solicitud-mobile-summary">${item.resumen_items || item.repuesto || "-"}</p>
-          <div class="solicitud-mobile-meta">
-            <span>${item.total_items || 1} producto(s)</span>
-            <span>${item.total_unidades || item.cantidad || 0} unidades</span>
-            <span>${renderStatusSnapshot(item, formatDate)}</span>
-          </div>
-          <div class="solicitud-mobile-urgency">${urgencyBadge}</div>
-          ${itemStatusSnapshot ? `<div class="solicitud-mobile-flow">${itemStatusSnapshot}</div>` : ""}
-          <div class="solicitud-mobile-next-step">${primaryAction.hint}</div>
-          <button class="action-btn solicitud-mobile-open ${primaryAction.emphasis ? "cta-emphasis" : ""}" data-action="open" data-id="${item.id}" type="button">
-            ${primaryAction.label}
-          </button>
         </article>
       `;
     })
@@ -1806,7 +1808,24 @@ export async function initSolicitudesView(context) {
     createOpenBtn.disabled = isBusy;
     if (isBusy) {
       tableBody.innerHTML = "<tr><td colspan='7'>Cargando solicitudes...</td></tr>";
-      mobileList.innerHTML = "<div class='history-empty'>Cargando solicitudes...</div>";
+      mobileList.innerHTML = [1, 2, 3, 4].map(() => `
+        <div class="skel-card">
+          <div class="skel-stripe"></div>
+          <div class="skel-body">
+            <div class="skel-row">
+              <div class="skel-line s"></div>
+              <div class="skel-chip"></div>
+            </div>
+            <div class="skel-line title"></div>
+            <div class="skel-line m"></div>
+            <div class="skel-row">
+              <div class="skel-chip"></div>
+              <div class="skel-chip"></div>
+            </div>
+            <div class="skel-btn"></div>
+          </div>
+        </div>
+      `).join("");
     }
   }
 

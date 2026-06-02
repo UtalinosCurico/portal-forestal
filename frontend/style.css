@@ -1157,6 +1157,78 @@ button:disabled:hover {
   min-height: 240px;
 }
 
+/* ── Skeleton solicitud cards ─────────────────────────────────────────────── */
+.skel-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(11,36,25,0.06);
+}
+.skel-card + .skel-card { margin-top: 0.7rem; }
+
+.skel-stripe {
+  height: 5px;
+  background: linear-gradient(90deg, #e3ece8 25%, #f3f8f5 50%, #e3ece8 75%);
+  background-size: 200% 100%;
+  animation: pulse-slide 1.3s linear infinite;
+}
+
+.skel-body {
+  padding: 0.85rem 0.9rem 0.9rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.skel-line {
+  height: 0.8rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #e3ece8 25%, #f3f8f5 50%, #e3ece8 75%);
+  background-size: 200% 100%;
+  animation: pulse-slide 1.3s linear infinite;
+}
+.skel-line.s     { width: 38%; }
+.skel-line.m     { width: 60%; }
+.skel-line.title { height: 1rem; width: 78%; }
+
+.skel-chip {
+  display: inline-block;
+  width: 72px;
+  height: 1.45rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #e3ece8 25%, #f3f8f5 50%, #e3ece8 75%);
+  background-size: 200% 100%;
+  animation: pulse-slide 1.3s linear infinite;
+}
+
+.skel-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.skel-btn {
+  height: 2.6rem;
+  border-radius: 10px;
+  margin-top: 0.2rem;
+  background: linear-gradient(90deg, #e3ece8 25%, #f3f8f5 50%, #e3ece8 75%);
+  background-size: 200% 100%;
+  animation: pulse-slide 1.3s linear infinite;
+}
+
+.skel-card:nth-child(2) .skel-stripe,
+.skel-card:nth-child(2) .skel-line,
+.skel-card:nth-child(2) .skel-chip,
+.skel-card:nth-child(2) .skel-btn  { animation-delay: 0.14s; }
+.skel-card:nth-child(3) .skel-stripe,
+.skel-card:nth-child(3) .skel-line,
+.skel-card:nth-child(3) .skel-chip,
+.skel-card:nth-child(3) .skel-btn  { animation-delay: 0.28s; }
+.skel-card:nth-child(4) .skel-stripe,
+.skel-card:nth-child(4) .skel-line,
+.skel-card:nth-child(4) .skel-chip,
+.skel-card:nth-child(4) .skel-btn  { animation-delay: 0.42s; }
+
 .view-grid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
@@ -1467,6 +1539,12 @@ button:disabled:hover {
   transform: translateY(-2px);
   border-color: var(--forest-200);
   background: #f8fcf9;
+}
+
+.quick-tile:active {
+  transform: scale(0.95) translateY(0);
+  box-shadow: 0 2px 8px rgba(8, 28, 18, 0.07);
+  transition-duration: 0.08s;
 }
 
 .quick-tile:focus-visible {
@@ -2853,19 +2931,57 @@ body.modal-active {
 
 .solicitud-mobile-card {
   border: 1px solid var(--line);
-  border-left: 4px solid var(--line);
   background: #ffffff;
   border-radius: 16px;
-  padding: 0.9rem;
-  box-shadow: 0 8px 18px rgba(11, 36, 25, 0.08);
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(11, 36, 25, 0.09);
+  cursor: pointer;
+  transition: transform 0.14s var(--ease-bounce), box-shadow 0.15s ease;
 }
 
-.solicitud-mobile-card[data-status="PENDIENTE"]    { border-left-color: #f5c842; }
-.solicitud-mobile-card[data-status="EN_REVISION"]  { border-left-color: #6aabf0; }
-.solicitud-mobile-card[data-status="APROBADO"]     { border-left-color: #4ecb80; }
-.solicitud-mobile-card[data-status="EN_DESPACHO"]  { border-left-color: #a87de0; }
-.solicitud-mobile-card[data-status="ENTREGADO"]    { border-left-color: #3ec870; }
-.solicitud-mobile-card[data-status="RECHAZADO"]    { border-left-color: #f07070; }
+.solicitud-mobile-card:active {
+  transform: scale(0.983);
+  box-shadow: 0 2px 8px rgba(11, 36, 25, 0.06);
+}
+
+.smc-accent {
+  height: 5px;
+  background: var(--line);
+  flex-shrink: 0;
+}
+.solicitud-mobile-card[data-status="PENDIENTE"]   .smc-accent { background: #f5c842; }
+.solicitud-mobile-card[data-status="EN_REVISION"] .smc-accent { background: #6aabf0; }
+.solicitud-mobile-card[data-status="APROBADO"]    .smc-accent { background: #4ecb80; }
+.solicitud-mobile-card[data-status="EN_DESPACHO"] .smc-accent { background: #a87de0; }
+.solicitud-mobile-card[data-status="ENTREGADO"]   .smc-accent { background: #3ec870; }
+.solicitud-mobile-card[data-status="RECHAZADO"]   .smc-accent { background: #f07070; }
+
+.smc-body {
+  padding: 0.9rem;
+}
+
+.smc-id-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.smc-equipo {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-top: 0.1rem;
+  line-height: 1.3;
+}
+
+.smc-solicitante {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 0.06rem;
+}
 
 .solicitud-mobile-top {
   display: flex;
@@ -3571,13 +3687,13 @@ body.modal-active {
 }
 
 @keyframes slide-up-fade {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: none;            }
+  from { opacity: 0; transform: translateY(16px) scale(0.985); }
+  to   { opacity: 1; transform: none;                          }
 }
 
 /* ── View entry transition ──────────────────────────────────────────────────── */
 .view-container.view-entering > * {
-  animation: slide-up-fade 0.3s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+  animation: slide-up-fade 0.4s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 /* ── Button ripple ──────────────────────────────────────────────────────────── */
@@ -4228,14 +4344,17 @@ tbody tr {
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     gap: 0.5rem;
-    padding-bottom: 0.3rem;
+    padding-bottom: 0.4rem;
+    scrollbar-width: none;
   }
+
+  .quick-strip::-webkit-scrollbar { display: none; }
 
   .quick-tile {
     flex: 0 0 auto;
-    min-width: 110px;
-    min-height: 72px;
-    padding: 0.65rem 0.75rem;
+    min-width: 106px;
+    min-height: 78px;
+    padding: 0.72rem 0.85rem;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -4244,14 +4363,22 @@ tbody tr {
     border-radius: 14px;
   }
 
+  .quick-tile:active {
+    transform: scale(0.92);
+    box-shadow: 0 2px 6px rgba(8,28,18,0.06);
+    transition-duration: 0.08s;
+  }
+
   .quick-label {
-    font-size: 0.78rem;
-    font-weight: 600;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
   }
 
   .quick-value {
-    font-size: 1.6rem;
-    line-height: 1.1;
+    font-size: 1.75rem;
+    line-height: 1.05;
+    font-weight: 800;
   }
 
   .quick-strip-hint {
@@ -4643,7 +4770,11 @@ tbody tr {
   /* Solicitud mobile card: más compacta y escaneable */
   .solicitud-mobile-card {
     border-radius: 16px;
-    padding: 0.85rem 0.9rem;
+    padding: 0;
+  }
+
+  .smc-body {
+    padding: 0.75rem 0.85rem 0.8rem;
   }
 
   .solicitud-mobile-top {
