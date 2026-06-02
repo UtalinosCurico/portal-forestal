@@ -17,86 +17,129 @@
   </head>
   <body>
     <section id="login-screen" class="login-screen">
+
+      <!-- Video background (fuera de la escena SVG — se muestra sobre ella cuando carga) -->
       <video id="login-bg-video" class="login-video-bg" autoplay muted loop playsinline preload="auto" aria-hidden="true">
         <source src="/assets/login-bg.mp4" type="video/mp4">
       </video>
       <div class="login-video-overlay" aria-hidden="true"></div>
-      <div id="login-landscape" class="login-landscape" aria-hidden="true">
-        <div class="login-layer" id="ll-mtn-far">
-          <div class="ll-scroll">
-            <svg viewBox="0 0 2880 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice">
-              <g id="ll-g-mtn-far"><path id="ll-path-mtn-far" fill="rgba(90,185,135,0.18)"/></g>
-              <use href="#ll-g-mtn-far" transform="translate(1440,0)"/>
-            </svg>
+
+      <!-- Escena atmosférica SVG (se oculta si hay video) -->
+      <div class="ls-scene" aria-hidden="true">
+
+        <!-- Cielo nocturno animado -->
+        <div class="ls-sky"></div>
+
+        <!-- Estrellas (generadas por JS) -->
+        <div id="ls-stars" class="ls-stars"></div>
+
+        <!-- Luna creciente con halo -->
+        <div class="ls-moon">
+          <svg viewBox="0 0 110 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="55" cy="55" r="50" fill="rgba(200,245,225,0.10)"/>
+            <circle cx="55" cy="55" r="36" fill="rgba(215,248,232,0.42)"/>
+            <circle cx="55" cy="55" r="28" fill="rgba(228,252,240,0.72)"/>
+            <circle cx="71" cy="44" r="26" fill="#030d07"/>
+          </svg>
+        </div>
+
+        <!-- Rayos de luz crepusculares -->
+        <div class="ls-rays" aria-hidden="true">
+          <div class="ls-ray ls-ray-1"></div>
+          <div class="ls-ray ls-ray-2"></div>
+          <div class="ls-ray ls-ray-3"></div>
+          <div class="ls-ray ls-ray-4"></div>
+        </div>
+
+        <!-- Paisaje parallax — envuelto en ll-wrap para parallax de mouse sin conflicto -->
+        <div id="ll-wrap" class="ll-wrap">
+          <div id="login-landscape" class="login-landscape">
+            <div class="login-layer" id="ll-mtn-far">
+              <div class="ll-scroll">
+                <svg viewBox="0 0 2880 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice">
+                  <g id="ll-g-mtn-far"><path id="ll-path-mtn-far" fill="rgba(55,130,85,0.14)"/></g>
+                  <use href="#ll-g-mtn-far" transform="translate(1440,0)"/>
+                </svg>
+              </div>
+            </div>
+            <div class="login-layer" id="ll-mtn-mid">
+              <div class="ll-scroll">
+                <svg viewBox="0 0 2880 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice">
+                  <g id="ll-g-mtn-mid"><path id="ll-path-mtn-mid" fill="rgba(28,80,50,0.40)"/></g>
+                  <use href="#ll-g-mtn-mid" transform="translate(1440,0)"/>
+                </svg>
+              </div>
+            </div>
+            <div class="login-layer" id="ll-trees-far">
+              <div class="ll-scroll">
+                <svg viewBox="0 0 2880 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice">
+                  <g id="ll-g-trees-far"><path id="ll-path-trees-far" fill="rgba(10,38,22,0.82)"/></g>
+                  <use href="#ll-g-trees-far" transform="translate(1440,0)"/>
+                </svg>
+              </div>
+            </div>
+            <div class="login-layer" id="ll-trees-near">
+              <div class="ll-scroll">
+                <svg viewBox="0 0 2880 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice">
+                  <g id="ll-g-trees-near"><path id="ll-path-trees-near" fill="rgba(3,9,5,0.97)"/></g>
+                  <use href="#ll-g-trees-near" transform="translate(1440,0)"/>
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="login-layer" id="ll-mtn-mid">
-          <div class="ll-scroll">
-            <svg viewBox="0 0 2880 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice">
-              <g id="ll-g-mtn-mid"><path id="ll-path-mtn-mid" fill="rgba(48,115,78,0.40)"/></g>
-              <use href="#ll-g-mtn-mid" transform="translate(1440,0)"/>
-            </svg>
-          </div>
+
+        <!-- Bandas de niebla que derivan -->
+        <div class="ls-mist-wrap">
+          <div class="ls-mist ls-mist-1"></div>
+          <div class="ls-mist ls-mist-2"></div>
+          <div class="ls-mist ls-mist-3"></div>
         </div>
-        <div class="login-layer" id="ll-trees-far">
-          <div class="ll-scroll">
-            <svg viewBox="0 0 2880 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice">
-              <g id="ll-g-trees-far"><path id="ll-path-trees-far" fill="rgba(18,60,40,0.80)"/></g>
-              <use href="#ll-g-trees-far" transform="translate(1440,0)"/>
-            </svg>
-          </div>
-        </div>
-        <div class="login-layer" id="ll-trees-near">
-          <div class="ll-scroll">
-            <svg viewBox="0 0 2880 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice">
-              <g id="ll-g-trees-near"><path id="ll-path-trees-near" fill="rgba(6,22,14,0.95)"/></g>
-              <use href="#ll-g-trees-near" transform="translate(1440,0)"/>
-            </svg>
-          </div>
-        </div>
-      </div>
+
+        <!-- Luciérnagas (generadas por JS) -->
+        <div id="ls-fireflies" class="ls-fireflies"></div>
+
+        <!-- Gradiente oscuro en la base -->
+        <div class="ls-ground-fog"></div>
+
+      </div><!-- /ls-scene -->
+
+      <!-- Tarjeta de acceso -->
       <div class="login-card">
         <img src="/assets/fmn-icon-512.png" alt="Portal FMN" class="brand-logo login-logo" />
         <h1>Portal FMN</h1>
-        <p>Gestion y seguimiento de solicitudes operativas.</p>
+        <p>Gestión de solicitudes operativas</p>
 
         <form id="login-form">
-          <label for="email">Email</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            autocomplete="username"
-            autocapitalize="none"
-            spellcheck="false"
-          />
 
-          <label for="password">Contrasena</label>
-          <div class="password-field">
-            <input id="password" name="password" type="password" required />
-            <button id="toggle-password-btn" class="field-toggle-btn" type="button">
-              Mostrar
-            </button>
+          <div class="lf-field">
+            <input id="email" name="email" type="email" required autocomplete="username" autocapitalize="none" spellcheck="false" placeholder=" " />
+            <label for="email">Email</label>
+          </div>
+
+          <div class="lf-field lf-has-action">
+            <input id="password" name="password" type="password" required placeholder=" " />
+            <label for="password">Contraseña</label>
+            <button id="toggle-password-btn" class="field-toggle-btn" type="button">Mostrar</button>
           </div>
 
           <label class="toggle-label toggle-card login-toggle-card" for="remember-session">
             <input id="remember-session" name="remember_session" type="checkbox" />
             <span>
-              <strong>Mantener sesion iniciada</strong>
-              <small>Guarda la sesion en este dispositivo hasta cerrar sesion manualmente.</small>
+              <strong>Mantener sesión iniciada</strong>
+              <small>Guarda la sesión en este dispositivo hasta cerrar sesión manualmente.</small>
             </span>
           </label>
 
-          <button type="submit">Ingresar</button>
+          <button type="submit">Ingresar al portal</button>
           <p id="login-error" class="text-error hidden"></p>
           <small class="login-help">
-            Si un usuario olvida su contrasena, un ADMIN o SUPERVISOR puede restablecerla desde el
-            modulo Usuarios.
+            Si un usuario olvida su contraseña, un ADMIN o SUPERVISOR puede restablecerla desde el módulo Usuarios.
           </small>
           <small class="login-version">v__APP_VER__</small>
         </form>
       </div>
+
     </section>
 
     <div id="portal-screen" class="portal-layout hidden">

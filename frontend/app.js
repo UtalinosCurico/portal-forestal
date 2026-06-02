@@ -84,6 +84,81 @@ const ASSET_VERSION = window.__APP_VERSION__ || "dev";
   });
 })();
 
+// ── Login atmosphere: estrellas + luciérnagas ────────────────────────────────
+(function initLoginAtmosphere() {
+  // ── Estrellas ──
+  const starsEl = document.getElementById("ls-stars");
+  if (starsEl) {
+    let s = 42;
+    const rng = () => { s = (s * 1664525 + 1013904223) & 0x7fffffff; return s / 0x7fffffff; };
+    for (let i = 0; i < 55; i++) {
+      const el = document.createElement("div");
+      el.className = "ls-star";
+      const sz = rng() < 0.12 ? (1.8 + rng() * 1.4) : (0.7 + rng() * 1.1);
+      el.style.cssText = [
+        `left:${rng() * 100}%`,
+        `top:${rng() * 62}%`,
+        `width:${sz}px`,
+        `height:${sz}px`,
+        `--st-dur:${2.2 + rng() * 4.5}s`,
+        `--st-del:${-(rng() * 6).toFixed(2)}s`,
+        `--st-lo:${(0.15 + rng() * 0.45).toFixed(2)}`,
+      ].join(";");
+      starsEl.appendChild(el);
+    }
+  }
+
+  // ── Luciérnagas ──
+  const ffEl = document.getElementById("ls-fireflies");
+  if (ffEl) {
+    let s2 = 137;
+    const rng2 = () => { s2 = (s2 * 1664525 + 1013904223) & 0x7fffffff; return s2 / 0x7fffffff; };
+    for (let i = 0; i < 18; i++) {
+      const el = document.createElement("div");
+      el.className = "ls-ff";
+      const dx = ((rng2() * 70) - 35).toFixed(1);
+      const dy = (-(28 + rng2() * 62)).toFixed(1);
+      el.style.cssText = [
+        `left:${(5 + rng2() * 90).toFixed(1)}%`,
+        `bottom:${(6 + rng2() * 48).toFixed(1)}%`,
+        `--ffd:${(5 + rng2() * 9).toFixed(1)}s`,
+        `--ffdel:${-(rng2() * 14).toFixed(2)}s`,
+        `--ffdx:${dx}px`,
+        `--ffdy:${dy}px`,
+      ].join(";");
+      ffEl.appendChild(el);
+    }
+  }
+})();
+
+// ── Login mouse parallax ──────────────────────────────────────────────────────
+(function initLoginMouseParallax() {
+  const screen = document.querySelector(".login-screen");
+  // Solo en dispositivos con cursor fino (desktop)
+  if (!screen || !window.matchMedia("(pointer: fine)").matches) return;
+
+  const wrap  = document.getElementById("ll-wrap");
+  const moon  = document.querySelector(".ls-moon");
+  const stars = document.querySelector(".ls-stars");
+  if (!wrap) return;
+
+  let tx = 0, ty = 0, cx = 0, cy = 0;
+
+  screen.addEventListener("mousemove", (e) => {
+    tx = (e.clientX / screen.clientWidth  - 0.5) * 2; // -1 → 1
+    ty = (e.clientY / screen.clientHeight - 0.5) * 2;
+  }, { passive: true });
+
+  (function tick() {
+    cx += (tx - cx) * 0.055;
+    cy += (ty - cy) * 0.055;
+    wrap.style.transform  = `translate(${(cx * -11).toFixed(2)}px, ${(cy * -5).toFixed(2)}px)`;
+    if (moon)  moon.style.transform  = `translate(${(cx * -7).toFixed(2)}px, ${(cy * -3.5).toFixed(2)}px)`;
+    if (stars) stars.style.transform = `translate(${(cx * -3).toFixed(2)}px, ${(cy * -1.5).toFixed(2)}px)`;
+    requestAnimationFrame(tick);
+  })();
+})();
+
 // ── Button ripple ────────────────────────────────────────────────────────────
 document.addEventListener("pointerdown", (e) => {
   const btn = e.target.closest(

@@ -415,6 +415,230 @@ button:disabled:hover {
   margin-top: 0.25rem;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   LOGIN — ESCENA ATMOSFÉRICA
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Contenedor que agrupa toda la escena (cielo, estrellas, paisaje, niebla).
+   Se desvanece cuando hay video disponible */
+.ls-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  transition: opacity 1.8s ease;
+}
+.login-screen.has-video .ls-scene {
+  opacity: 0;
+}
+
+/* ── Cielo ── */
+.ls-sky {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 55% 45% at 76% 10%, rgba(40,95,65,0.22) 0%, transparent 55%),
+    linear-gradient(162deg, #020b06 0%, #071810 28%, #0e2a1a 60%, #040e08 100%);
+  animation: ls-sky-breathe 16s ease-in-out infinite;
+}
+@keyframes ls-sky-breathe {
+  0%, 100% { filter: brightness(1); }
+  50%       { filter: brightness(1.08); }
+}
+
+/* ── Estrellas ── */
+.ls-stars {
+  position: absolute;
+  inset: 0;
+}
+.ls-star {
+  position: absolute;
+  background: #e5f4ed;
+  border-radius: 50%;
+  animation: ls-twinkle var(--st-dur, 3s) ease-in-out infinite var(--st-del, 0s);
+}
+@keyframes ls-twinkle {
+  0%, 100% { opacity: var(--st-lo, 0.25); transform: scale(1); }
+  50%       { opacity: 1; transform: scale(1.6); box-shadow: 0 0 5px 2px rgba(200,245,225,0.45); }
+}
+
+/* ── Luna ── */
+.ls-moon {
+  position: absolute;
+  top: 6%;
+  right: 10%;
+  width: 68px;
+  height: 68px;
+  filter: drop-shadow(0 0 10px rgba(185,245,215,0.30));
+  animation: ls-moon-glow 9s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes ls-moon-glow {
+  0%, 100% { filter: drop-shadow(0 0 10px rgba(185,245,215,0.25)); }
+  50%       { filter: drop-shadow(0 0 22px rgba(185,245,215,0.55)) drop-shadow(0 0 44px rgba(100,200,145,0.18)); }
+}
+
+/* ── Rayos de luz crepusculares ── */
+.ls-rays {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ls-ray {
+  position: absolute;
+  top: 0;
+  height: 72%;
+  background: linear-gradient(to bottom, rgba(120,220,160,0.055) 0%, transparent 100%);
+  transform-origin: top center;
+}
+.ls-ray-1 { left: 14%; width: 80px; animation: ls-ray-a 14s ease-in-out infinite 0s; }
+.ls-ray-2 { left: 34%; width: 55px; animation: ls-ray-b 11s ease-in-out infinite -4s; }
+.ls-ray-3 { left: 58%; width: 70px; animation: ls-ray-a 13s ease-in-out infinite -8s; }
+.ls-ray-4 { left: 79%; width: 50px; animation: ls-ray-b 10s ease-in-out infinite -2s; }
+@keyframes ls-ray-a {
+  0%, 100% { opacity: 0.5; transform: skewX(-6deg) scaleX(1); }
+  50%       { opacity: 1.0; transform: skewX(5deg) scaleX(1.25); }
+}
+@keyframes ls-ray-b {
+  0%, 100% { opacity: 0.35; transform: skewX(4deg) scaleX(1); }
+  50%       { opacity: 0.8; transform: skewX(-4deg) scaleX(1.15); }
+}
+
+/* ── Wrapper de parallax (envuelve #login-landscape) ── */
+.ll-wrap {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  will-change: transform;
+}
+
+/* ── Bandas de niebla ── */
+.ls-mist-wrap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.ls-mist {
+  position: absolute;
+  left: -8%;
+  width: 116%;
+  border-radius: 50%;
+  filter: blur(22px);
+  animation: ls-mist-drift var(--md, 30s) ease-in-out infinite var(--mdel, 0s);
+}
+.ls-mist-1 { bottom: 44%; height: 52px;  background: rgba(170,215,195,0.13); --md:36s; --mdel:0s; }
+.ls-mist-2 { bottom: 30%; height: 68px;  background: rgba(158,208,188,0.17); --md:27s; --mdel:-11s; }
+.ls-mist-3 { bottom: 16%; height: 88px;  background: rgba(148,200,180,0.21); --md:21s; --mdel:-6s; }
+@keyframes ls-mist-drift {
+  0%   { transform: translateX(0)    scaleX(1);    opacity: 0.55; }
+  28%  { transform: translateX(38px) scaleX(1.04); opacity: 0.90; }
+  55%  { transform: translateX(12px) scaleX(1.01); opacity: 0.70; }
+  78%  { transform: translateX(-28px) scaleX(0.98); opacity: 0.80; }
+  100% { transform: translateX(0)    scaleX(1);    opacity: 0.55; }
+}
+
+/* ── Luciérnagas ── */
+.ls-fireflies { position: absolute; inset: 0; pointer-events: none; }
+.ls-ff {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #a8ff68;
+  animation: ls-ff-float var(--ffd, 7s) ease-in-out infinite var(--ffdel, 0s);
+}
+@keyframes ls-ff-float {
+  0%   { opacity: 0;   transform: translate(0, 0) scale(0.7);                       box-shadow: none; }
+  18%  { opacity: 1;                                                                  box-shadow: 0 0 6px 3px rgba(130,255,70,0.55), 0 0 12px 7px rgba(90,220,50,0.22); }
+  48%  { opacity: 0.65; transform: translate(var(--ffdx,20px), calc(var(--ffdy,-40px)*0.5)) scale(1.15); }
+  78%  { opacity: 1;                                                                  box-shadow: 0 0 8px 4px rgba(150,255,90,0.65), 0 0 18px 9px rgba(90,220,50,0.28); }
+  100% { opacity: 0;   transform: translate(calc(var(--ffdx,20px)*1.6), var(--ffdy,-40px)) scale(0.5); box-shadow: none; }
+}
+
+/* ── Gradiente oscuro en la base ── */
+.ls-ground-fog {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 20%;
+  background: linear-gradient(to top,
+    rgba(4,11,7,0.95) 0%,
+    rgba(6,16,10,0.65) 40%,
+    rgba(8,20,13,0.28) 70%,
+    transparent 100%);
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LOGIN — CARD & FORMULARIO
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Entrada del card con spring */
+.login-card {
+  animation: lc-emerge 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+}
+@keyframes lc-emerge {
+  from { opacity: 0; transform: translateY(28px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+/* Brillo verde al hacer foco en el card */
+.login-card:focus-within {
+  box-shadow:
+    0 32px 80px rgba(0,0,0,0.38),
+    0 6px 20px rgba(0,0,0,0.18),
+    inset 0 1px 0 rgba(255,255,255,0.85),
+    0 0 0 1px rgba(56,149,106,0.18),
+    0 0 48px rgba(56,149,106,0.10);
+  transition: box-shadow 0.35s ease;
+}
+
+/* ── Floating labels ── */
+.lf-field {
+  position: relative;
+}
+.lf-field input {
+  padding-top: 1.45rem;
+  padding-bottom: 0.55rem;
+}
+.lf-field > label {
+  position: absolute;
+  left: 0.92rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+  font-weight: 400;
+  color: #7a9087;
+  pointer-events: none;
+  z-index: 1;
+  transition:
+    top 0.22s cubic-bezier(0.4,0,0.2,1),
+    transform 0.22s cubic-bezier(0.4,0,0.2,1),
+    font-size 0.22s cubic-bezier(0.4,0,0.2,1),
+    font-weight 0.22s,
+    color 0.22s;
+}
+.lf-field input:focus + label,
+.lf-field input:not(:placeholder-shown) + label {
+  top: 0.5rem;
+  transform: translateY(0);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--forest-600);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+/* Campo con acción (botón interno) */
+.lf-has-action input { padding-right: 6.4rem; }
+.lf-has-action .field-toggle-btn {
+  position: absolute;
+  top: 50%;
+  right: 0.45rem;
+  transform: translateY(-50%);
+}
+
 .text-error {
   margin: 0;
   color: var(--danger);
