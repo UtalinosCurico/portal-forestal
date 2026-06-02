@@ -108,10 +108,10 @@
         </div>
 
         <nav class="sidebar-nav" id="sidebar-nav">
-          <button class="nav-item active" data-view="dashboard">Dashboard</button>
-          <button class="nav-item" data-view="solicitudes">Solicitudes</button>
-          <button class="nav-item" data-view="usuarios">Usuarios</button>
-          <button class="nav-item" data-view="powerbi">Power BI</button>
+          <button class="nav-item active" data-view="dashboard"><span class="nav-icon" aria-hidden="true">📊</span> Dashboard</button>
+          <button class="nav-item" data-view="solicitudes"><span class="nav-icon" aria-hidden="true">📋</span> Solicitudes</button>
+          <button class="nav-item" data-view="usuarios"><span class="nav-icon" aria-hidden="true">👥</span> Usuarios</button>
+          <button class="nav-item" data-view="powerbi"><span class="nav-icon" aria-hidden="true">📈</span> Power BI</button>
         </nav>
 
         <a href="https://app.mydatascope.com/" target="_blank" rel="noopener noreferrer" class="datascope-btn" id="datascope-btn">
@@ -179,8 +179,10 @@
           <div class="puma-runner">
             <svg class="puma-svg" viewBox="0 0 82 44" xmlns="http://www.w3.org/2000/svg">
               <!-- cola larga — sale por la derecha y sube -->
-              <path d="M 64 22 C 70 20 76 17 78 11 C 80 6 76 3 73 5"
-                    stroke="#C8905A" stroke-width="5" stroke-linecap="round" fill="none"/>
+              <g class="puma-tail">
+                <path d="M 64 22 C 70 20 76 17 78 11 C 80 6 76 3 73 5"
+                      stroke="#C8905A" stroke-width="5" stroke-linecap="round" fill="none"/>
+              </g>
 
               <!-- grupa / cuartos traseros (más alto que los hombros) -->
               <path d="M 46 10 C 54 8 62 11 64 17 C 67 23 63 30 56 31 C 50 32 46 30 46 10 Z"
