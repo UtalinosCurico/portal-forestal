@@ -1116,6 +1116,8 @@ export async function initSolicitudesView(context) {
   const detailAddItemBtn = document.getElementById("detail-add-item-btn");
   const saveBtn = document.getElementById("solicitud-save-btn");
   const deleteBtn = document.getElementById("solicitud-delete-btn");
+  const archivarBtn = document.getElementById("solicitud-archivar-btn");
+  const desarchivarBtn = document.getElementById("solicitud-desarchivar-btn");
   const confirmBox = document.getElementById("solicitud-confirm-box");
   const confirmBtn = document.getElementById("solicitud-confirm-btn");
   const openChatBtn = document.getElementById("solicitud-open-chat-btn");
@@ -2055,6 +2057,9 @@ export async function initSolicitudesView(context) {
     detailAddItemBtn.classList.toggle("hidden", !editable);
     saveBtn.classList.toggle("hidden", !editable && !canManage);
     deleteBtn.classList.toggle("hidden", !canManage);
+    const isArchived = !!solicitud.archivado;
+    archivarBtn?.classList.toggle("hidden", !canManage || isArchived);
+    desarchivarBtn?.classList.toggle("hidden", !canManage || !isArchived);
     confirmBox.classList.toggle("hidden", !canConfirmSolicitud(solicitud));
     if (preserveChat) {
       openChatDrawer({ syncTab: false });
@@ -2102,6 +2107,8 @@ export async function initSolicitudesView(context) {
     detailAddItemBtn.classList.add("hidden");
     saveBtn.classList.add("hidden");
     deleteBtn.classList.add("hidden");
+    archivarBtn?.classList.add("hidden");
+    desarchivarBtn?.classList.add("hidden");
     confirmBox.classList.add("hidden");
     closeChatDrawer({ syncTab: false });
     lastSeenMessageCount = 0;
@@ -2828,6 +2835,44 @@ export async function initSolicitudesView(context) {
       context.showToast("Solicitud eliminada");
     } catch (error) {
       context.showToast(error.message, true);
+    }
+  });
+
+  archivarBtn?.addEventListener("click", async () => {
+    if (!currentSolicitud) return;
+    try {
+      archivarBtn.disabled = true;
+      await context.apiRequest(`/api/solicitudes/${currentSolicitud.id}/archivar`, {
+        method: "PATCH",
+        body: JSON.stringify({ archivar: true }),
+      });
+      context.showToast("Solicitud archivada");
+      closeChatDrawer();
+      closeDetailSurface();
+      await loadSolicitudes({ showLoading: false });
+    } catch (error) {
+      context.showToast(error.message, true);
+    } finally {
+      archivarBtn.disabled = false;
+    }
+  });
+
+  desarchivarBtn?.addEventListener("click", async () => {
+    if (!currentSolicitud) return;
+    try {
+      desarchivarBtn.disabled = true;
+      await context.apiRequest(`/api/solicitudes/${currentSolicitud.id}/archivar`, {
+        method: "PATCH",
+        body: JSON.stringify({ archivar: false }),
+      });
+      context.showToast("Solicitud restaurada al inbox");
+      closeChatDrawer();
+      closeDetailSurface();
+      await loadSolicitudes({ showLoading: false });
+    } catch (error) {
+      context.showToast(error.message, true);
+    } finally {
+      desarchivarBtn.disabled = false;
     }
   });
 

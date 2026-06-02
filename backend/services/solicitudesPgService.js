@@ -219,8 +219,9 @@ function buildWhereClause(actor, filters = {}, alias = "s") {
     conditions.push(`${alias}.estado = ${push(normalized.estado)}`);
   } else if (normalized.archivo === "activas") {
     conditions.push(`${alias}.estado <> ${push(SOLICITUD_STATUS.ENTREGADO)}`);
+    conditions.push(`COALESCE(${alias}.archivado, FALSE) = FALSE`);
   } else if (normalized.archivo === "entregadas") {
-    conditions.push(`${alias}.estado = ${push(SOLICITUD_STATUS.ENTREGADO)}`);
+    conditions.push(`(${alias}.estado = ${push(SOLICITUD_STATUS.ENTREGADO)} OR COALESCE(${alias}.archivado, FALSE) = TRUE)`);
   }
 
   if (normalized.usuarioId) {
@@ -969,6 +970,7 @@ async function loadSolicitudRecord(solicitudId, client = null) {
         cantidad,
         comentario,
         estado,
+        archivado,
         reviewed_at,
         reviewed_by,
         dispatched_at,
@@ -1118,7 +1120,7 @@ async function listSolicitudes(actor, filters = {}) {
     `
       SELECT
         id, solicitante_id, equipo, equipo_id, repuesto, cantidad,
-        comentario, estado, reviewed_at, reviewed_by,
+        comentario, estado, archivado, reviewed_at, reviewed_by,
         dispatched_at, dispatched_by, received_at, received_by,
         created_at, updated_at,
         GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (NOW() - COALESCE(updated_at, created_at))) / 86400))::int AS dias_sin_movimiento
@@ -2794,6 +2796,18 @@ async function listPendingItems(actor) {
   }));
 }
 
+async function archivarSolicitud(actor, solicitudId, archivar = true) {
+  const pool = getOperationalPool();
+  const { rows } = await pool.query(
+    `UPDATE solicitudes SET archivado = $1, updated_at = NOW() WHERE id = $2 RETURNING id, archivado`,
+    [Boolean(archivar), Number(solicitudId)]
+  );
+  if (!rows[0]) {
+    throw new HttpError(404, "Solicitud no encontrada");
+  }
+  return rows[0];
+}
+
 module.exports = {
   listSolicitudes,
   listSolicitudesForExport,
@@ -2812,4 +2826,5 @@ module.exports = {
   listPendingItems,
   buildItemStatusSummary,
   deriveSolicitudStatusFromItemSummary,
+  archivarSolicitud,
 };

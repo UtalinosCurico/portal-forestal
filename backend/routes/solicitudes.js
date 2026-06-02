@@ -102,6 +102,21 @@ router.put(
   })
 );
 
+router.patch(
+  "/:id/archivar",
+  authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.JEFE_FAENA),
+  asyncHandler(async (req, res) => {
+    const solicitudId = Number(req.params.id);
+    const archivar = (req.body || {}).archivar !== false;
+    const data = await solicitudesService.archivarSolicitud(req.user, solicitudId, archivar);
+    res.json({
+      status: "ok",
+      mensaje: archivar ? "Solicitud archivada" : "Solicitud restaurada al inbox",
+      data,
+    });
+  })
+);
+
 router.post(
   "/:id/comentarios-proceso",
   authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.JEFE_FAENA),

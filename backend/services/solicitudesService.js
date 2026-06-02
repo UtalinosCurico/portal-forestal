@@ -2745,4 +2745,8 @@ module.exports = {
     isOperationalPgEnabled() ? pgService.deleteSolicitud(...args) : deleteSolicitud(...args),
   listPendingItems: (...args) =>
     isOperationalPgEnabled() ? pgService.listPendingItems(...args) : listPendingItems(...args),
+  archivarSolicitud: (...args) =>
+    isOperationalPgEnabled()
+      ? pgService.archivarSolicitud(...args)
+      : Promise.reject(new Error("Archivar solicitudes requiere modo PostgreSQL")),
 };
