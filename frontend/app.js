@@ -207,6 +207,13 @@ const state = {
   notifBatchTimer: null,
   notifBatchCount: 0,
   notifBatchLastNotif: null,
+  tokenRefreshTimer: null,
+  tokenRefreshInFlight: null,
+  // Al abrir la app hay que fijar el conteo base sin avisar nada: lo pendiente
+  // de antes no es "novedad". Recien despues de eso avisamos lo que llegue.
+  alertsPrimed: false,
+  lastNotifSoundAt: 0,
+  alertsReconnectAttempts: 0,
 };
 
 const loginScreen = document.getElementById("login-screen");
@@ -379,6 +386,14 @@ async function openGlobalSearchResult(type, id) {
   globalSearchInput.value = "";
 
   if (type === "solicitud") {
+    // Si la vista de solicitudes ya esta montada, loadView corta anticipadamente
+    // y el controlador nunca vuelve a leer el id. Abrimos el detalle directo.
+    const solicitudesMounted = viewContainer.dataset.viewName === "solicitudes";
+    if (solicitudesMounted && typeof window.__fmnOpenSolicitudDetail === "function") {
+      await window.__fmnOpenSolicitudDetail(id);
+      return;
+    }
+
     sessionStorage.setItem("fmn-open-solicitud-id", String(id));
     await loadView("solicitudes");
     return;
@@ -583,6 +598,69 @@ function showToast(message, isError = false) {
   }, 2600);
 }
 
+// --- Avisos agrupados ------------------------------------------------------
+// La secretaria es ADMIN y recibe una notificacion por cada solicitud de todos
+// los equipos. Sin agrupar, ocho solicitudes seguidas eran ocho avisos y ocho
+// sonidos. Aca se juntan en una sola tanda.
+
+const NOTIF_BATCH_WINDOW_MS = 1500;
+const NOTIF_SOUND_MIN_GAP_MS = 15000;
+
+function playNotificationSoundThrottled() {
+  const now = Date.now();
+  if (now - state.lastNotifSoundAt < NOTIF_SOUND_MIN_GAP_MS) {
+    return;
+  }
+  state.lastNotifSoundAt = now;
+  playNotificationSound();
+}
+
+function flushAlertNotice() {
+  const total = state.notifBatchCount;
+  const last = state.notifBatchLastNotif;
+
+  state.notifBatchCount = 0;
+  state.notifBatchTimer = null;
+  state.notifBatchLastNotif = null;
+
+  if (total <= 0) {
+    return;
+  }
+
+  // En telefono solo interrumpimos por cosas de solicitudes o urgentes; en el
+  // resto de los casos basta con el globito del campanario.
+  const isSolicitudNotif = String(last?.tipo || "").startsWith("SOLICITUD_");
+  const shouldInterrupt =
+    !isPhoneLayout() || isUrgentNotification(last) || isSolicitudNotif;
+
+  if (!shouldInterrupt) {
+    return;
+  }
+
+  playNotificationSoundThrottled();
+  showToast(
+    total === 1
+      ? last?.titulo || "Nueva alerta recibida"
+      : `${total} novedades nuevas`
+  );
+}
+
+function queueAlertNotice(count = 1, notification = null) {
+  if (count <= 0) {
+    return;
+  }
+
+  state.notifBatchCount += count;
+  if (notification) {
+    state.notifBatchLastNotif = notification;
+  }
+
+  if (state.notifBatchTimer) {
+    window.clearTimeout(state.notifBatchTimer);
+  }
+  state.notifBatchTimer = window.setTimeout(flushAlertNotice, NOTIF_BATCH_WINDOW_MS);
+}
+
 function advanceSessionEpoch() {
   state.sessionEpoch += 1;
 }
@@ -652,6 +730,7 @@ function clearSession() {
   state.notifications = [];
   state.notificationsLoadedAt = 0;
   state.lastAlertsCount = 0;
+  state.alertsPrimed = false;
   state.pushStatus = null;
   state.pushStatusLoadedAt = 0;
   state.pushBusy = false;
@@ -807,6 +886,7 @@ async function apiRequest(path, options = {}, requiresAuth = true) {
         stopRealtimeAlerts();
         stopAlertsPolling();
         stopSessionPolling();
+        stopTokenRefresh();
         clearSession();
         updateAlertsBadge(0);
         closeAlertsModal();
@@ -1003,19 +1083,24 @@ async function loadNotifications(showToastMessage = "") {
 async function checkAlerts(showToastOnNew = false) {
   if (!shouldPollAlerts()) {
     state.lastAlertsCount = 0;
+    state.alertsPrimed = false;
     updateAlertsBadge(0);
     return;
   }
 
   const payload = await apiRequest("/api/notificaciones?soloNoLeidas=1&limit=50");
-  const unreadCount = (payload.data || []).length;
+  const rows = payload.data || [];
+  const unreadCount = rows.length;
+  const nuevas = unreadCount - state.lastAlertsCount;
 
-  if (showToastOnNew && unreadCount > state.lastAlertsCount) {
-    playNotificationSound();
-    showToast("Hay novedades nuevas en solicitudes o mensajes.");
+  // La primera consulta tras abrir la app solo fija el conteo base. Lo que ya
+  // estaba pendiente se muestra en el globito, sin sonido ni aviso emergente.
+  if (state.alertsPrimed && showToastOnNew && nuevas > 0) {
+    queueAlertNotice(nuevas, rows[0] || null);
     await loadNotifications();
   }
 
+  state.alertsPrimed = true;
   state.lastAlertsCount = unreadCount;
   updateAlertsBadge(unreadCount);
 }
@@ -1037,24 +1122,7 @@ function handleRealtimeNotification(notification) {
   const isNew = !exists && Number(notification.leida) !== 1;
   if (isNew) {
     state.lastAlertsCount += 1;
-    state.notifBatchCount += 1;
-    state.notifBatchLastNotif = notification;
-    if (state.notifBatchTimer) window.clearTimeout(state.notifBatchTimer);
-    state.notifBatchTimer = window.setTimeout(() => {
-      const count = state.notifBatchCount;
-      const last  = state.notifBatchLastNotif;
-      state.notifBatchCount = 0;
-      state.notifBatchTimer = null;
-      state.notifBatchLastNotif = null;
-      playNotificationSound();
-      const isSolicitudNotif = String(last?.tipo || "").startsWith("SOLICITUD_");
-      if (!isPhoneLayout() || isUrgentNotification(last) || isSolicitudNotif) {
-        showToast(count === 1
-          ? (last?.titulo || "Nueva alerta recibida")
-          : `${count} nuevas alertas recibidas`
-        );
-      }
-    }, 1200);
+    queueAlertNotice(1, notification);
   } else {
     state.lastAlertsCount = Math.max(
       state.lastAlertsCount,
@@ -1066,6 +1134,10 @@ function handleRealtimeNotification(notification) {
   updateAlertsBadge(state.lastAlertsCount);
   window.dispatchEvent(new CustomEvent("fmn:notification", { detail: notification }));
 }
+
+const REALTIME_BASE_BACKOFF_MS = 7000;
+const REALTIME_MAX_BACKOFF_MS = 5 * 60 * 1000;
+const REALTIME_MAX_RETRIES = 5;
 
 function connectRealtimeAlerts() {
   if (!("EventSource" in window) || !state.token || document.hidden) {
@@ -1087,19 +1159,34 @@ function connectRealtimeAlerts() {
   });
 
   eventSource.addEventListener("connected", () => {
-    // Conexion lista.
+    // Conexion viva: volvemos a permitir reintentos rapidos si luego se corta.
+    state.alertsReconnectAttempts = 0;
   });
 
   eventSource.onerror = () => {
+    stopRealtimeAlerts();
+
     if (!state.token) {
-      stopRealtimeAlerts();
       return;
     }
 
-    stopRealtimeAlerts();
+    state.alertsReconnectAttempts += 1;
+
+    // En Vercel las funciones son serverless y no sostienen un stream abierto,
+    // asi que el SSE falla siempre. Tras varios intentos dejamos de insistir y
+    // nos quedamos con el sondeo periodico, que si funciona ahi.
+    if (state.alertsReconnectAttempts > REALTIME_MAX_RETRIES) {
+      return;
+    }
+
+    const backoff = Math.min(
+      REALTIME_MAX_BACKOFF_MS,
+      REALTIME_BASE_BACKOFF_MS * 2 ** (state.alertsReconnectAttempts - 1)
+    );
+
     state.alertsReconnectTimer = window.setTimeout(() => {
       connectRealtimeAlerts();
-    }, 7000);
+    }, backoff);
   };
 }
 
@@ -1131,6 +1218,115 @@ function startAlertsPolling() {
       // Ignorar errores de polling.
     });
   }, 45000);
+}
+
+// --- Renovacion de sesion -------------------------------------------------
+// El token JWT vence solo. Sin renovacion, al usuario lo expulsa a mitad de
+// jornada y tiene que volver a escribir su clave. Aca lo renovamos antes de
+// que venza, mientras la pestana este viva.
+
+const TOKEN_REFRESH_MARGIN_MS = 30 * 60 * 1000; // renovar a 30 min del vencimiento
+const TOKEN_REFRESH_MIN_DELAY_MS = 60 * 1000;
+const TOKEN_REFRESH_MAX_DELAY_MS = 30 * 60 * 1000;
+
+function getTokenExpiryMs(token = state.token) {
+  if (!token) {
+    return 0;
+  }
+  try {
+    const [, payloadPart] = token.split(".");
+    if (!payloadPart) {
+      return 0;
+    }
+    const normalized = payloadPart.replaceAll("-", "+").replaceAll("_", "/");
+    const payload = JSON.parse(atob(normalized));
+    return Number(payload.exp || 0) * 1000;
+  } catch {
+    return 0;
+  }
+}
+
+function stopTokenRefresh() {
+  if (state.tokenRefreshTimer) {
+    window.clearTimeout(state.tokenRefreshTimer);
+    state.tokenRefreshTimer = null;
+  }
+}
+
+async function refreshAuthToken() {
+  if (!state.token) {
+    return false;
+  }
+
+  // Evitar renovaciones simultaneas (timer + retorno de foco a la vez).
+  if (state.tokenRefreshInFlight) {
+    return state.tokenRefreshInFlight;
+  }
+
+  state.tokenRefreshInFlight = (async () => {
+    try {
+      const payload = await apiRequest(
+        "/api/auth/refresh",
+        { method: "POST", retryOnUnauthorized: false },
+        true
+      );
+      if (!payload?.token) {
+        return false;
+      }
+      state.token = payload.token;
+      if (payload.user) {
+        state.user = { ...state.user, ...payload.user };
+      }
+      saveSession();
+      return true;
+    } catch {
+      // Si falla (sin red, token ya vencido) no cerramos sesion aca: el
+      // apiRequest normal se encarga cuando el backend devuelva 401.
+      return false;
+    } finally {
+      state.tokenRefreshInFlight = null;
+    }
+  })();
+
+  return state.tokenRefreshInFlight;
+}
+
+function scheduleTokenRefresh() {
+  stopTokenRefresh();
+  if (!state.token) {
+    return;
+  }
+
+  const expiresAt = getTokenExpiryMs();
+  if (!expiresAt) {
+    return;
+  }
+
+  const msUntilRefresh = expiresAt - Date.now() - TOKEN_REFRESH_MARGIN_MS;
+  const delay = Math.min(
+    TOKEN_REFRESH_MAX_DELAY_MS,
+    Math.max(TOKEN_REFRESH_MIN_DELAY_MS, msUntilRefresh)
+  );
+
+  state.tokenRefreshTimer = window.setTimeout(async () => {
+    await refreshAuthToken();
+    scheduleTokenRefresh();
+  }, delay);
+}
+
+// Al volver a la pestana tras un rato, renovar si queda poco.
+async function refreshTokenIfExpiringSoon() {
+  if (!state.token) {
+    return;
+  }
+  const expiresAt = getTokenExpiryMs();
+  if (!expiresAt) {
+    return;
+  }
+  if (expiresAt - Date.now() < TOKEN_REFRESH_MARGIN_MS) {
+    await refreshAuthToken();
+    scheduleTokenRefresh();
+  }
 }
 
 function stopSessionPolling() {
@@ -1199,6 +1395,12 @@ function handleVisibilityChange() {
     return;
   }
 
+  // Al volver tras un rato el token pudo quedar cerca de vencer.
+  refreshTokenIfExpiringSoon().catch(() => {
+    // Ignorar: apiRequest maneja el 401 si realmente vencio.
+  });
+  // Volver a la pestana es una senal nueva: damos otra oportunidad al stream.
+  state.alertsReconnectAttempts = 0;
   connectRealtimeAlerts();
   checkAlerts(false).catch(() => {
     // Ignorar errores al retomar el foco.
@@ -1883,6 +2085,7 @@ async function handleLoginSubmit(event) {
     updateNavByRole();
     startAlertsPolling();
     startSessionPolling();
+    scheduleTokenRefresh();
     setAuthenticatedUI(true);
     showToast("Sesion iniciada");
     loginForm.reset();
@@ -1927,6 +2130,7 @@ function logout() {
   stopRealtimeAlerts();
   stopAlertsPolling();
   stopSessionPolling();
+  stopTokenRefresh();
   clearSession();
   state.rememberSession = false;
   localStorage.setItem(SESSION_REMEMBER_KEY, "0");
@@ -2264,6 +2468,7 @@ async function bootstrap() {
   updateNavByRole();
   startAlertsPolling();
   startSessionPolling();
+  scheduleTokenRefresh();
   // Badge de novedades para todos los roles
   refreshNovedadesBadge().catch(() => {});
   // Badge de feedback solo para ADMIN

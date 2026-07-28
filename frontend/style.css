@@ -2259,6 +2259,81 @@ th {
   color: #426657;
 }
 
+/* --- Bandeja de solicitudes: tabla condensada -------------------------- */
+/* La fila completa abre la solicitud y la columna de accion queda fijada a
+   la derecha, para que "Ver" nunca quede fuera de pantalla. */
+
+#solicitudes-table-body .solicitud-row {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+#solicitudes-table-body .solicitud-row:hover td {
+  background: var(--forest-50);
+}
+
+#solicitudes-table-body .solicitud-row:focus-visible {
+  outline: 2px solid var(--forest-700);
+  outline-offset: -2px;
+}
+
+/* Anchos: lo fijo se mantiene angosto, el texto largo envuelve en vez de
+   estirar la tabla hacia la derecha. */
+.table-wrap .col-id {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.table-wrap .col-estado {
+  width: 1%;
+}
+
+.table-wrap .col-equipo,
+.table-wrap .col-resumen,
+.table-wrap .col-seguimiento {
+  white-space: normal;
+  min-width: 140px;
+}
+
+.table-wrap .col-resumen {
+  max-width: 320px;
+}
+
+.table-wrap .col-seguimiento {
+  max-width: 260px;
+}
+
+/* Columna de accion siempre visible aunque la tabla desborde. */
+.table-wrap .col-accion {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  width: 1%;
+  white-space: nowrap;
+  background: #ffffff;
+  box-shadow: -8px 0 10px -8px rgba(20, 40, 32, 0.25);
+}
+
+.table-wrap thead .col-accion {
+  z-index: 3;
+  background: var(--surface);
+}
+
+#solicitudes-table-body .solicitud-row:hover .col-accion {
+  background: var(--forest-50);
+}
+
+.table-wrap .col-accion .table-btn,
+.table-wrap .col-accion .table-btn-state {
+  display: block;
+  width: 100%;
+  margin: 0 0 0.3rem 0;
+}
+
+.table-wrap .col-accion .table-btn-state {
+  margin-bottom: 0;
+}
+
 .status-badge {
   display: inline-flex;
   align-items: center;

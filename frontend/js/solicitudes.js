@@ -662,7 +662,7 @@ function renderStatusSnapshot(item, formatDate) {
 
 function renderRows(rows, tableBody, mobileList, formatDate, role) {
   if (!rows.length) {
-    tableBody.innerHTML = "<tr><td colspan='7'>Sin solicitudes registradas</td></tr>";
+    tableBody.innerHTML = "<tr><td colspan='6'>Sin solicitudes registradas</td></tr>";
     mobileList.innerHTML = "<div class='history-empty'>Sin solicitudes registradas</div>";
     return;
   }
@@ -676,27 +676,31 @@ function renderRows(rows, tableBody, mobileList, formatDate, role) {
         const urgencyBadge = renderUrgencyBadge(item.dias_sin_movimiento || 0);
         const rowDelay = Math.min(i * 0.03, 0.28);
         return `
-        <tr data-id="${item.id}" style="animation-delay:${rowDelay}s">
-          <td>${item.id}</td>
-          <td>
-            <strong>${item.nombre_equipo || item.equipo || "-"}</strong>
-            <div class="table-subline">Solicita: ${solicitante}</div>
+        <tr class="solicitud-row" data-id="${item.id}" style="animation-delay:${rowDelay}s" tabindex="0" role="button" aria-label="Abrir solicitud ${item.id}">
+          <td class="col-id">
+            <strong>#${item.id}</strong>
+            <div class="table-subline">${formatDate(item.created_at)}</div>
           </td>
-          <td>
+          <td class="col-equipo">
+            <strong>${item.nombre_equipo || item.equipo || "-"}</strong>
+            <div class="table-subline">${solicitante}</div>
+          </td>
+          <td class="col-resumen">
             <strong>${item.resumen_items || item.repuesto || "-"}</strong>
-            <div class="table-subline">${item.total_items || 1} producto(s) - ${
+            <div class="table-subline">${item.total_items || 1} prod. · ${
               item.total_unidades || item.cantidad || 0
-            } unidades</div>
+            } uds</div>
             ${itemStatusSnapshot ? `<div class="table-subline item-flow-inline">${itemStatusSnapshot}</div>` : ""}
           </td>
-          <td>${renderStatusBadge(item.estado)}</td>
-          <td>
+          <td class="col-estado">
+            ${renderStatusBadge(item.estado)}
+            ${urgencyBadge ? `<div class="table-subline">${urgencyBadge}</div>` : ""}
+          </td>
+          <td class="col-seguimiento">
             <span class="table-subline">${renderStatusSnapshot(item, formatDate)}</span>
             <div class="table-subline strong-subline">${primaryAction.hint}</div>
-            <div class="table-subline">${urgencyBadge}</div>
           </td>
-          <td>${formatDate(item.created_at)}</td>
-          <td>
+          <td class="col-accion">
             <button class="table-btn ${primaryAction.emphasis ? "table-btn-emphasis" : ""}" data-action="open" data-id="${item.id}" type="button">
               ${primaryAction.label}
             </button>
@@ -1904,10 +1908,9 @@ export async function initSolicitudesView(context) {
           await loadSolicitudDetail(currentSolicitud.id, { preserveChat: shouldPreserveChat });
         }
 
-        // Toast contextual con info del cambio
-        if (notification.titulo) {
-          context.showToast(notification.titulo);
-        }
+        // El aviso lo emite app.js de forma agrupada: si tambien avisaramos aca,
+        // una tanda de solicitudes generaria un toast por cada una. Basta con
+        // refrescar la lista y resaltar la fila que cambio.
 
         // Highlight visual de la fila/card que cambió
         if (referenceId) {
@@ -2599,49 +2602,52 @@ export async function initSolicitudesView(context) {
 
   tableBody.addEventListener("click", async (event) => {
     const button = event.target.closest("button[data-action]");
-    if (!button) {
+    const row = event.target.closest("tr[data-id]");
+
+    // Toda la fila abre la solicitud; los botones solo eligen que pestana mostrar.
+    if (!button && !row) {
       return;
     }
 
-    const action = button.dataset.action;
-    const solicitudId = Number(button.dataset.id);
-
-    try {
-      if (action === "open-state") {
-        activeDetailTab = "estado";
-        lastNonChatDetailTab = "estado";
-      } else {
-        activeDetailTab = "items";
-        lastNonChatDetailTab = "items";
+    // No secuestrar clics sobre otros controles ni sobre texto seleccionado.
+    if (!button) {
+      if (event.target.closest("a, button, input, select, textarea, label")) {
+        return;
       }
-      applyDetailTabLayout();
-      showDetailLoading(solicitudId);
-      openDetailSurface();
-      await loadSolicitudDetail(solicitudId);
-    } catch (error) {
-      closeDetailSurface();
-      context.showToast(error.message, true);
+      if (String(window.getSelection?.() || "").length > 0) {
+        return;
+      }
     }
+
+    const solicitudId = Number(button?.dataset.id || row?.dataset.id);
+    const tab = button?.dataset.action === "open-state" ? "estado" : "items";
+    await openSolicitudDetailById(solicitudId, { tab });
+  });
+
+  tableBody.addEventListener("keydown", async (event) => {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+    const row = event.target.closest("tr[data-id]");
+    if (!row || event.target !== row) {
+      return;
+    }
+    event.preventDefault();
+    await openSolicitudDetailById(Number(row.dataset.id));
   });
 
   mobileList.addEventListener("click", async (event) => {
     const button = event.target.closest("button[data-action='open']");
-    if (!button) {
+    const card = event.target.closest("article[data-id]");
+    if (!button && !card) {
       return;
     }
 
-    try {
-      const solicitudId = Number(button.dataset.id);
-      activeDetailTab = "items";
-      lastNonChatDetailTab = "items";
-      applyDetailTabLayout();
-      showDetailLoading(solicitudId);
-      openDetailSurface();
-      await loadSolicitudDetail(solicitudId);
-    } catch (error) {
-      closeDetailSurface();
-      context.showToast(error.message, true);
+    if (!button && event.target.closest("a, button, input, select, textarea, label")) {
+      return;
     }
+
+    await openSolicitudDetailById(Number(button?.dataset.id || card?.dataset.id));
   });
 
   detailStatusActions.addEventListener("click", (event) => {
@@ -3094,6 +3100,33 @@ export async function initSolicitudesView(context) {
   };
   window.addEventListener("fmn:notification", window.__fmnSolicitudesRealtimeHandler);
 
+  // Abre el detalle de una solicitud por id. Se expone en window para que el
+  // buscador global pueda abrirla sin recargar la vista cuando ya esta montada.
+  async function openSolicitudDetailById(solicitudId, options = {}) {
+    const id = Number(solicitudId);
+    if (!id) {
+      return false;
+    }
+
+    const tab = options.tab === "estado" ? "estado" : "items";
+
+    try {
+      activeDetailTab = tab;
+      lastNonChatDetailTab = tab;
+      applyDetailTabLayout();
+      showDetailLoading(id);
+      openDetailSurface();
+      await loadSolicitudDetail(id);
+      return true;
+    } catch (error) {
+      closeDetailSurface();
+      context.showToast(error.message, true);
+      return false;
+    }
+  }
+
+  window.__fmnOpenSolicitudDetail = openSolicitudDetailById;
+
   // Pending items inline events
   inlinePendingToggle?.addEventListener("click", () => {
     const isCollapsed = inlinePendingBody?.classList.toggle("collapsed");
@@ -3112,17 +3145,7 @@ export async function initSolicitudesView(context) {
     if (!btn) return;
     const solicitudId = Number(btn.dataset.openSolicitud);
     if (!solicitudId) return;
-    try {
-      activeDetailTab = "items";
-      lastNonChatDetailTab = "items";
-      applyDetailTabLayout();
-      showDetailLoading(solicitudId);
-      openDetailSurface();
-      await loadSolicitudDetail(solicitudId);
-    } catch (err) {
-      closeDetailSurface();
-      context.showToast(err.message, true);
-    }
+    await openSolicitudDetailById(solicitudId);
   });
 
   await loadEquiposIfNeeded();
@@ -3133,17 +3156,7 @@ export async function initSolicitudesView(context) {
   const initialSolicitudId = Number(sessionStorage.getItem("fmn-open-solicitud-id") || 0);
   if (initialSolicitudId) {
     sessionStorage.removeItem("fmn-open-solicitud-id");
-    try {
-      activeDetailTab = "items";
-      lastNonChatDetailTab = "items";
-      applyDetailTabLayout();
-      showDetailLoading(initialSolicitudId);
-      openDetailSurface();
-      await loadSolicitudDetail(initialSolicitudId);
-    } catch (error) {
-      closeDetailSurface();
-      context.showToast(error.message, true);
-    }
+    await openSolicitudDetailById(initialSolicitudId);
   }
 
   // Auto-refresh pendientes cada 2 minutos
