@@ -236,6 +236,15 @@ tabla `producto_alias` y **se aplica tambien a lo que se escriba despues**: si u
 trabajador vuelve a escribirlo mal, ya se cuenta en el lugar correcto sin que
 nadie intervenga. La decision se toma una vez.
 
+Se llega por dos caminos, con la misma ventana:
+
+- desde una sugerencia, con el par ya elegido
+- con el boton **Unificar productos**, eligiendo dos cualquiera de la lista
+
+El segundo camino existe porque hay equivalencias que ningun algoritmo puede
+deducir: `papel confort` y `papel higienico` no se parecen en el texto, pero en
+la faena son lo mismo. Eso solo lo sabe una persona.
+
 Se puede deshacer en cualquier momento desde el panel "Productos unificados": no
 se modifica ninguna solicitud, solo la forma de agrupar al calcular el reporte.
 

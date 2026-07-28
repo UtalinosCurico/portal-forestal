@@ -2511,6 +2511,11 @@ th {
   margin-top: 0.2rem;
 }
 
+.reportes-unificar-aviso {
+  margin: 0 0 1rem;
+  font-size: 0.86rem;
+}
+
 /* --- Bandeja de solicitudes: tabla condensada -------------------------- */
 /* La fila completa abre la solicitud y la columna de accion queda fijada a
    la derecha, para que "Ver" nunca quede fuera de pantalla. */

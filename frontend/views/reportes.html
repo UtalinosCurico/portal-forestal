@@ -120,14 +120,26 @@
         <div>
           <h4>Unificar productos</h4>
           <p class="muted-text">
-            Elige con que nombre queda el producto. El otro pasa a contarse
-            dentro de este y se suman sus cantidades.
+            Marca dos nombres como el mismo producto. Sus cantidades se suman y
+            de aqui en adelante siempre se cuentan juntos.
           </p>
         </div>
         <button id="reportes-unificar-close" class="icon-btn" type="button" aria-label="Cerrar">x</button>
       </header>
 
+      <div class="form-grid cols-2">
+        <div>
+          <label for="reportes-unificar-a">Producto</label>
+          <select id="reportes-unificar-a"></select>
+        </div>
+        <div>
+          <label for="reportes-unificar-b">Es el mismo que</label>
+          <select id="reportes-unificar-b"></select>
+        </div>
+      </div>
+
       <div id="reportes-unificar-opciones" class="reportes-unificar-opciones"></div>
+      <p id="reportes-unificar-aviso" class="muted-text reportes-unificar-aviso"></p>
 
       <div class="actions-inline wrap-actions">
         <button id="reportes-unificar-confirm" class="action-btn" type="button">
@@ -154,6 +166,9 @@
           <label class="sr-only" for="reportes-search">Buscar producto</label>
           <input id="reportes-search" type="search" placeholder="Buscar producto" />
         </div>
+        <button id="reportes-unificar-manual-btn" class="action-btn secondary hidden" type="button">
+          Unificar productos
+        </button>
       </div>
     </div>
 

@@ -305,6 +305,10 @@ export async function initReportesView(context) {
   const unificadosList = document.getElementById("reportes-unificados-list");
   const unificarModal = document.getElementById("reportes-unificar-modal");
   const unificarOpciones = document.getElementById("reportes-unificar-opciones");
+  const unificarAviso = document.getElementById("reportes-unificar-aviso");
+  const unificarManualBtn = document.getElementById("reportes-unificar-manual-btn");
+  const selectA = document.getElementById("reportes-unificar-a");
+  const selectB = document.getElementById("reportes-unificar-b");
 
   const role = state.user?.role || state.user?.rol || "";
   const esRolGlobal = role === "ADMIN" || role === "SUPERVISOR";
@@ -318,6 +322,10 @@ export async function initReportesView(context) {
   // Un jefe de faena solo ve su equipo: el selector no le aporta nada.
   if (!esRolGlobal && equipoField) {
     equipoField.classList.add("hidden");
+  }
+
+  if (puedeUnificar) {
+    unificarManualBtn?.classList.remove("hidden");
   }
 
   async function cargarEquipos() {
@@ -398,21 +406,72 @@ export async function initReportesView(context) {
     }
   }
 
-  function abrirModalUnificar(sugerencia) {
-    unificacionPendiente = { sugerencia, elegido: 0 };
-    unificarOpciones.innerHTML = sugerencia.nombres
+  /** Llena los dos selectores con los productos del periodo cargado. */
+  function poblarSelectoresProductos(claveA, claveB) {
+    const opciones = datos.productos
       .map(
-        (nombre, i) => `
+        (p) =>
+          `<option value="${escapeHtml(p.clave)}">${escapeHtml(p.nombre)} (${p.total_unidades})</option>`
+      )
+      .join("");
+
+    selectA.innerHTML = opciones;
+    selectB.innerHTML = opciones;
+    if (claveA) selectA.value = claveA;
+    if (claveB) selectB.value = claveB;
+
+    // Si no vino un par sugerido, dejamos el segundo distinto del primero para
+    // que la ventana no abra proponiendo unir algo consigo mismo.
+    if (!claveB && datos.productos.length > 1 && selectB.value === selectA.value) {
+      selectB.selectedIndex = selectA.selectedIndex === 0 ? 1 : 0;
+    }
+  }
+
+  /** Radios para elegir con que nombre queda el producto unificado. */
+  function renderOpcionesNombre() {
+    const a = datos.productos.find((p) => p.clave === selectA.value);
+    const b = datos.productos.find((p) => p.clave === selectB.value);
+    const confirmar = document.getElementById("reportes-unificar-confirm");
+
+    if (!a || !b || a.clave === b.clave) {
+      unificarOpciones.innerHTML = "";
+      unificarAviso.textContent = "Elige dos productos distintos.";
+      confirmar.disabled = true;
+      return;
+    }
+
+    unificarAviso.textContent = `Quedaran juntos: ${a.total_unidades + b.total_unidades} unidades en total.`;
+    confirmar.disabled = false;
+
+    unificarOpciones.innerHTML = [a, b]
+      .map(
+        (p, i) => `
         <label class="reportes-unificar-opcion">
-          <input type="radio" name="reportes-canonico" value="${i}" ${i === 0 ? "checked" : ""} />
+          <input type="radio" name="reportes-canonico" value="${escapeHtml(p.clave)}" ${
+            i === 0 ? "checked" : ""
+          } />
           <span>
-            <strong>${escapeHtml(nombre)}</strong>
-            <span class="table-subline">El otro nombre se sumara dentro de este</span>
+            <strong>${escapeHtml(p.nombre)}</strong>
+            <span class="table-subline">Se queda con este nombre (${p.total_unidades} unidades hoy)</span>
           </span>
         </label>
       `
       )
       .join("");
+  }
+
+  function abrirModalUnificar(claveA = "", claveB = "") {
+    if (!datos.productos.length) {
+      showToast("No hay productos en el periodo para unificar", true);
+      return;
+    }
+    if (datos.productos.length < 2) {
+      showToast("Se necesitan al menos dos productos para unificar", true);
+      return;
+    }
+
+    poblarSelectoresProductos(claveA, claveB);
+    renderOpcionesNombre();
     unificarModal.classList.remove("hidden");
   }
 
@@ -422,14 +481,17 @@ export async function initReportesView(context) {
   }
 
   async function confirmarUnificacion() {
-    if (!unificacionPendiente) return;
+    const claveCanonica = unificarOpciones.querySelector(
+      'input[name="reportes-canonico"]:checked'
+    )?.value;
+    if (!claveCanonica) {
+      return;
+    }
 
-    const elegido = Number(
-      unificarOpciones.querySelector('input[name="reportes-canonico"]:checked')?.value ?? 0
-    );
-    const { sugerencia } = unificacionPendiente;
-    const claveCanonica = sugerencia.claves[elegido];
-    const claveVariante = sugerencia.claves[elegido === 0 ? 1 : 0];
+    // La que no quedo elegida es la que se absorbe.
+    const claveVariante =
+      selectA.value === claveCanonica ? selectB.value : selectA.value;
+    const canonico = datos.productos.find((p) => p.clave === claveCanonica);
 
     try {
       await apiRequest("/api/reportes/alias", {
@@ -437,7 +499,7 @@ export async function initReportesView(context) {
         body: {
           claveVariante,
           claveCanonica,
-          nombreCanonico: sugerencia.nombres[elegido],
+          nombreCanonico: canonico?.nombre || claveCanonica,
         },
       });
       cerrarModalUnificar();
@@ -452,8 +514,12 @@ export async function initReportesView(context) {
     const boton = event.target.closest("[data-unificar]");
     if (!boton) return;
     const sugerencia = datos.posibles_duplicados[Number(boton.dataset.unificar)];
-    if (sugerencia) abrirModalUnificar(sugerencia);
+    if (sugerencia) abrirModalUnificar(sugerencia.claves[0], sugerencia.claves[1]);
   });
+
+  selectA.addEventListener("change", renderOpcionesNombre);
+  selectB.addEventListener("change", renderOpcionesNombre);
+  unificarManualBtn?.addEventListener("click", () => abrirModalUnificar());
 
   unificadosList.addEventListener("click", async (event) => {
     const boton = event.target.closest("[data-deshacer]");
