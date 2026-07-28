@@ -85,6 +85,46 @@ function renderBarrasMeses(porMes, meses) {
   `;
 }
 
+/**
+ * Los productos que concentran el consumo, en barras horizontales. Responde de
+ * un vistazo "que es lo que mas se pide", sin tener que leer la tabla entera.
+ */
+function renderTopProductos(productos, contenedor, limite = 7) {
+  const top = productos.slice(0, limite);
+
+  if (!top.length) {
+    contenedor.innerHTML = "<p class='muted-text'>Sin consumo en el periodo.</p>";
+    return;
+  }
+
+  const maximo = top[0].total_unidades || 1;
+  const totalGeneral = productos.reduce((acc, p) => acc + p.total_unidades, 0) || 1;
+
+  contenedor.innerHTML = top
+    .map((p) => {
+      const porcentaje = Math.round((p.total_unidades / totalGeneral) * 100);
+      return `
+        <div class="reportes-top-fila" title="${escapeHtml(p.nombre)}: ${p.total_unidades} (${porcentaje}% del total)">
+          <span class="reportes-top-nombre">${escapeHtml(p.nombre)}</span>
+          <span class="reportes-top-riel">
+            <span class="reportes-top-relleno" style="width:${Math.max(2, Math.round((p.total_unidades / maximo) * 100))}%"></span>
+          </span>
+          <span class="reportes-top-valor">${p.total_unidades}</span>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+/** Suma de todos los productos por mes: muestra si el consumo sube o baja. */
+function renderTendencia(productos, meses, contenedor) {
+  const totalPorMes = {};
+  for (const mes of meses) {
+    totalPorMes[mes] = productos.reduce((acc, p) => acc + (p.por_mes[mes] || 0), 0);
+  }
+  contenedor.innerHTML = renderBarrasMeses(totalPorMes, meses);
+}
+
 function renderDesgloseEquipos(porEquipo) {
   const filas = Object.entries(porEquipo || {}).sort((a, b) => b[1] - a[1]);
   if (!filas.length) {
@@ -128,17 +168,68 @@ function renderVariantes(variantes = []) {
   `;
 }
 
-function renderFilas(productos, meses, tbody, filtroTexto = "") {
+/** Mismo contenido que la tabla, en tarjetas: en telefono la tabla no cabe. */
+function renderTarjetasMovil(visibles, meses, lista) {
+  lista.innerHTML = visibles
+    .map(
+      (p) => `
+      <article class="reportes-card" data-clave="${escapeHtml(p.clave)}" tabindex="0" role="button">
+        <div class="reportes-card-head">
+          <div>
+            <strong class="reportes-card-nombre">${escapeHtml(p.nombre)}</strong>
+            ${
+              p.escrito_de_formas > 1
+                ? `<div class="table-subline reportes-aviso">agrupa ${p.escrito_de_formas} escrituras</div>`
+                : ""
+            }
+          </div>
+          <span class="reportes-card-total">
+            ${p.total_unidades}<small>${p.unidad ? ` ${escapeHtml(p.unidad)}` : ""}</small>
+          </span>
+        </div>
+        <div class="reportes-card-datos">
+          <span><em>Solicitudes</em> ${p.total_solicitudes}</span>
+          <span><em>Promedio mes</em> ${p.promedio_mensual}</span>
+          <span><em>Stock</em> min ${p.sugerido_min} · max ${p.sugerido_max}</span>
+        </div>
+        ${
+          p.meses_con_datos <= 1
+            ? `<div class="table-subline reportes-aviso">Solo ${p.meses_con_datos} mes con datos: sugerencia referencial.</div>`
+            : ""
+        }
+        <div class="reportes-card-detalle hidden">
+          <h5>Consumo por mes</h5>
+          ${renderBarrasMeses(p.por_mes, meses)}
+          <h5>Por equipo</h5>
+          ${renderDesgloseEquipos(p.por_equipo) || "<p class='muted-text'>Sin desglose.</p>"}
+          ${renderVariantes(p.variantes)}
+        </div>
+        <span class="reportes-card-hint">Toca para ver el detalle</span>
+      </article>
+    `
+    )
+    .join("");
+}
+
+function renderFilas(productos, meses, tbody, filtroTexto = "", mobileList = null) {
   const filtro = filtroTexto.trim().toLowerCase();
   const visibles = filtro
     ? productos.filter((p) => p.nombre.toLowerCase().includes(filtro))
     : productos;
 
   if (!visibles.length) {
-    tbody.innerHTML = `<tr><td colspan="5">${
-      filtro ? "Ningun producto coincide con la busqueda." : "Sin consumo registrado en el periodo."
-    }</td></tr>`;
+    const mensaje = filtro
+      ? "Ningun producto coincide con la busqueda."
+      : "Sin consumo registrado en el periodo.";
+    tbody.innerHTML = `<tr><td colspan="5">${mensaje}</td></tr>`;
+    if (mobileList) {
+      mobileList.innerHTML = `<div class="history-empty">${mensaje}</div>`;
+    }
     return;
+  }
+
+  if (mobileList) {
+    renderTarjetasMovil(visibles, meses, mobileList);
   }
 
   tbody.innerHTML = visibles
@@ -296,6 +387,9 @@ export async function initReportesView(context) {
   const equipoSelect = document.getElementById("reportes-equipo-id");
   const equipoField = document.getElementById("reportes-equipo-field");
   const tbody = document.getElementById("reportes-table-body");
+  const mobileList = document.getElementById("reportes-mobile-list");
+  const topProductos = document.getElementById("reportes-top-productos");
+  const tendencia = document.getElementById("reportes-tendencia");
   const searchInput = document.getElementById("reportes-search");
   const lastUpdate = document.getElementById("reportes-last-update");
   const quickStrip = document.getElementById("reportes-quick-periodos");
@@ -389,7 +483,9 @@ export async function initReportesView(context) {
       const respuesta = await apiRequest(`/api/reportes/consumo${construirQuery()}`);
       datos = respuesta.data;
       pintarResumen(datos);
-      renderFilas(datos.productos, datos.periodo.meses, tbody, searchInput.value);
+      renderTopProductos(datos.productos, topProductos);
+      renderTendencia(datos.productos, datos.periodo.meses, tendencia);
+      renderFilas(datos.productos, datos.periodo.meses, tbody, searchInput.value, mobileList);
       renderDuplicados(
         datos.posibles_duplicados,
         duplicadosCard,
@@ -572,7 +668,15 @@ export async function initReportesView(context) {
   });
 
   searchInput.addEventListener("input", () => {
-    renderFilas(datos.productos, datos.periodo.meses, tbody, searchInput.value);
+    renderFilas(datos.productos, datos.periodo.meses, tbody, searchInput.value, mobileList);
+  });
+
+  // En telefono la tarjeta cumple el rol de la fila: se toca y despliega igual.
+  mobileList.addEventListener("click", (event) => {
+    const card = event.target.closest(".reportes-card");
+    if (!card) return;
+    card.querySelector(".reportes-card-detalle")?.classList.toggle("hidden");
+    card.classList.toggle("abierta");
   });
 
   document.getElementById("reportes-filter-btn").addEventListener("click", cargar);

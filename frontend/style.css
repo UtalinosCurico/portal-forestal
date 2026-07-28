@@ -2321,6 +2321,145 @@ th {
   letter-spacing: 0.03em;
 }
 
+/* Resumen visual: que concentra el consumo y como evoluciona */
+.reportes-visual-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.6rem;
+}
+
+.reportes-visual-bloque h5 {
+  margin: 0 0 0.9rem;
+  color: var(--forest-700);
+  font-size: 0.86rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.reportes-top {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.reportes-top-fila {
+  display: grid;
+  grid-template-columns: minmax(90px, 1.1fr) 2fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.86rem;
+}
+
+.reportes-top-nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reportes-top-riel {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--forest-100);
+}
+
+.reportes-top-relleno {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--forest-500), var(--forest-700));
+  transition: width 0.4s var(--ease-smooth);
+}
+
+.reportes-top-valor {
+  font-weight: 700;
+  color: var(--forest-700);
+}
+
+/* Tarjetas de producto para telefono */
+.reportes-mobile-list {
+  display: none;
+  gap: 0.7rem;
+}
+
+.reportes-card {
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--forest-500);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+}
+
+.reportes-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.reportes-card-nombre {
+  font-size: 0.98rem;
+}
+
+.reportes-card-total {
+  color: var(--forest-700);
+  font-size: 1.3rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.reportes-card-total small {
+  margin-left: 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.reportes-card-datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  margin-top: 0.6rem;
+  font-size: 0.84rem;
+}
+
+.reportes-card-datos em {
+  display: block;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-style: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.reportes-card-detalle {
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--line);
+}
+
+.reportes-card-detalle h5 {
+  margin: 0 0 0.6rem;
+  color: var(--forest-700);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.reportes-card-detalle h5:not(:first-child) {
+  margin-top: 1.1rem;
+}
+
+.reportes-card-hint {
+  display: block;
+  margin-top: 0.6rem;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.reportes-card.abierta .reportes-card-hint {
+  display: none;
+}
+
 /* Barras de consumo mensual */
 .reportes-barras {
   display: flex;
@@ -4958,12 +5097,22 @@ tbody tr {
     grid-template-columns: 1fr;
   }
 
-  .solicitudes-mobile-list {
+  .solicitudes-mobile-list,
+  .reportes-mobile-list {
     display: grid;
   }
 
   .table-wrap.mobile-hide-on-phone {
     display: none;
+  }
+
+  /* En telefono las barras mensuales se aprietan: menos alto y sin apretujar. */
+  .reportes-barras {
+    min-height: 108px;
+  }
+
+  .reportes-barra-riel {
+    height: 62px;
   }
 
   .table-wrap:not(.mobile-hide-on-phone) {

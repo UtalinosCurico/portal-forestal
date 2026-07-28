@@ -86,6 +86,27 @@
     </div>
   </section>
 
+  <section class="card full" id="reportes-visual-card">
+    <div class="section-head">
+      <div>
+        <h4>Resumen visual</h4>
+        <p class="muted-text">
+          Que productos concentran el consumo y como viene evolucionando el total.
+        </p>
+      </div>
+    </div>
+    <div class="reportes-visual-grid">
+      <div class="reportes-visual-bloque">
+        <h5>Lo que mas se consume</h5>
+        <div id="reportes-top-productos" class="reportes-top"></div>
+      </div>
+      <div class="reportes-visual-bloque">
+        <h5>Consumo total por mes</h5>
+        <div id="reportes-tendencia"></div>
+      </div>
+    </div>
+  </section>
+
   <section class="card full hidden" id="reportes-duplicados-card">
     <div class="section-head">
       <div>
@@ -172,7 +193,7 @@
       </div>
     </div>
 
-    <div class="table-wrap">
+    <div class="table-wrap mobile-hide-on-phone">
       <table>
         <thead>
           <tr>
@@ -186,5 +207,7 @@
         <tbody id="reportes-table-body"></tbody>
       </table>
     </div>
+
+    <div id="reportes-mobile-list" class="reportes-mobile-list"></div>
   </section>
 </div>
