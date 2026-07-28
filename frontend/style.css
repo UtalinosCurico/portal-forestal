@@ -2259,6 +2259,184 @@ th {
   color: #426657;
 }
 
+/* --- Reportes: consumo por producto ------------------------------------ */
+
+.reportes-nota {
+  margin-top: 0.6rem;
+  font-size: 0.84rem;
+}
+
+/* Tarjetas de resumen: mismo aspecto que los filtros rapidos, pero no se
+   clickean, asi que no deben insinuar que son botones. */
+.quick-tile.static {
+  cursor: default;
+}
+
+.quick-tile.static:hover,
+.quick-tile.static:active {
+  transform: none;
+  box-shadow: var(--shadow-card);
+}
+
+#reportes-table-body .reportes-row {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+#reportes-table-body .reportes-row:hover td,
+#reportes-table-body .reportes-row.abierta td {
+  background: var(--forest-50);
+}
+
+#reportes-table-body .reportes-row:focus-visible {
+  outline: 2px solid var(--forest-700);
+  outline-offset: -2px;
+}
+
+.reportes-stock {
+  white-space: nowrap;
+}
+
+.reportes-aviso {
+  color: var(--warning);
+}
+
+.reportes-detalle td {
+  background: var(--surface-soft);
+  white-space: normal;
+}
+
+.reportes-detalle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.4rem;
+  padding: 0.6rem 0.2rem;
+}
+
+.reportes-detalle-grid h5 {
+  margin: 0 0 0.7rem;
+  color: var(--forest-700);
+  font-size: 0.86rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* Barras de consumo mensual */
+.reportes-barras {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  min-height: 130px;
+}
+
+.reportes-barra {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 34px;
+}
+
+.reportes-barra-valor {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--forest-700);
+}
+
+.reportes-barra-riel {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  height: 80px;
+  border-radius: 6px;
+  background: var(--forest-100);
+}
+
+.reportes-barra-relleno {
+  width: 100%;
+  min-height: 3px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, var(--forest-500), var(--forest-700));
+  transition: height 0.35s var(--ease-smooth);
+}
+
+.reportes-barra-mes {
+  font-size: 0.74rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Desglose por equipo */
+.reportes-equipos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.reportes-equipo-fila {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) 2fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.reportes-equipo-riel {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--forest-100);
+}
+
+.reportes-equipo-relleno {
+  display: block;
+  height: 100%;
+  min-width: 3px;
+  border-radius: 999px;
+  background: var(--forest-600);
+}
+
+.reportes-equipo-valor {
+  font-weight: 700;
+  color: var(--forest-700);
+}
+
+.reportes-variantes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.84rem;
+}
+
+/* Posibles duplicados */
+.reportes-duplicados {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.reportes-duplicado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--warning);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.reportes-duplicado-vs {
+  margin: 0 0.4rem;
+  color: var(--muted);
+}
+
 /* --- Bandeja de solicitudes: tabla condensada -------------------------- */
 /* La fila completa abre la solicitud y la columna de accion queda fijada a
    la derecha, para que "Ver" nunca quede fuera de pantalla. */

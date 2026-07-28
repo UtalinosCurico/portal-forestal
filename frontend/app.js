@@ -268,6 +268,12 @@ const VIEWS = {
     subtitle: "Registro y seguimiento de solicitudes",
     roles: ["ADMIN", "SUPERVISOR", "JEFE_FAENA", "MECANICO", "OPERADOR"],
   },
+  reportes: {
+    file: `/views/reportes.html?v=${ASSET_VERSION}`,
+    title: "Reportes",
+    subtitle: "Consumo por producto y stock sugerido",
+    roles: ["ADMIN", "SUPERVISOR", "JEFE_FAENA"],
+  },
   usuarios: {
     file: `/views/usuarios.html?v=${ASSET_VERSION}`,
     title: "Usuarios",
@@ -1473,6 +1479,7 @@ async function getViewController(viewName) {
   const loaders = {
     dashboard: () => import(`/js/dashboard.js?v=${ASSET_VERSION}`).then((module) => module.initDashboardView),
     solicitudes: () => import(`/js/solicitudes.js?v=${ASSET_VERSION}`).then((module) => module.initSolicitudesView),
+    reportes: () => import(`/js/reportes.js?v=${ASSET_VERSION}`).then((module) => module.initReportesView),
     usuarios: () => import(`/js/usuarios.js?v=${ASSET_VERSION}`).then((module) => module.initUsuariosView),
     powerbi: () => import(`/js/powerbi.js?v=${ASSET_VERSION}`).then((module) => module.initPowerBIView),
     "como-usar": () => import(`/js/como-usar.js?v=${ASSET_VERSION}`).then((module) => module.initComoUsarView),

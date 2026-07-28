@@ -4,10 +4,30 @@ const { authenticate } = require("../middleware/auth");
 const { authorize } = require("../middleware/authorize");
 const { ROLES } = require("../config/appRoles");
 const reportesService = require("../services/reportesService");
+const consumoService = require("../services/consumoService");
 
 const router = express.Router();
 
 router.use(authenticate);
+
+router.get(
+  "/consumo",
+  authorize(
+    ROLES.ADMIN,
+    ROLES.SUPERVISOR,
+    ROLES.SECRETARIA,
+    ROLES.JEFE_FAENA,
+    ROLES.MECANICO,
+    ROLES.OPERADOR
+  ),
+  asyncHandler(async (req, res) => {
+    const data = await consumoService.getConsumo(req.user, req.query || {});
+    res.json({
+      status: "ok",
+      data,
+    });
+  })
+);
 
 router.get(
   "/excel/solicitudes",
