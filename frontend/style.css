@@ -2259,6 +2259,477 @@ th {
   color: #426657;
 }
 
+/* --- Reportes: consumo por producto ------------------------------------ */
+
+.reportes-nota {
+  margin-top: 0.6rem;
+  font-size: 0.84rem;
+}
+
+/* Tarjetas de resumen: mismo aspecto que los filtros rapidos, pero no se
+   clickean, asi que no deben insinuar que son botones. */
+.quick-tile.static {
+  cursor: default;
+}
+
+.quick-tile.static:hover,
+.quick-tile.static:active {
+  transform: none;
+  box-shadow: var(--shadow-card);
+}
+
+#reportes-table-body .reportes-row {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+#reportes-table-body .reportes-row:hover td,
+#reportes-table-body .reportes-row.abierta td {
+  background: var(--forest-50);
+}
+
+#reportes-table-body .reportes-row:focus-visible {
+  outline: 2px solid var(--forest-700);
+  outline-offset: -2px;
+}
+
+.reportes-stock {
+  white-space: nowrap;
+}
+
+.reportes-aviso {
+  color: var(--warning);
+}
+
+.reportes-detalle td {
+  background: var(--surface-soft);
+  white-space: normal;
+}
+
+.reportes-detalle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.4rem;
+  padding: 0.6rem 0.2rem;
+}
+
+.reportes-detalle-grid h5 {
+  margin: 0 0 0.7rem;
+  color: var(--forest-700);
+  font-size: 0.86rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* Resumen visual: que concentra el consumo y como evoluciona */
+.reportes-visual-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.6rem;
+}
+
+.reportes-visual-bloque h5 {
+  margin: 0 0 0.9rem;
+  color: var(--forest-700);
+  font-size: 0.86rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.reportes-top {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.reportes-top-fila {
+  display: grid;
+  grid-template-columns: minmax(90px, 1.1fr) 2fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.86rem;
+}
+
+.reportes-top-nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reportes-top-riel {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--forest-100);
+}
+
+.reportes-top-relleno {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--forest-500), var(--forest-700));
+  transition: width 0.4s var(--ease-smooth);
+}
+
+.reportes-top-valor {
+  font-weight: 700;
+  color: var(--forest-700);
+}
+
+/* Tarjetas de producto para telefono */
+.reportes-mobile-list {
+  display: none;
+  gap: 0.7rem;
+}
+
+.reportes-card {
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--forest-500);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+}
+
+.reportes-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.reportes-card-nombre {
+  font-size: 0.98rem;
+}
+
+.reportes-card-total {
+  color: var(--forest-700);
+  font-size: 1.3rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.reportes-card-total small {
+  margin-left: 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.reportes-card-datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  margin-top: 0.6rem;
+  font-size: 0.84rem;
+}
+
+.reportes-card-datos em {
+  display: block;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-style: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.reportes-card-detalle {
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--line);
+}
+
+.reportes-card-detalle h5 {
+  margin: 0 0 0.6rem;
+  color: var(--forest-700);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.reportes-card-detalle h5:not(:first-child) {
+  margin-top: 1.1rem;
+}
+
+.reportes-card-hint {
+  display: block;
+  margin-top: 0.6rem;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.reportes-card.abierta .reportes-card-hint {
+  display: none;
+}
+
+/* Barras de consumo mensual */
+.reportes-barras {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  min-height: 130px;
+}
+
+.reportes-barra {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 34px;
+}
+
+.reportes-barra-valor {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--forest-700);
+}
+
+.reportes-barra-riel {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  height: 80px;
+  border-radius: 6px;
+  background: var(--forest-100);
+}
+
+.reportes-barra-relleno {
+  width: 100%;
+  min-height: 3px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, var(--forest-500), var(--forest-700));
+  transition: height 0.35s var(--ease-smooth);
+}
+
+.reportes-barra-mes {
+  font-size: 0.74rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Desglose por equipo */
+.reportes-equipos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.reportes-equipo-fila {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) 2fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.reportes-equipo-riel {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--forest-100);
+}
+
+.reportes-equipo-relleno {
+  display: block;
+  height: 100%;
+  min-width: 3px;
+  border-radius: 999px;
+  background: var(--forest-600);
+}
+
+.reportes-equipo-valor {
+  font-weight: 700;
+  color: var(--forest-700);
+}
+
+.reportes-variantes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.84rem;
+}
+
+/* Posibles duplicados */
+.reportes-duplicados {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.reportes-duplicado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--warning);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.reportes-duplicado-vs {
+  margin: 0 0.4rem;
+  color: var(--muted);
+}
+
+.reportes-duplicado-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Productos ya unificados a mano */
+.reportes-unificados {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.reportes-unificado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--forest-500);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 0.88rem;
+}
+
+.reportes-unificado-variante {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.reportes-unificado-flecha {
+  margin: 0 0.45rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+/* Modal para elegir con que nombre queda el producto */
+.reportes-unificar-opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 1rem 0;
+}
+
+.reportes-unificar-opcion {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.reportes-unificar-opcion:hover {
+  border-color: var(--forest-500);
+  background: var(--forest-50);
+}
+
+.reportes-unificar-opcion:has(input:checked) {
+  border-color: var(--forest-600);
+  background: var(--forest-50);
+  box-shadow: 0 0 0 1px var(--forest-600) inset;
+}
+
+.reportes-unificar-opcion input {
+  width: auto;
+  margin-top: 0.2rem;
+}
+
+.reportes-unificar-aviso {
+  margin: 0 0 1rem;
+  font-size: 0.86rem;
+}
+
+/* --- Bandeja de solicitudes: tabla condensada -------------------------- */
+/* La fila completa abre la solicitud y la columna de accion queda fijada a
+   la derecha, para que "Ver" nunca quede fuera de pantalla. */
+
+#solicitudes-table-body .solicitud-row {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+#solicitudes-table-body .solicitud-row:hover td {
+  background: var(--forest-50);
+}
+
+#solicitudes-table-body .solicitud-row:focus-visible {
+  outline: 2px solid var(--forest-700);
+  outline-offset: -2px;
+}
+
+/* Anchos: lo fijo se mantiene angosto, el texto largo envuelve en vez de
+   estirar la tabla hacia la derecha. */
+.table-wrap .col-id {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.table-wrap .col-estado {
+  width: 1%;
+}
+
+.table-wrap .col-equipo,
+.table-wrap .col-resumen,
+.table-wrap .col-seguimiento {
+  white-space: normal;
+  min-width: 140px;
+}
+
+.table-wrap .col-resumen {
+  max-width: 320px;
+}
+
+.table-wrap .col-seguimiento {
+  max-width: 260px;
+}
+
+/* Columna de accion siempre visible aunque la tabla desborde. */
+.table-wrap .col-accion {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  width: 1%;
+  white-space: nowrap;
+  background: #ffffff;
+  box-shadow: -8px 0 10px -8px rgba(20, 40, 32, 0.25);
+}
+
+.table-wrap thead .col-accion {
+  z-index: 3;
+  background: var(--surface);
+}
+
+#solicitudes-table-body .solicitud-row:hover .col-accion {
+  background: var(--forest-50);
+}
+
+.table-wrap .col-accion .table-btn,
+.table-wrap .col-accion .table-btn-state {
+  display: block;
+  width: 100%;
+  margin: 0 0 0.3rem 0;
+}
+
+.table-wrap .col-accion .table-btn-state {
+  margin-bottom: 0;
+}
+
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -4626,12 +5097,22 @@ tbody tr {
     grid-template-columns: 1fr;
   }
 
-  .solicitudes-mobile-list {
+  .solicitudes-mobile-list,
+  .reportes-mobile-list {
     display: grid;
   }
 
   .table-wrap.mobile-hide-on-phone {
     display: none;
+  }
+
+  /* En telefono las barras mensuales se aprietan: menos alto y sin apretujar. */
+  .reportes-barras {
+    min-height: 108px;
+  }
+
+  .reportes-barra-riel {
+    height: 62px;
   }
 
   .table-wrap:not(.mobile-hide-on-phone) {

@@ -208,7 +208,52 @@ Valores recomendados:
 - Inventario global y vista por equipo
 - Equipos y stock en faena (`equipo_stock`)
 - Usuarios (CRUD completo para ADMIN, solo lectura para SUPERVISOR)
+- Reportes de consumo por producto (ADMIN/SUPERVISOR/JEFE_FAENA)
 - Power BI embebido (solo ADMIN/SUPERVISOR)
+
+### Reportes de consumo
+
+Responde cuanto se pidio de cada producto en un periodo, para definir stock
+minimo y maximo. Incluye comparacion mes a mes, desglose por equipo y descarga
+en CSV.
+
+Como el nombre del producto lo escribe cada persona a mano, `backend/utils/productoKey.js`
+agrupa las escrituras que son con certeza lo mismo (mayusculas, tildes, espacios,
+puntuacion): `Papel Higienico`, `papel higiénico` y `PAPEL  HIGIENICO` suman juntas.
+
+Lo que **no** hace es unir por parecido: sumar productos distintos llevaria a
+decidir mal un stock. Los nombres sospechosos de ser el mismo se muestran aparte
+como sugerencia para que una persona decida. Dos nombres que solo difieren en los
+numeros nunca se sugieren, porque el numero suele ser la medida (`cadena 18` y
+`cadena 20` son productos distintos).
+
+#### Unificar productos a mano
+
+Cuando la normalizacion automatica no alcanza (`papel hig.` y `papel higienico`,
+o un nombre propio de faena), ADMIN o SUPERVISOR pueden declarar que dos nombres
+son el mismo producto y elegir con cual queda. La equivalencia se guarda en la
+tabla `producto_alias` y **se aplica tambien a lo que se escriba despues**: si un
+trabajador vuelve a escribirlo mal, ya se cuenta en el lugar correcto sin que
+nadie intervenga. La decision se toma una vez.
+
+Se llega por dos caminos, con la misma ventana:
+
+- desde una sugerencia, con el par ya elegido
+- con el boton **Unificar productos**, eligiendo dos cualquiera de la lista
+
+El segundo camino existe porque hay equivalencias que ningun algoritmo puede
+deducir: `papel confort` y `papel higienico` no se parecen en el texto, pero en
+la faena son lo mismo. Eso solo lo sabe una persona.
+
+Se puede deshacer en cualquier momento desde el panel "Productos unificados": no
+se modifica ninguna solicitud, solo la forma de agrupar al calcular el reporte.
+
+Las cadenas se aplanan al guardar (si `A` apunta a `B` y luego se une `C` a `A`,
+`C` queda apuntando a `B`), y se rechazan las referencias circulares.
+
+El stock sugerido sale del historial: el minimo es el consumo de un mes promedio
+y el maximo es el mes de mayor consumo mas un 50% de holgura. Con un solo mes de
+datos la vista avisa que la sugerencia es referencial.
 
 ## Endpoints principales
 
@@ -232,6 +277,11 @@ Protegidos:
 - `GET /api/usuarios`
 - `POST /api/usuarios`
 - `PUT /api/usuarios/:id`
+- `GET /api/reportes/consumo`
+- `GET /api/reportes/alias`
+- `POST /api/reportes/alias`
+- `DELETE /api/reportes/alias/:id`
+- `POST /api/auth/refresh`
 - `GET /api/equipos`
 - `GET /api/equipos/stock`
 - `POST /api/equipos`

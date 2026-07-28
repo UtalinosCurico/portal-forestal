@@ -1,0 +1,213 @@
+<div class="view-grid">
+  <section class="card hero-card full">
+    <div class="section-head">
+      <div>
+        <h4>Consumo por producto</h4>
+        <p class="muted-text">
+          Cuanto se pidio de cada producto en el periodo, para definir stock minimo y maximo.
+        </p>
+      </div>
+      <div class="actions-inline wrap-actions">
+        <span id="reportes-last-update" class="dashboard-last-update">Sin cargar</span>
+        <button id="reportes-refresh-btn" class="action-btn secondary" type="button">
+          Actualizar
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card full">
+    <div class="section-head">
+      <h4>Periodo</h4>
+      <div class="actions-inline wrap-actions">
+        <button id="reportes-filter-btn" class="action-btn" type="button">Aplicar</button>
+        <button id="reportes-clear-btn" class="action-btn secondary" type="button">Limpiar</button>
+        <button id="reportes-export-btn" class="action-btn secondary" type="button">
+          Descargar CSV
+        </button>
+      </div>
+    </div>
+
+    <div class="quick-strip" id="reportes-quick-periodos" aria-label="Periodos rapidos">
+      <button class="quick-tile" data-periodo="mes-actual" type="button">
+        <span class="quick-label">Este mes</span>
+      </button>
+      <button class="quick-tile" data-periodo="mes-anterior" type="button">
+        <span class="quick-label">Mes pasado</span>
+      </button>
+      <button class="quick-tile active" data-periodo="ultimos-3" type="button">
+        <span class="quick-label">Ultimos 3 meses</span>
+      </button>
+      <button class="quick-tile" data-periodo="ultimos-6" type="button">
+        <span class="quick-label">Ultimos 6 meses</span>
+      </button>
+      <button class="quick-tile" data-periodo="ano" type="button">
+        <span class="quick-label">Este ano</span>
+      </button>
+    </div>
+
+    <form id="reportes-filter-form" class="form-grid cols-3">
+      <div>
+        <label for="reportes-fecha-desde">Fecha desde</label>
+        <input id="reportes-fecha-desde" name="fechaDesde" type="date" />
+      </div>
+      <div>
+        <label for="reportes-fecha-hasta">Fecha hasta</label>
+        <input id="reportes-fecha-hasta" name="fechaHasta" type="date" />
+      </div>
+      <div id="reportes-equipo-field">
+        <label for="reportes-equipo-id">Equipo</label>
+        <select id="reportes-equipo-id" name="equipoId"></select>
+      </div>
+    </form>
+    <p class="muted-text reportes-nota">
+      Se cuentan todas las solicitudes del periodo salvo las rechazadas.
+    </p>
+  </section>
+
+  <section class="card full">
+    <div class="quick-strip" id="reportes-resumen" aria-label="Resumen del periodo">
+      <div class="quick-tile static">
+        <span class="quick-label">Productos distintos</span>
+        <strong class="quick-value" id="reportes-total-productos">0</strong>
+      </div>
+      <div class="quick-tile static">
+        <span class="quick-label">Unidades pedidas</span>
+        <strong class="quick-value" id="reportes-total-unidades">0</strong>
+      </div>
+      <div class="quick-tile static">
+        <span class="quick-label">Solicitudes</span>
+        <strong class="quick-value" id="reportes-total-solicitudes">0</strong>
+      </div>
+      <div class="quick-tile static">
+        <span class="quick-label">Meses en el periodo</span>
+        <strong class="quick-value" id="reportes-total-meses">0</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="card full" id="reportes-visual-card">
+    <div class="section-head">
+      <div>
+        <h4>Resumen visual</h4>
+        <p class="muted-text">
+          Que productos concentran el consumo y como viene evolucionando el total.
+        </p>
+      </div>
+    </div>
+    <div class="reportes-visual-grid">
+      <div class="reportes-visual-bloque">
+        <h5>Lo que mas se consume</h5>
+        <div id="reportes-top-productos" class="reportes-top"></div>
+      </div>
+      <div class="reportes-visual-bloque">
+        <h5>Consumo total por mes</h5>
+        <div id="reportes-tendencia"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card full hidden" id="reportes-duplicados-card">
+    <div class="section-head">
+      <div>
+        <h4>Nombres que podrian ser el mismo producto</h4>
+        <p class="muted-text">
+          Como cada persona escribe el nombre a mano, estos pares se parecen mucho.
+          No se sumaron juntos. Si son lo mismo, unificalos: queda guardado y de
+          ahi en adelante siempre se cuentan juntos.
+        </p>
+      </div>
+    </div>
+    <div id="reportes-duplicados-list" class="reportes-duplicados"></div>
+  </section>
+
+  <section class="card full hidden" id="reportes-unificados-card">
+    <div class="section-head">
+      <div>
+        <h4>Productos unificados</h4>
+        <p class="muted-text">
+          Nombres que ya marcaste como el mismo producto. Se aplican a todos los
+          periodos y a lo que se escriba de aqui en adelante.
+        </p>
+      </div>
+    </div>
+    <div id="reportes-unificados-list" class="reportes-unificados"></div>
+  </section>
+
+  <div id="reportes-unificar-modal" class="modal hidden">
+    <div class="modal-backdrop" data-close="true"></div>
+    <section class="modal-content">
+      <header class="modal-header">
+        <div>
+          <h4>Unificar productos</h4>
+          <p class="muted-text">
+            Marca dos nombres como el mismo producto. Sus cantidades se suman y
+            de aqui en adelante siempre se cuentan juntos.
+          </p>
+        </div>
+        <button id="reportes-unificar-close" class="icon-btn" type="button" aria-label="Cerrar">x</button>
+      </header>
+
+      <div class="form-grid cols-2">
+        <div>
+          <label for="reportes-unificar-a">Producto</label>
+          <select id="reportes-unificar-a"></select>
+        </div>
+        <div>
+          <label for="reportes-unificar-b">Es el mismo que</label>
+          <select id="reportes-unificar-b"></select>
+        </div>
+      </div>
+
+      <div id="reportes-unificar-opciones" class="reportes-unificar-opciones"></div>
+      <p id="reportes-unificar-aviso" class="muted-text reportes-unificar-aviso"></p>
+
+      <div class="actions-inline wrap-actions">
+        <button id="reportes-unificar-confirm" class="action-btn" type="button">
+          Unificar y guardar
+        </button>
+        <button id="reportes-unificar-cancel" class="action-btn secondary" type="button">
+          Cancelar
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <section class="card full">
+    <div class="section-head">
+      <div>
+        <h4>Detalle por producto</h4>
+        <p class="muted-text">
+          Ordenado de mayor a menor consumo. Haz clic en una fila para ver el
+          desglose por mes, por equipo y las formas en que se escribio.
+        </p>
+      </div>
+      <div class="actions-inline wrap-actions">
+        <div class="search-box search-box-wide">
+          <label class="sr-only" for="reportes-search">Buscar producto</label>
+          <input id="reportes-search" type="search" placeholder="Buscar producto" />
+        </div>
+        <button id="reportes-unificar-manual-btn" class="action-btn secondary hidden" type="button">
+          Unificar productos
+        </button>
+      </div>
+    </div>
+
+    <div class="table-wrap mobile-hide-on-phone">
+      <table>
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Total pedido</th>
+            <th>Solicitudes</th>
+            <th>Promedio mensual</th>
+            <th>Stock sugerido</th>
+          </tr>
+        </thead>
+        <tbody id="reportes-table-body"></tbody>
+      </table>
+    </div>
+
+    <div id="reportes-mobile-list" class="reportes-mobile-list"></div>
+  </section>
+</div>

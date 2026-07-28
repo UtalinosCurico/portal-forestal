@@ -278,6 +278,27 @@ async function createTables() {
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // Equivalencias de producto declaradas por un ADMIN: "esto y esto otro son lo
+  // mismo". El nombre lo escribe cada persona a mano, asi que sin esto el
+  // reporte de consumo no puede saber que "papel hig." es "papel higienico".
+  // clave_variante es unica: un nombre no puede apuntar a dos productos.
+  await run(`
+    CREATE TABLE IF NOT EXISTS producto_alias (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      clave_variante TEXT NOT NULL UNIQUE,
+      clave_canonica TEXT NOT NULL,
+      nombre_canonico TEXT,
+      creado_por_id INTEGER,
+      creado_por_nombre TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await run(`
+    CREATE INDEX IF NOT EXISTS idx_producto_alias_canonica
+    ON producto_alias (clave_canonica)
+  `);
 }
 
 async function migrateUsuariosSchema() {

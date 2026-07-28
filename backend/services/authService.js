@@ -92,8 +92,24 @@ async function getProfile(userId) {
   return sanitizeUser(user);
 }
 
+// Sesion deslizante: mientras el usuario siga activo y su token siga siendo
+// valido, se emite uno nuevo para que no lo expulse a mitad de jornada.
+async function refreshSession(userId) {
+  const user = await findUserById(userId);
+
+  if (!user || !normalizeBoolean(user.activo) || normalizeBoolean(user.archivado)) {
+    throw new HttpError(401, "Usuario invalido o inactivo");
+  }
+
+  return {
+    token: createToken(user),
+    user: sanitizeUser(user),
+  };
+}
+
 module.exports = {
   login,
   getProfile,
+  refreshSession,
 };
 
