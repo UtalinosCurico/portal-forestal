@@ -92,13 +92,53 @@
         <h4>Nombres que podrian ser el mismo producto</h4>
         <p class="muted-text">
           Como cada persona escribe el nombre a mano, estos pares se parecen mucho.
-          No se sumaron juntos: revisa si son lo mismo y corrige el nombre en las
-          solicitudes para que el total quede bien.
+          No se sumaron juntos. Si son lo mismo, unificalos: queda guardado y de
+          ahi en adelante siempre se cuentan juntos.
         </p>
       </div>
     </div>
     <div id="reportes-duplicados-list" class="reportes-duplicados"></div>
   </section>
+
+  <section class="card full hidden" id="reportes-unificados-card">
+    <div class="section-head">
+      <div>
+        <h4>Productos unificados</h4>
+        <p class="muted-text">
+          Nombres que ya marcaste como el mismo producto. Se aplican a todos los
+          periodos y a lo que se escriba de aqui en adelante.
+        </p>
+      </div>
+    </div>
+    <div id="reportes-unificados-list" class="reportes-unificados"></div>
+  </section>
+
+  <div id="reportes-unificar-modal" class="modal hidden">
+    <div class="modal-backdrop" data-close="true"></div>
+    <section class="modal-content">
+      <header class="modal-header">
+        <div>
+          <h4>Unificar productos</h4>
+          <p class="muted-text">
+            Elige con que nombre queda el producto. El otro pasa a contarse
+            dentro de este y se suman sus cantidades.
+          </p>
+        </div>
+        <button id="reportes-unificar-close" class="icon-btn" type="button" aria-label="Cerrar">x</button>
+      </header>
+
+      <div id="reportes-unificar-opciones" class="reportes-unificar-opciones"></div>
+
+      <div class="actions-inline wrap-actions">
+        <button id="reportes-unificar-confirm" class="action-btn" type="button">
+          Unificar y guardar
+        </button>
+        <button id="reportes-unificar-cancel" class="action-btn secondary" type="button">
+          Cancelar
+        </button>
+      </div>
+    </section>
+  </div>
 
   <section class="card full">
     <div class="section-head">

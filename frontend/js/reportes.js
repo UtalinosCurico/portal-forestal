@@ -187,7 +187,7 @@ function renderFilas(productos, meses, tbody, filtroTexto = "") {
     .join("");
 }
 
-function renderDuplicados(sugerencias, card, lista) {
+function renderDuplicados(sugerencias, card, lista, puedeUnificar) {
   if (!sugerencias.length) {
     card.classList.add("hidden");
     lista.innerHTML = "";
@@ -197,14 +197,56 @@ function renderDuplicados(sugerencias, card, lista) {
   card.classList.remove("hidden");
   lista.innerHTML = sugerencias
     .map(
-      (s) => `
+      (s, i) => `
       <div class="reportes-duplicado">
         <span class="reportes-duplicado-par">
           <strong>${escapeHtml(s.nombres[0])}</strong>
           <span class="reportes-duplicado-vs">y</span>
           <strong>${escapeHtml(s.nombres[1])}</strong>
         </span>
-        <span class="mini-chip">${escapeHtml(s.motivo)}</span>
+        <span class="reportes-duplicado-acciones">
+          <span class="mini-chip">${escapeHtml(s.motivo)}</span>
+          ${
+            puedeUnificar
+              ? `<button class="action-btn secondary table-btn" data-unificar="${i}" type="button">Son el mismo</button>`
+              : ""
+          }
+        </span>
+      </div>
+    `
+    )
+    .join("");
+}
+
+function renderUnificados(alias, card, lista, puedeUnificar) {
+  if (!alias.length) {
+    card.classList.add("hidden");
+    lista.innerHTML = "";
+    return;
+  }
+
+  card.classList.remove("hidden");
+  lista.innerHTML = alias
+    .map(
+      (a) => `
+      <div class="reportes-unificado">
+        <span class="reportes-unificado-par">
+          <span class="reportes-unificado-variante">${escapeHtml(a.clave_variante)}</span>
+          <span class="reportes-unificado-flecha">cuenta como</span>
+          <strong>${escapeHtml(a.nombre_canonico || a.clave_canonica)}</strong>
+        </span>
+        <span class="reportes-duplicado-acciones">
+          ${
+            a.creado_por_nombre
+              ? `<span class="table-subline">${escapeHtml(a.creado_por_nombre)}</span>`
+              : ""
+          }
+          ${
+            puedeUnificar
+              ? `<button class="action-btn secondary table-btn" data-deshacer="${a.id}" type="button">Deshacer</button>`
+              : ""
+          }
+        </span>
       </div>
     `
     )
@@ -259,11 +301,19 @@ export async function initReportesView(context) {
   const quickStrip = document.getElementById("reportes-quick-periodos");
   const duplicadosCard = document.getElementById("reportes-duplicados-card");
   const duplicadosList = document.getElementById("reportes-duplicados-list");
+  const unificadosCard = document.getElementById("reportes-unificados-card");
+  const unificadosList = document.getElementById("reportes-unificados-list");
+  const unificarModal = document.getElementById("reportes-unificar-modal");
+  const unificarOpciones = document.getElementById("reportes-unificar-opciones");
 
   const role = state.user?.role || state.user?.rol || "";
   const esRolGlobal = role === "ADMIN" || role === "SUPERVISOR";
+  // Unificar cambia los totales de todos, asi que solo los roles de gestion.
+  const puedeUnificar = esRolGlobal;
 
   let datos = { productos: [], periodo: { meses: [] }, posibles_duplicados: [] };
+  let aliasGuardados = [];
+  let unificacionPendiente = null;
 
   // Un jefe de faena solo ve su equipo: el selector no le aporta nada.
   if (!esRolGlobal && equipoField) {
@@ -311,6 +361,20 @@ export async function initReportesView(context) {
       payload.periodo.meses.length;
   }
 
+  async function cargarAlias() {
+    if (!puedeUnificar) {
+      return;
+    }
+    try {
+      const respuesta = await apiRequest("/api/reportes/alias");
+      aliasGuardados = respuesta.data || [];
+      renderUnificados(aliasGuardados, unificadosCard, unificadosList, puedeUnificar);
+    } catch {
+      // Sin unificaciones la vista sigue siendo util: no es un error bloqueante.
+      aliasGuardados = [];
+    }
+  }
+
   async function cargar() {
     tbody.innerHTML = '<tr><td colspan="5">Calculando consumo...</td></tr>';
     try {
@@ -318,7 +382,12 @@ export async function initReportesView(context) {
       datos = respuesta.data;
       pintarResumen(datos);
       renderFilas(datos.productos, datos.periodo.meses, tbody, searchInput.value);
-      renderDuplicados(datos.posibles_duplicados, duplicadosCard, duplicadosList);
+      renderDuplicados(
+        datos.posibles_duplicados,
+        duplicadosCard,
+        duplicadosList,
+        puedeUnificar
+      );
       lastUpdate.textContent = `Actualizado ${new Date().toLocaleTimeString("es-CL", {
         hour: "2-digit",
         minute: "2-digit",
@@ -328,6 +397,85 @@ export async function initReportesView(context) {
       showToast(error.message, true);
     }
   }
+
+  function abrirModalUnificar(sugerencia) {
+    unificacionPendiente = { sugerencia, elegido: 0 };
+    unificarOpciones.innerHTML = sugerencia.nombres
+      .map(
+        (nombre, i) => `
+        <label class="reportes-unificar-opcion">
+          <input type="radio" name="reportes-canonico" value="${i}" ${i === 0 ? "checked" : ""} />
+          <span>
+            <strong>${escapeHtml(nombre)}</strong>
+            <span class="table-subline">El otro nombre se sumara dentro de este</span>
+          </span>
+        </label>
+      `
+      )
+      .join("");
+    unificarModal.classList.remove("hidden");
+  }
+
+  function cerrarModalUnificar() {
+    unificarModal.classList.add("hidden");
+    unificacionPendiente = null;
+  }
+
+  async function confirmarUnificacion() {
+    if (!unificacionPendiente) return;
+
+    const elegido = Number(
+      unificarOpciones.querySelector('input[name="reportes-canonico"]:checked')?.value ?? 0
+    );
+    const { sugerencia } = unificacionPendiente;
+    const claveCanonica = sugerencia.claves[elegido];
+    const claveVariante = sugerencia.claves[elegido === 0 ? 1 : 0];
+
+    try {
+      await apiRequest("/api/reportes/alias", {
+        method: "POST",
+        body: {
+          claveVariante,
+          claveCanonica,
+          nombreCanonico: sugerencia.nombres[elegido],
+        },
+      });
+      cerrarModalUnificar();
+      showToast("Productos unificados");
+      await Promise.all([cargar(), cargarAlias()]);
+    } catch (error) {
+      showToast(error.message, true);
+    }
+  }
+
+  duplicadosList.addEventListener("click", (event) => {
+    const boton = event.target.closest("[data-unificar]");
+    if (!boton) return;
+    const sugerencia = datos.posibles_duplicados[Number(boton.dataset.unificar)];
+    if (sugerencia) abrirModalUnificar(sugerencia);
+  });
+
+  unificadosList.addEventListener("click", async (event) => {
+    const boton = event.target.closest("[data-deshacer]");
+    if (!boton) return;
+    if (!window.confirm("Deshacer esta unificacion? Los productos volveran a contarse por separado.")) {
+      return;
+    }
+    try {
+      await apiRequest(`/api/reportes/alias/${boton.dataset.deshacer}`, { method: "DELETE" });
+      showToast("Unificacion deshecha");
+      await Promise.all([cargar(), cargarAlias()]);
+    } catch (error) {
+      showToast(error.message, true);
+    }
+  });
+
+  document.getElementById("reportes-unificar-close").addEventListener("click", cerrarModalUnificar);
+  document.getElementById("reportes-unificar-cancel").addEventListener("click", cerrarModalUnificar);
+  document.getElementById("reportes-unificar-confirm").addEventListener("click", confirmarUnificacion);
+  unificarModal.addEventListener("click", (event) => {
+    if (event.target.dataset.close === "true") cerrarModalUnificar();
+  });
 
   quickStrip?.addEventListener("click", (event) => {
     const boton = event.target.closest("[data-periodo]");
@@ -400,5 +548,5 @@ export async function initReportesView(context) {
   desdeInput.value = inicial.desde;
   hastaInput.value = inicial.hasta;
 
-  await cargar();
+  await Promise.all([cargar(), cargarAlias()]);
 }

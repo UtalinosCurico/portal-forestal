@@ -227,6 +227,21 @@ como sugerencia para que una persona decida. Dos nombres que solo difieren en lo
 numeros nunca se sugieren, porque el numero suele ser la medida (`cadena 18` y
 `cadena 20` son productos distintos).
 
+#### Unificar productos a mano
+
+Cuando la normalizacion automatica no alcanza (`papel hig.` y `papel higienico`,
+o un nombre propio de faena), ADMIN o SUPERVISOR pueden declarar que dos nombres
+son el mismo producto y elegir con cual queda. La equivalencia se guarda en la
+tabla `producto_alias` y **se aplica tambien a lo que se escriba despues**: si un
+trabajador vuelve a escribirlo mal, ya se cuenta en el lugar correcto sin que
+nadie intervenga. La decision se toma una vez.
+
+Se puede deshacer en cualquier momento desde el panel "Productos unificados": no
+se modifica ninguna solicitud, solo la forma de agrupar al calcular el reporte.
+
+Las cadenas se aplanan al guardar (si `A` apunta a `B` y luego se une `C` a `A`,
+`C` queda apuntando a `B`), y se rechazan las referencias circulares.
+
 El stock sugerido sale del historial: el minimo es el consumo de un mes promedio
 y el maximo es el mes de mayor consumo mas un 50% de holgura. Con un solo mes de
 datos la vista avisa que la sugerencia es referencial.
@@ -254,6 +269,9 @@ Protegidos:
 - `POST /api/usuarios`
 - `PUT /api/usuarios/:id`
 - `GET /api/reportes/consumo`
+- `GET /api/reportes/alias`
+- `POST /api/reportes/alias`
+- `DELETE /api/reportes/alias/:id`
 - `POST /api/auth/refresh`
 - `GET /api/equipos`
 - `GET /api/equipos/stock`

@@ -2437,6 +2437,80 @@ th {
   color: var(--muted);
 }
 
+.reportes-duplicado-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Productos ya unificados a mano */
+.reportes-unificados {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.reportes-unificado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--forest-500);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 0.88rem;
+}
+
+.reportes-unificado-variante {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.reportes-unificado-flecha {
+  margin: 0 0.45rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+/* Modal para elegir con que nombre queda el producto */
+.reportes-unificar-opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 1rem 0;
+}
+
+.reportes-unificar-opcion {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.reportes-unificar-opcion:hover {
+  border-color: var(--forest-500);
+  background: var(--forest-50);
+}
+
+.reportes-unificar-opcion:has(input:checked) {
+  border-color: var(--forest-600);
+  background: var(--forest-50);
+  box-shadow: 0 0 0 1px var(--forest-600) inset;
+}
+
+.reportes-unificar-opcion input {
+  width: auto;
+  margin-top: 0.2rem;
+}
+
 /* --- Bandeja de solicitudes: tabla condensada -------------------------- */
 /* La fila completa abre la solicitud y la columna de accion queda fijada a
    la derecha, para que "Ver" nunca quede fuera de pantalla. */

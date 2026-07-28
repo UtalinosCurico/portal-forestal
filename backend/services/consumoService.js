@@ -5,6 +5,7 @@
 // JEFE_FAENA solo puede agregar lo de su equipo, sin logica de permisos nueva.
 
 const solicitudesService = require("./solicitudesService");
+const productoAliasService = require("./productoAliasService");
 const {
   buildProductoKey,
   normalizeUnidad,
@@ -58,7 +59,10 @@ function sugerirStock(porMes, mesesDelPeriodo) {
 }
 
 async function getConsumo(actor, filters = {}) {
-  const solicitudes = await solicitudesService.listSolicitudesForExport(actor, filters);
+  const [solicitudes, alias] = await Promise.all([
+    solicitudesService.listSolicitudesForExport(actor, filters),
+    productoAliasService.buildResolver(),
+  ]);
 
   const productos = new Map();
   const mesesVistos = new Set();
@@ -88,10 +92,15 @@ async function getConsumo(actor, filters = {}) {
 
     for (const item of items) {
       const nombreCrudo = String(item.nombre_item || "").trim();
-      const clave = buildProductoKey(nombreCrudo);
-      if (!clave) {
+      const claveOriginal = buildProductoKey(nombreCrudo);
+      if (!claveOriginal) {
         continue;
       }
+
+      // Si un ADMIN declaro que este nombre es el mismo producto que otro, se
+      // suma alla. Es la unica forma de agrupar lo que la normalizacion
+      // automatica no puede saber por su cuenta.
+      const clave = alias.resolver(claveOriginal);
 
       const cantidad = Number(item.cantidad) || 0;
       totalUnidades += cantidad;
@@ -137,9 +146,16 @@ async function getConsumo(actor, filters = {}) {
         (a, b) => b[1] - a[1]
       )[0];
 
+      // Si el ADMIN eligio con que nombre quedaba el producto al unificarlo,
+      // ese manda por sobre el mas frecuente.
+      const nombreElegido = alias.nombreDe(registro.clave);
+      const unificadosAMano = alias.variantesDe(registro.clave);
+
       return {
         clave: registro.clave,
-        nombre: pickNombreVisible(variantes) || registro.clave,
+        nombre: nombreElegido || pickNombreVisible(variantes) || registro.clave,
+        unificado_a_mano: unificadosAMano.length > 0,
+        nombres_unificados: unificadosAMano,
         // Se exponen las variantes para que se vea que quedo agrupado bajo un
         // mismo nombre y se pueda detectar a simple vista una agrupacion mala.
         variantes,
