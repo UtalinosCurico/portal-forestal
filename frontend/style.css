@@ -2618,18 +2618,32 @@ th {
   gap: 0.55rem;
 }
 
+/* Los nombres reales son largos ("Cadena motosierra Stihl 3/8 72 eslabones").
+   Cortarlos con puntos suspensivos dejaba las siete filas indistinguibles, asi
+   que el nombre va arriba completo y la barra debajo. */
 .reportes-top-fila {
   display: grid;
-  grid-template-columns: minmax(90px, 1.1fr) 2fr auto;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "nombre valor"
+    "riel   riel";
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.15rem 0.6rem;
+  padding-bottom: 0.35rem;
   font-size: 0.86rem;
 }
 
 .reportes-top-nombre {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  grid-area: nombre;
+  line-height: 1.3;
+}
+
+.reportes-top-riel {
+  grid-area: riel;
+}
+
+.reportes-top-valor {
+  grid-area: valor;
 }
 
 .reportes-top-riel {
@@ -2796,6 +2810,100 @@ th {
   line-height: 1.45;
 }
 
+/* --- Pestana Analisis --------------------------------------------------- */
+
+.reportes-subtitulo {
+  margin: 1.4rem 0 0.8rem;
+  color: var(--forest-700);
+  font-size: 0.86rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.reportes-asociados {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.reportes-asociado {
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--forest-500);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.reportes-asociado-meta {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.reportes-equipos-resumen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.8rem;
+}
+
+.reportes-equipo-tarjeta {
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.reportes-equipo-cifra {
+  display: block;
+  margin: 0.2rem 0;
+  color: var(--forest-700);
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.reportes-equipo-cifra small {
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.reportes-concentraciones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.reportes-concentracion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--warning);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+/* Con muchos periodos el grafico se desplaza de lado en vez de apretar las
+   barras hasta volverlas ilegibles. */
+.reportes-barras-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.3rem;
+}
+
+.reportes-hint-scroll {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
 /* Linea de media movil dibujada encima de las barras */
 .reportes-barras-wrap {
   position: relative;
@@ -2890,10 +2998,14 @@ th {
   transition: height 0.35s var(--ease-smooth);
 }
 
+/* Al mostrarse solo una etiqueta cada N, las vecinas quedan vacias: la fecha
+   puede salirse de su columna sin pisar nada y asi no se parte en tres lineas. */
 .reportes-barra-mes {
   font-size: 0.74rem;
   color: var(--muted);
   text-align: center;
+  white-space: nowrap;
+  overflow: visible;
 }
 
 /* Desglose por equipo */

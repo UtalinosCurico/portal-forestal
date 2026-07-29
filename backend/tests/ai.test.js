@@ -12,8 +12,27 @@ const assert = require("node:assert/strict");
 process.env.NODE_ENV = "test";
 
 const { construirHerramientas } = require("../services/aiToolsService");
+const { __private: aiPrivate } = require("../routes/ai");
 
 const ACTOR = { id: 7, nombre: "Jefe de prueba", rol: "JEFE_FAENA", equipo_id: 2 };
+
+// Mandar `thinking: adaptive` o `effort` a un modelo que no los soporta devuelve
+// 400 y el asistente deja de responder. Paso una vez por no revisarlo.
+test("no se manda razonamiento adaptativo a modelos que no lo soportan", () => {
+  const { soportaRazonamientoAdaptativo } = aiPrivate;
+
+  for (const modelo of ["claude-haiku-4-5", "claude-sonnet-4-5", "claude-opus-4-5"]) {
+    assert.equal(
+      soportaRazonamientoAdaptativo(modelo),
+      false,
+      `${modelo} no soporta thinking adaptativo ni effort`
+    );
+  }
+
+  for (const modelo of ["claude-opus-4-8", "claude-opus-4-6", "claude-sonnet-5", "claude-fable-5"]) {
+    assert.equal(soportaRazonamientoAdaptativo(modelo), true, `${modelo} si lo soporta`);
+  }
+});
 
 test("el asistente solo expone herramientas de consulta", () => {
   const herramientas = construirHerramientas(ACTOR);

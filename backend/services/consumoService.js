@@ -19,6 +19,7 @@ const {
 } = require("../utils/productoKey");
 const estadistica = require("../utils/estadistica");
 const periodos = require("../utils/periodos");
+const analisis = require("../utils/analisis");
 
 // Una solicitud rechazada no representa consumo real, no debe inflar el stock.
 const ESTADOS_EXCLUIDOS = new Set(["RECHAZADO"]);
@@ -31,6 +32,13 @@ function recolectarPedidos(solicitudes, alias, agrupacion) {
   const productos = new Map();
   const periodosVistos = new Map();
   const equiposVistos = new Set();
+
+  // Insumos del analisis profundo: cuantas solicitudes hace cada equipo (para
+  // medir desproporcion, no volumen bruto) y que productos van juntos en una
+  // misma solicitud.
+  const solicitudesPorEquipo = {};
+  const clavesPorSolicitud = [];
+  const solicitudesConsideradasCrudas = [];
 
   let totalUnidades = 0;
   let solicitudesConsideradas = 0;
@@ -47,6 +55,10 @@ function recolectarPedidos(solicitudes, alias, agrupacion) {
     }
     equiposVistos.add(equipo);
     solicitudesConsideradas += 1;
+    solicitudesPorEquipo[equipo] = (solicitudesPorEquipo[equipo] || 0) + 1;
+    solicitudesConsideradasCrudas.push(solicitud);
+
+    const clavesDeEstaSolicitud = [];
 
     // Solicitudes antiguas guardaban un solo repuesto en la propia solicitud,
     // antes de que existiera la tabla de items. Hay que contarlas igual.
@@ -69,6 +81,7 @@ function recolectarPedidos(solicitudes, alias, agrupacion) {
       const clave = alias.resolver(claveOriginal);
       const cantidad = Number(item.cantidad) || 0;
       totalUnidades += cantidad;
+      clavesDeEstaSolicitud.push(clave);
 
       if (!productos.has(clave)) {
         productos.set(clave, {
@@ -99,9 +112,22 @@ function recolectarPedidos(solicitudes, alias, agrupacion) {
         nombre_escrito: nombreCrudo,
       });
     }
+
+    if (clavesDeEstaSolicitud.length) {
+      clavesPorSolicitud.push(clavesDeEstaSolicitud);
+    }
   }
 
-  return { productos, periodosVistos, equiposVistos, totalUnidades, solicitudesConsideradas };
+  return {
+    productos,
+    periodosVistos,
+    equiposVistos,
+    totalUnidades,
+    solicitudesConsideradas,
+    solicitudesPorEquipo,
+    clavesPorSolicitud,
+    solicitudesConsideradasCrudas,
+  };
 }
 
 function sumarPorPeriodo(pedidos, claves) {
@@ -133,8 +159,16 @@ async function getConsumo(actor, filters = {}) {
     productoAliasService.buildResolver(),
   ]);
 
-  const { productos, periodosVistos, equiposVistos, totalUnidades, solicitudesConsideradas } =
-    recolectarPedidos(solicitudes, alias, agrupacion);
+  const {
+    productos,
+    periodosVistos,
+    equiposVistos,
+    totalUnidades,
+    solicitudesConsideradas,
+    solicitudesPorEquipo,
+    clavesPorSolicitud,
+    solicitudesConsideradasCrudas,
+  } = recolectarPedidos(solicitudes, alias, agrupacion);
 
   const clavesPeriodo = [...periodosVistos.keys()].sort();
   const etiquetasPeriodo = clavesPeriodo.map((clave) => periodosVistos.get(clave).etiqueta);
@@ -301,6 +335,16 @@ async function getConsumo(actor, filters = {}) {
     ),
     equipos: [...equiposVistos].sort(),
     productos: filas,
+
+    // Analisis que no se ve mirando la tabla producto por producto.
+    analisis: {
+      equipos: analisis.compararEquipos(filas, solicitudesPorEquipo),
+      estacionalidad: analisis.calcularEstacionalidad(solicitudesConsideradasCrudas),
+      asociados: analisis.detectarProductosAsociados(
+        clavesPorSolicitud,
+        new Map(filas.map((f) => [f.clave, f.nombre]))
+      ),
+    },
     // Pedidos que se salen de lo normal. No se borran: se muestran para que
     // alguien confirme si fue un error de tipeo o un consumo real.
     atipicos: atipicosGlobales

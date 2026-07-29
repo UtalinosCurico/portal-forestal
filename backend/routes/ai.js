@@ -75,14 +75,25 @@ Responde siempre en español, de forma breve y concreta. Puedes usar emojis con 
 const MAX_HISTORY_TURNS = 10;
 const MAX_CONTENT_LENGTH = 2000;
 
-// El modelo se puede cambiar sin tocar código. Opus 4.8 es el que mejor razona
-// sobre los datos y decide qué consultar; para bajar costo se puede apuntar a
-// otro con ANTHROPIC_MODEL.
-const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || "claude-opus-4-8";
+// Haiku por defecto: el asistente se paga por consulta y este portal corre con
+// un credito acotado. Haiku responde bien apoyandose en las herramientas, que
+// es donde estan los datos de verdad, y cuesta del orden de diez veces menos
+// que Opus. Se puede subir con ANTHROPIC_MODEL cuando haga falta mas capacidad.
+const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || "claude-haiku-4-5";
+
+// `thinking: adaptive` y `effort` existen desde la generacion 4.6. Enviarlos a
+// un modelo anterior -Haiku 4.5 -- devuelve 400 y el asistente deja de
+// responder por completo, asi que solo se mandan donde estan soportados.
+function soportaRazonamientoAdaptativo(modelo) {
+  return /^claude-(fable-5|mythos-5|opus-4-(6|7|8)|sonnet-(5|4-6))/.test(modelo);
+}
 
 // Suficiente para que el modelo consulte y luego redacte, sin dejarlo dar vueltas.
-const MAX_TOKENS = 4000;
-const MAX_TOOL_ITERATIONS = 6;
+const MAX_TOKENS = 2000;
+
+// Cada vuelta del ciclo reenvia la conversacion completa y se paga de nuevo.
+// Con tres alcanza para consultar, y si hace falta, consultar una segunda cosa.
+const MAX_TOOL_ITERATIONS = 3;
 const ANTHROPIC_TIMEOUT_MS = 45000;
 
 function formatearFechaChile(fecha = new Date()) {
@@ -220,9 +231,10 @@ router.post(
         system: systemPrompt,
         tools,
         messages: history,
-        thinking: { type: "adaptive" },
-        output_config: { effort: "low" },
         max_iterations: MAX_TOOL_ITERATIONS,
+        ...(soportaRazonamientoAdaptativo(ANTHROPIC_MODEL)
+          ? { thinking: { type: "adaptive" }, output_config: { effort: "low" } }
+          : {}),
       });
 
       const herramientasUsadas = [];
@@ -272,3 +284,4 @@ router.post(
 );
 
 module.exports = router;
+module.exports.__private = { soportaRazonamientoAdaptativo };

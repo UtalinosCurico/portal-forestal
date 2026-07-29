@@ -54,6 +54,7 @@
   <nav class="reportes-tabs" id="reportes-tabs" role="tablist">
     <button class="reportes-tab active" data-tab="resumen" role="tab" type="button">Resumen</button>
     <button class="reportes-tab" data-tab="detalle" role="tab" type="button">Detalle</button>
+    <button class="reportes-tab" data-tab="analisis" role="tab" type="button">Analisis</button>
     <button class="reportes-tab" data-tab="nombres" role="tab" type="button">
       Nombres
       <span id="reportes-tab-nombres-badge" class="reportes-tab-badge hidden">0</span>
@@ -183,6 +184,49 @@
       </div>
 
       <div id="reportes-mobile-list" class="reportes-mobile-list"></div>
+    </section>
+  </div>
+
+  <!-- ── ANALISIS ────────────────────────────────────────────────────── -->
+  <div class="reportes-panel hidden" data-panel="analisis">
+    <section class="card full">
+      <div class="section-head">
+        <div>
+          <h4>Productos que se piden juntos</h4>
+          <p class="muted-text">
+            Cuando aparece uno, suele aparecer el otro en la misma solicitud.
+            Sirve para comprarlos de una vez y no tener que pedir dos veces.
+          </p>
+        </div>
+      </div>
+      <div id="reportes-asociados"></div>
+    </section>
+
+    <section class="card full">
+      <div class="section-head">
+        <div>
+          <h4>Consumo por equipo</h4>
+          <p class="muted-text">
+            Cuanto pide cada equipo, y sobre todo que productos se lleva muy por
+            encima de lo que le corresponde por su nivel de actividad.
+          </p>
+        </div>
+      </div>
+      <div id="reportes-equipos-resumen" class="reportes-equipos-resumen"></div>
+      <div id="reportes-concentraciones"></div>
+    </section>
+
+    <section class="card full">
+      <div class="section-head">
+        <div>
+          <h4>Temporadas del ano</h4>
+          <p class="muted-text">
+            En que meses se pide mas. Necesita al menos un ano de registros para
+            distinguir una temporada real de una casualidad.
+          </p>
+        </div>
+      </div>
+      <div id="reportes-estacionalidad"></div>
     </section>
   </div>
 

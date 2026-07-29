@@ -67,6 +67,23 @@ function renderLineaMediaMovil(mediaMovil, maximo) {
  *
  * @param {number[]} serie valores alineados a periodo.claves
  */
+// Ancho minimo para que una barra siga siendo legible. Con 31 semanas en el
+// ancho de la tarjeta quedaban de 17px: ilegibles y con las fechas partidas en
+// tres lineas. Por debajo de esto el grafico se desplaza de lado en vez de
+// seguir apretando.
+const ANCHO_MINIMO_BARRA = 46;
+
+/**
+ * Con muchos periodos las fechas se pisan unas con otras. Se muestra una de
+ * cada N -siempre la primera y la ultima- para que se lean, sin perder barras.
+ */
+function pasoEtiquetas(cantidad) {
+  if (cantidad <= 8) return 1;
+  if (cantidad <= 16) return 2;
+  if (cantidad <= 28) return 3;
+  return Math.ceil(cantidad / 10);
+}
+
 function renderBarras(serie, periodo, mediaMovil = null) {
   const { claves, etiquetas, incompleto } = periodo;
 
@@ -76,30 +93,44 @@ function renderBarras(serie, periodo, mediaMovil = null) {
 
   const valores = serie.map((v) => Number(v) || 0);
   const maximo = Math.max(...valores, ...(mediaMovil || []), 1);
+  const paso = pasoEtiquetas(claves.length);
+  const anchoInterior = claves.length * ANCHO_MINIMO_BARRA;
 
   return `
-    <div class="reportes-barras-wrap">
-      ${mediaMovil ? renderLineaMediaMovil(mediaMovil, maximo) : ""}
-      <div class="reportes-barras">
-        ${claves
-          .map((clave, i) => {
-            const valor = valores[i];
-            const alto = Math.round((valor / maximo) * 100);
-            const esIncompleto = clave === incompleto;
-            return `
-              <div class="reportes-barra ${esIncompleto ? "incompleta" : ""}"
-                   title="${escapeHtml(etiquetas[i])}: ${valor}${esIncompleto ? " (aun no termina)" : ""}">
-                <div class="reportes-barra-valor">${valor}</div>
-                <div class="reportes-barra-riel">
-                  <div class="reportes-barra-relleno" style="height:${alto}%"></div>
+    <div class="reportes-barras-scroll">
+      <div class="reportes-barras-wrap" style="min-width:${anchoInterior}px">
+        ${mediaMovil ? renderLineaMediaMovil(mediaMovil, maximo) : ""}
+        <div class="reportes-barras">
+          ${claves
+            .map((clave, i) => {
+              const valor = valores[i];
+              const alto = Math.round((valor / maximo) * 100);
+              const esIncompleto = clave === incompleto;
+              // La primera y la ultima siempre se rotulan: dan el rango de un vistazo.
+              const mostrarEtiqueta =
+                i % paso === 0 || i === claves.length - 1 || claves.length <= 8;
+              return `
+                <div class="reportes-barra ${esIncompleto ? "incompleta" : ""}"
+                     title="${escapeHtml(etiquetas[i])}: ${valor}${esIncompleto ? " (aun no termina)" : ""}">
+                  <div class="reportes-barra-valor">${paso > 2 && !mostrarEtiqueta ? "" : valor}</div>
+                  <div class="reportes-barra-riel">
+                    <div class="reportes-barra-relleno" style="height:${alto}%"></div>
+                  </div>
+                  <div class="reportes-barra-mes">${
+                    mostrarEtiqueta ? escapeHtml(etiquetas[i]) : ""
+                  }</div>
                 </div>
-                <div class="reportes-barra-mes">${escapeHtml(etiquetas[i])}</div>
-              </div>
-            `;
-          })
-          .join("")}
+              `;
+            })
+            .join("")}
+        </div>
       </div>
     </div>
+    ${
+      claves.length > 10
+        ? `<p class="reportes-hint-scroll">${claves.length} periodos — arrastra de lado para ver todos.</p>`
+        : ""
+    }
   `;
 }
 
@@ -222,6 +253,128 @@ function renderAtipicos(atipicos, card, lista) {
     `
     )
     .join("");
+}
+
+/** Aviso honesto cuando un analisis no tiene datos suficientes. */
+function renderSinDatos(mensaje) {
+  return `
+    <div class="reportes-vacio">
+      <strong>Todavia no hay datos suficientes</strong>
+      <p class="muted-text">${escapeHtml(mensaje)}</p>
+    </div>`;
+}
+
+function renderAsociados(asociados, contenedor) {
+  if (!asociados?.disponible) {
+    contenedor.innerHTML = renderSinDatos(asociados?.mensaje || "Sin informacion.");
+    return;
+  }
+
+  if (!asociados.pares.length) {
+    contenedor.innerHTML = `
+      <div class="reportes-vacio ok">
+        <strong>No se detectaron productos que se pidan juntos</strong>
+        <p class="muted-text">
+          Se revisaron ${asociados.solicitudes_analizadas} solicitudes con mas de un
+          producto y no aparecio ninguna combinacion que se repita mas de lo que
+          cabria esperar por azar.
+        </p>
+      </div>`;
+    return;
+  }
+
+  contenedor.innerHTML = `
+    <div class="reportes-asociados">
+      ${asociados.pares
+        .map(
+          (p) => `
+        <div class="reportes-asociado">
+          <div class="reportes-asociado-texto">
+            Cuando se pide <strong>${escapeHtml(p.producto)}</strong>,
+            el <strong>${p.confianza}%</strong> de las veces tambien se pide
+            <strong>${escapeHtml(p.se_pide_con)}</strong>
+            <span class="reportes-asociado-meta">
+              ${p.veces_juntos} veces juntos · ${p.veces_mas_que_el_azar}x mas que por azar
+            </span>
+          </div>
+        </div>
+      `
+        )
+        .join("")}
+    </div>`;
+}
+
+function renderEquipos(datosEquipos, resumenEl, concentracionesEl) {
+  const { equipos = [], concentraciones = [] } = datosEquipos || {};
+
+  resumenEl.innerHTML = equipos.length
+    ? equipos
+        .map(
+          (e) => `
+      <div class="reportes-equipo-tarjeta">
+        <strong>${escapeHtml(e.equipo)}</strong>
+        <span class="reportes-equipo-cifra">${e.unidades}<small> uds</small></span>
+        <span class="table-subline">
+          ${e.solicitudes} solicitudes · ${e.participacion_unidades}% del total
+        </span>
+      </div>`
+        )
+        .join("")
+    : "<p class='muted-text'>Sin equipos con movimiento en el periodo.</p>";
+
+  concentracionesEl.innerHTML = concentraciones.length
+    ? `
+      <h5 class="reportes-subtitulo">Consumos desproporcionados</h5>
+      <div class="reportes-concentraciones">
+        ${concentraciones
+          .map(
+            (c) => `
+          <div class="reportes-concentracion">
+            <span>
+              <strong>${escapeHtml(c.equipo)}</strong> se lleva el
+              <strong>${c.participacion_del_producto}%</strong> de
+              <strong>${escapeHtml(c.producto)}</strong>
+              <span class="reportes-asociado-meta">
+                por su actividad le corresponderia ${c.participacion_esperada}%
+              </span>
+            </span>
+            <span class="reportes-chip alerta">${c.veces_lo_esperado}x</span>
+          </div>`
+          )
+          .join("")}
+      </div>`
+    : `<p class="muted-text reportes-nota">
+         Ningun equipo consume un producto muy por encima de lo que le corresponde.
+       </p>`;
+}
+
+function renderEstacionalidad(estacionalidad, contenedor) {
+  if (!estacionalidad?.disponible) {
+    contenedor.innerHTML = renderSinDatos(estacionalidad?.mensaje || "Sin informacion.");
+    return;
+  }
+
+  const maximo = Math.max(...estacionalidad.meses.map((m) => m.unidades), 1);
+
+  contenedor.innerHTML = `
+    <p class="muted-text reportes-nota">
+      Mes de mayor consumo: <strong>${escapeHtml(estacionalidad.mes_peak.mes)}</strong> ·
+      el mas bajo: <strong>${escapeHtml(estacionalidad.mes_mas_bajo.mes)}</strong>
+    </p>
+    <div class="reportes-top">
+      ${estacionalidad.meses
+        .map(
+          (m) => `
+        <div class="reportes-top-fila">
+          <span class="reportes-top-nombre">${escapeHtml(m.mes)}</span>
+          <span class="reportes-top-valor">${m.unidades}</span>
+          <span class="reportes-top-riel">
+            <span class="reportes-top-relleno" style="width:${Math.max(2, Math.round((m.unidades / maximo) * 100))}%"></span>
+          </span>
+        </div>`
+        )
+        .join("")}
+    </div>`;
 }
 
 function renderTarjetasMovil(visibles, periodo, lista) {
@@ -593,6 +746,14 @@ export async function initReportesView(context) {
       renderAtipicos(datos.atipicos, atipicosCard, atipicosList);
       renderFilas(datos.productos, datos.periodo, tbody, searchInput.value, mobileList);
       renderDuplicados(datos.posibles_duplicados, duplicadosList, puedeUnificar);
+
+      renderAsociados(datos.analisis?.asociados, el("reportes-asociados"));
+      renderEquipos(
+        datos.analisis?.equipos,
+        el("reportes-equipos-resumen"),
+        el("reportes-concentraciones")
+      );
+      renderEstacionalidad(datos.analisis?.estacionalidad, el("reportes-estacionalidad"));
     } catch (error) {
       tbody.innerHTML = `<tr><td colspan="6">${escapeHtml(error.message)}</td></tr>`;
       showToast(error.message, true);
