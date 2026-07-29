@@ -350,6 +350,49 @@ async function createSolicitudNotification({ solicitudId, equipoId, equipoNombre
   return notifications.at(-1) || null;
 }
 
+async function createPedidoInusualNotification({
+  solicitudId,
+  equipoId,
+  equipoNombre,
+  nombreItem,
+  cantidad,
+  valorTipico,
+  vecesLoTipico,
+}) {
+  if (isOperationalPgEnabled()) {
+    const notifications = await pgService.createPedidoInusualNotification({
+      solicitudId,
+      equipoId,
+      equipoNombre,
+      nombreItem,
+      cantidad,
+      valorTipico,
+      vecesLoTipico,
+    });
+    const latest = emitNotifications(notifications);
+    dispatchPushNotifications(notifications);
+    return latest;
+  }
+
+  const notifications = await insertNotificationsForRoles(
+    {
+      tipo: "SOLICITUD_PEDIDO_INUSUAL",
+      titulo: "Pedido fuera de lo normal",
+      mensaje:
+        `${equipoNombre || "Un equipo"} pidio ${cantidad} de "${nombreItem}"` +
+        (vecesLoTipico
+          ? ` (${vecesLoTipico}x lo habitual, que es ${valorTipico})`
+          : ""),
+      equipoId: equipoId || null,
+      referenciaId: solicitudId || null,
+    },
+    MANAGEMENT_NOTIFICATION_ROLES
+  );
+
+  dispatchPushNotifications(notifications);
+  return notifications.at(-1) || null;
+}
+
 async function createSolicitudStatusNotification({
   solicitudId,
   equipoId,
@@ -535,4 +578,5 @@ module.exports = {
   createEnvioNotification,
   createSolicitudMessageNotification,
   createSolicitudItemNotification,
+  createPedidoInusualNotification,
 };

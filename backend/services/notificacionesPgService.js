@@ -304,6 +304,33 @@ async function createSolicitudNotification({ solicitudId, equipoId, equipoNombre
   return notifications.filter(Boolean);
 }
 
+async function createPedidoInusualNotification({
+  solicitudId,
+  equipoId,
+  equipoNombre,
+  nombreItem,
+  cantidad,
+  valorTipico,
+  vecesLoTipico,
+}) {
+  const notifications = await insertNotificationsForRoles(
+    {
+      tipo: "SOLICITUD_PEDIDO_INUSUAL",
+      titulo: "Pedido fuera de lo normal",
+      mensaje:
+        `${equipoNombre || "Un equipo"} pidio ${cantidad} de "${nombreItem}"` +
+        (vecesLoTipico
+          ? ` (${vecesLoTipico}x lo habitual, que es ${valorTipico})`
+          : ""),
+      equipoId: equipoId || null,
+      referenciaId: solicitudId || null,
+    },
+    MANAGEMENT_NOTIFICATION_ROLES
+  );
+
+  return notifications.filter(Boolean);
+}
+
 async function createSolicitudStatusNotification({
   solicitudId,
   equipoId,
@@ -439,4 +466,5 @@ module.exports = {
   createEnvioNotification,
   createSolicitudMessageNotification,
   createSolicitudItemNotification,
+  createPedidoInusualNotification,
 };

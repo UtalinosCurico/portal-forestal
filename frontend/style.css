@@ -2750,6 +2750,79 @@ th {
   display: none;
 }
 
+/* Renombrar producto: boton discreto junto al nombre, aparece al pasar el
+   mouse para no ensuciar la fila con algo que no se usa a diario. */
+.reportes-nombre-fila {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.reportes-renombrar-btn {
+  width: auto;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.3;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.reportes-row:hover .reportes-renombrar-btn,
+.reportes-renombrar-btn:focus-visible {
+  opacity: 1;
+}
+
+#reportes-renombrar-input {
+  width: 100%;
+  margin: 0.4rem 0 1rem;
+}
+
+/* Pedido por pedido */
+.reportes-pedidos {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line);
+}
+
+.reportes-pedidos-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.7rem;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.reportes-pedido-fila {
+  display: grid;
+  grid-template-columns: 70px 50px 1fr 1fr 55px auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 0.82rem;
+}
+
+.reportes-pedido-fila.atipico {
+  border-left: 3px solid var(--warning);
+}
+
+.reportes-pedido-cantidad {
+  font-weight: 700;
+  color: var(--forest-700);
+}
+
+.reportes-pedido-solicitud {
+  color: var(--muted);
+}
+
 /* Estados vacios: decir que pasa y que hacer, no solo "sin datos" */
 .reportes-vacio {
   padding: 1.6rem 1rem;

@@ -299,6 +299,21 @@ async function createTables() {
     CREATE INDEX IF NOT EXISTS idx_producto_alias_canonica
     ON producto_alias (clave_canonica)
   `);
+
+  // Nombre elegido a mano para un producto del reporte. El automatico toma la
+  // escritura mas repetida, pero "PAPEL CONF. D/H 30MTS" repetido veinte veces
+  // sigue siendo ilegible: aca la encargada le pone "Papel confort" y ese
+  // nombre manda en el reporte, el Excel y el asistente.
+  await run(`
+    CREATE TABLE IF NOT EXISTS producto_nombre (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      clave TEXT NOT NULL UNIQUE,
+      nombre TEXT NOT NULL,
+      creado_por_id INTEGER,
+      creado_por_nombre TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 }
 
 async function migrateUsuariosSchema() {

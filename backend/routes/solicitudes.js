@@ -4,6 +4,7 @@ const { authenticate } = require("../middleware/auth");
 const { authorize } = require("../middleware/authorize");
 const { ROLES } = require("../config/appRoles");
 const solicitudesService = require("../services/solicitudesService");
+const alertasService = require("../services/alertasService");
 
 const router = express.Router();
 
@@ -85,6 +86,19 @@ router.post(
       data,
       ...(meta ? { meta } : {}),
     });
+
+    // Se revisa despues de responder: la secretaria no debe esperar a que se
+    // recorra un ano de historial para que la solicitud quede creada.
+    if (Array.isArray(data?.items) && data.items.length) {
+      alertasService
+        .revisarPedidosNuevos({
+          solicitudId: data.id,
+          equipoId: data.equipo_id,
+          equipoNombre: data.nombre_equipo,
+          items: data.items,
+        })
+        .catch(() => {});
+    }
   })
 );
 
@@ -171,6 +185,18 @@ router.post(
       data,
       ...(meta ? { meta } : {}),
     });
+
+    // Reusar un item existente no es un pedido nuevo: no hay nada que revisar.
+    if (!reusedExistingItem && data?.item) {
+      alertasService
+        .revisarPedidosNuevos({
+          solicitudId,
+          equipoId: data.solicitud?.equipo_id,
+          equipoNombre: data.solicitud?.nombre_equipo,
+          items: [data.item],
+        })
+        .catch(() => {});
+    }
   })
 );
 

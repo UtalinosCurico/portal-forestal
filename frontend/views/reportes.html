@@ -265,6 +265,34 @@
     </section>
   </div>
 
+  <div id="reportes-renombrar-modal" class="modal hidden">
+    <div class="modal-backdrop" data-close="true"></div>
+    <section class="modal-content">
+      <header class="modal-header">
+        <div>
+          <h4>Renombrar producto</h4>
+          <p class="muted-text">
+            Este nombre reemplaza al automatico en el reporte, el Excel y el
+            asistente. No cambia nada en las solicitudes.
+          </p>
+        </div>
+        <button id="reportes-renombrar-close" class="icon-btn" type="button" aria-label="Cerrar">x</button>
+      </header>
+
+      <p class="table-subline">Nombre actual: <strong id="reportes-renombrar-actual"></strong></p>
+      <label for="reportes-renombrar-input">Nuevo nombre</label>
+      <input id="reportes-renombrar-input" type="text" maxlength="80" placeholder="Ej: Flexible" />
+
+      <div class="actions-inline wrap-actions">
+        <button id="reportes-renombrar-confirm" class="action-btn" type="button">Guardar</button>
+        <button id="reportes-renombrar-cancel" class="action-btn secondary" type="button">Cancelar</button>
+        <button id="reportes-renombrar-quitar" class="action-btn secondary hidden" type="button">
+          Volver al automatico
+        </button>
+      </div>
+    </section>
+  </div>
+
   <div id="reportes-unificar-modal" class="modal hidden">
     <div class="modal-backdrop" data-close="true"></div>
     <section class="modal-content">

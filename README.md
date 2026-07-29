@@ -281,6 +281,33 @@ El stock sugerido sale del historial: el minimo es el consumo de un mes promedio
 y el maximo es el mes de mayor consumo mas un 50% de holgura. Con un solo mes de
 datos la vista avisa que la sugerencia es referencial.
 
+#### Renombrar productos
+
+El nombre automatico (la escritura mas repetida) no siempre alcanza — "PAPEL
+CONF. D/H 30MTS" repetido veinte veces sigue siendo ilegible. Desde el reporte
+se puede renombrar un producto a mano (boton junto al nombre en la pestaña
+Detalle); ese nombre pasa a usarse en el reporte, el Excel y el asistente. Se
+puede volver al automatico en cualquier momento. Requiere ADMIN o SUPERVISOR.
+
+#### Pedido por pedido
+
+Al abrir un producto en Detalle, "Ver cada pedido" trae el detalle de cada
+pedido individual: fecha, cantidad, equipo, quien lo pidio, y el numero de
+solicitud. Se carga aparte (no viaja dentro del reporte general) para no
+engordar la respuesta con algo que solo hace falta al mirar un producto puntual.
+
+#### Avisos automaticos de pedidos inusuales
+
+Cuando se crea una solicitud (o se agrega un producto a una existente) con una
+cantidad muy por encima de lo tipico para ese producto, ADMIN y SUPERVISOR
+reciben una notificacion automatica sin tener que entrar a Reportes a buscarla.
+Usa el mismo criterio del reporte (backend/utils/estadistica.js), asi que "esto
+es raro" significa lo mismo en todas partes. Con menos de 5 pedidos previos de
+ese producto no hay base para decidir, y no avisa.
+
+Ver tambien la pestaña Analisis del reporte de consumo: co-ocurrencia de
+productos, comparacion entre equipos y estacionalidad (backend/utils/analisis.js).
+
 ## Endpoints principales
 
 Publicos:
@@ -304,9 +331,13 @@ Protegidos:
 - `POST /api/usuarios`
 - `PUT /api/usuarios/:id`
 - `GET /api/reportes/consumo`
+- `GET /api/reportes/consumo/detalle`
 - `GET /api/reportes/alias`
 - `POST /api/reportes/alias`
 - `DELETE /api/reportes/alias/:id`
+- `GET /api/reportes/nombres`
+- `POST /api/reportes/nombres`
+- `DELETE /api/reportes/nombres/:id`
 - `POST /api/auth/refresh`
 - `GET /api/equipos`
 - `GET /api/equipos/stock`

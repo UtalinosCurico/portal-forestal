@@ -419,7 +419,7 @@ function renderTarjetasMovil(visibles, periodo, lista) {
     .join("");
 }
 
-function renderFilas(productos, periodo, tbody, filtroTexto, mobileList) {
+function renderFilas(productos, periodo, tbody, filtroTexto, mobileList, puedeRenombrar) {
   const filtro = filtroTexto.trim().toLowerCase();
   const visibles = filtro
     ? productos.filter((p) => p.nombre.toLowerCase().includes(filtro))
@@ -455,7 +455,19 @@ function renderFilas(productos, periodo, tbody, filtroTexto, mobileList) {
       return `
         <tr class="reportes-row" data-clave="${escapeHtml(p.clave)}" tabindex="0" role="button">
           <td>
-            <strong>${escapeHtml(p.nombre)}</strong>
+            <span class="reportes-nombre-fila">
+              <strong>${escapeHtml(p.nombre)}</strong>
+              ${
+                puedeRenombrar
+                  ? `<button class="reportes-renombrar-btn" data-renombrar="${escapeHtml(p.clave)}"
+                       data-nombre-actual="${escapeHtml(p.nombre)}"
+                       data-personalizado="${p.nombre_personalizado ? "1" : ""}"
+                       type="button" title="${p.nombre_personalizado ? "Quitar renombre" : "Renombrar"}">
+                       ${p.nombre_personalizado ? "↺" : "✎"}
+                     </button>`
+                  : ""
+              }
+            </span>
             ${
               p.escrito_de_formas > 1
                 ? `<div class="table-subline reportes-aviso">agrupa ${p.escrito_de_formas} escrituras</div>`
@@ -488,11 +500,44 @@ function renderFilas(productos, periodo, tbody, filtroTexto, mobileList) {
               </div>
             </div>
             ${renderVariantes(p.variantes)}
+            <div class="reportes-pedidos" data-pedidos-de="${escapeHtml(p.clave)}">
+              <button class="action-btn secondary table-btn" data-cargar-pedidos="${escapeHtml(p.clave)}" type="button">
+                Ver cada pedido
+              </button>
+            </div>
           </td>
         </tr>
       `;
     })
     .join("");
+}
+
+/** Tabla de pedidos individuales: cuando, cuanto, para quien. */
+function renderPedidosIndividuales(datos, contenedor) {
+  if (!datos.pedidos.length) {
+    contenedor.innerHTML = "<p class='muted-text'>Sin pedidos registrados.</p>";
+    return;
+  }
+
+  contenedor.innerHTML = `
+    <h5>Pedido por pedido (${datos.total_pedidos})</h5>
+    <div class="reportes-pedidos-lista">
+      ${datos.pedidos
+        .map(
+          (p) => `
+        <div class="reportes-pedido-fila ${p.atipico ? "atipico" : ""}">
+          <span class="reportes-pedido-fecha">${escapeHtml(p.fecha_corta)}</span>
+          <span class="reportes-pedido-cantidad">${p.cantidad}</span>
+          <span class="reportes-pedido-equipo">${escapeHtml(p.equipo)}</span>
+          <span class="reportes-pedido-solicitante">${escapeHtml(p.solicitante)}</span>
+          <span class="reportes-pedido-solicitud">#${p.solicitud_id}</span>
+          ${p.atipico ? `<span class="reportes-chip alerta">atipico</span>` : ""}
+        </div>
+      `
+        )
+        .join("")}
+    </div>
+  `;
 }
 
 function renderDuplicados(sugerencias, lista, puedeUnificar) {
@@ -744,7 +789,7 @@ export async function initReportesView(context) {
       renderTopProductos(datos.productos, topProductos);
       tendenciaBox.innerHTML = renderBarras(datos.serie_general, datos.periodo, datos.media_movil);
       renderAtipicos(datos.atipicos, atipicosCard, atipicosList);
-      renderFilas(datos.productos, datos.periodo, tbody, searchInput.value, mobileList);
+      renderFilas(datos.productos, datos.periodo, tbody, searchInput.value, mobileList, puedeUnificar);
       renderDuplicados(datos.posibles_duplicados, duplicadosList, puedeUnificar);
 
       renderAsociados(datos.analisis?.asociados, el("reportes-asociados"));
@@ -806,14 +851,107 @@ export async function initReportesView(context) {
 
   // ── Detalle ───────────────────────────────────────────────────────────
   searchInput.addEventListener("input", () => {
-    renderFilas(datos.productos, datos.periodo, tbody, searchInput.value, mobileList);
+    renderFilas(datos.productos, datos.periodo, tbody, searchInput.value, mobileList, puedeUnificar);
   });
 
   tbody.addEventListener("click", (event) => {
+    // El boton de renombrar vive dentro de la fila: no debe abrir/cerrar el
+    // detalle al usarlo.
+    const botonRenombrar = event.target.closest("[data-renombrar]");
+    if (botonRenombrar) {
+      abrirModalRenombrar(
+        botonRenombrar.dataset.renombrar,
+        botonRenombrar.dataset.nombreActual,
+        botonRenombrar.dataset.personalizado === "1"
+      );
+      return;
+    }
+
+    const botonPedidos = event.target.closest("[data-cargar-pedidos]");
+    if (botonPedidos) {
+      cargarPedidosIndividuales(botonPedidos.dataset.cargarPedidos, botonPedidos.parentElement);
+      return;
+    }
+
     const fila = event.target.closest(".reportes-row");
     if (!fila) return;
     tbody.querySelector(`[data-detalle="${CSS.escape(fila.dataset.clave)}"]`)?.classList.toggle("hidden");
     fila.classList.toggle("abierta");
+  });
+
+  async function cargarPedidosIndividuales(clave, contenedor) {
+    contenedor.innerHTML = "<p class='muted-text'>Cargando pedidos...</p>";
+    try {
+      const params = new URLSearchParams({ clave });
+      if (desdeInput.value) params.set("fechaDesde", desdeInput.value);
+      if (hastaInput.value) params.set("fechaHasta", hastaInput.value);
+      const respuesta = await apiRequest(`/api/reportes/consumo/detalle?${params.toString()}`);
+      renderPedidosIndividuales(respuesta.data, contenedor);
+    } catch (error) {
+      contenedor.innerHTML = `<p class="muted-text">${escapeHtml(error.message)}</p>`;
+    }
+  }
+
+  // ── Renombrar producto ────────────────────────────────────────────────
+  let renombrarPendiente = null;
+
+  function abrirModalRenombrar(clave, nombreActual, esPersonalizado) {
+    renombrarPendiente = { clave, esPersonalizado };
+    el("reportes-renombrar-actual").textContent = nombreActual;
+    const input = el("reportes-renombrar-input");
+    input.value = esPersonalizado ? nombreActual : "";
+    el("reportes-renombrar-quitar").classList.toggle("hidden", !esPersonalizado);
+    el("reportes-renombrar-modal").classList.remove("hidden");
+    input.focus();
+  }
+
+  function cerrarModalRenombrar() {
+    el("reportes-renombrar-modal").classList.add("hidden");
+    renombrarPendiente = null;
+  }
+
+  async function confirmarRenombrar() {
+    if (!renombrarPendiente) return;
+    const nombre = el("reportes-renombrar-input").value.trim();
+    if (!nombre) {
+      showToast("Escribe un nombre", true);
+      return;
+    }
+    try {
+      await apiRequest("/api/reportes/nombres", {
+        method: "POST",
+        body: { clave: renombrarPendiente.clave, nombre },
+      });
+      cerrarModalRenombrar();
+      showToast("Nombre guardado");
+      await cargar();
+    } catch (error) {
+      showToast(error.message, true);
+    }
+  }
+
+  async function quitarRenombre() {
+    if (!renombrarPendiente) return;
+    try {
+      const nombres = await apiRequest("/api/reportes/nombres");
+      const fila = (nombres.data || []).find((n) => n.clave === renombrarPendiente.clave);
+      if (fila) {
+        await apiRequest(`/api/reportes/nombres/${fila.id}`, { method: "DELETE" });
+      }
+      cerrarModalRenombrar();
+      showToast("Se volvio al nombre automatico");
+      await cargar();
+    } catch (error) {
+      showToast(error.message, true);
+    }
+  }
+
+  el("reportes-renombrar-close")?.addEventListener("click", cerrarModalRenombrar);
+  el("reportes-renombrar-cancel")?.addEventListener("click", cerrarModalRenombrar);
+  el("reportes-renombrar-confirm")?.addEventListener("click", confirmarRenombrar);
+  el("reportes-renombrar-quitar")?.addEventListener("click", quitarRenombre);
+  el("reportes-renombrar-modal")?.addEventListener("click", (event) => {
+    if (event.target.dataset.close === "true") cerrarModalRenombrar();
   });
 
   tbody.addEventListener("keydown", (event) => {

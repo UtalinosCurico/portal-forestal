@@ -33,16 +33,111 @@ async function listAliases() {
   );
 }
 
+// ── Nombres personalizados ──────────────────────────────────────────────────
+// Distintos de los alias: un alias une dos productos; un nombre personalizado
+// solo cambia como se muestra uno. Se pueden combinar (unificar y ademas
+// renombrar el resultado).
+
+async function listNombresPersonalizados() {
+  if (isOperationalPgEnabled()) {
+    const pg = getOperationalPool();
+    const { rows } = await pg.query(
+      `SELECT id, clave, nombre, creado_por_nombre, created_at
+         FROM producto_nombre
+        ORDER BY nombre ASC`
+    );
+    return rows;
+  }
+
+  return sqliteAll(
+    `SELECT id, clave, nombre, creado_por_nombre, created_at
+       FROM producto_nombre
+      ORDER BY nombre ASC`
+  );
+}
+
+/** Pone o reemplaza el nombre visible de un producto. */
+async function setNombrePersonalizado(actor, payload = {}) {
+  const clave = buildProductoKey(payload.clave);
+  const nombre = String(payload.nombre || "").trim().slice(0, 80);
+
+  if (!clave) {
+    throw new HttpError(400, "Falta el producto a renombrar");
+  }
+  if (!nombre) {
+    throw new HttpError(400, "El nombre no puede quedar vacio");
+  }
+
+  const actorId = Number(actor?.id) || null;
+  const actorNombre = actor?.nombre || actor?.name || "Admin";
+
+  if (isOperationalPgEnabled()) {
+    const pg = getOperationalPool();
+    const { rows } = await pg.query(
+      `INSERT INTO producto_nombre (clave, nombre, creado_por_id, creado_por_nombre)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (clave) DO UPDATE
+         SET nombre = EXCLUDED.nombre,
+             creado_por_id = EXCLUDED.creado_por_id,
+             creado_por_nombre = EXCLUDED.creado_por_nombre
+       RETURNING *`,
+      [clave, nombre, actorId, actorNombre]
+    );
+    return rows[0];
+  }
+
+  await sqliteRun(
+    `INSERT INTO producto_nombre (clave, nombre, creado_por_id, creado_por_nombre)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT (clave) DO UPDATE
+       SET nombre = excluded.nombre,
+           creado_por_id = excluded.creado_por_id,
+           creado_por_nombre = excluded.creado_por_nombre`,
+    [clave, nombre, actorId, actorNombre]
+  );
+
+  return sqliteGet("SELECT * FROM producto_nombre WHERE clave = ?", [clave]);
+}
+
+/** Quita el nombre personalizado: el producto vuelve al automatico. */
+async function deleteNombrePersonalizado(nombreId) {
+  const id = Number(nombreId);
+  if (!id) {
+    throw new HttpError(400, "Identificador invalido");
+  }
+
+  if (isOperationalPgEnabled()) {
+    const pg = getOperationalPool();
+    const { rowCount } = await pg.query("DELETE FROM producto_nombre WHERE id = $1", [id]);
+    if (!rowCount) {
+      throw new HttpError(404, "Ese nombre personalizado no existe");
+    }
+    return { id };
+  }
+
+  const resultado = await sqliteRun("DELETE FROM producto_nombre WHERE id = ?", [id]);
+  if (!resultado.changes) {
+    throw new HttpError(404, "Ese nombre personalizado no existe");
+  }
+  return { id };
+}
+
 /**
  * Devuelve una funcion que lleva cualquier clave a su clave canonica, siguiendo
  * la cadena si A apunta a B y B apunta a C. Se construye una sola vez por
  * reporte para no consultar la base por cada item.
  */
 async function buildResolver() {
-  const aliases = await listAliases();
+  const [aliases, personalizados] = await Promise.all([
+    listAliases(),
+    listNombresPersonalizados(),
+  ]);
 
   const directo = new Map();
   const nombres = new Map();
+  const nombresPersonalizados = new Map(
+    personalizados.map((fila) => [fila.clave, fila.nombre])
+  );
 
   for (const fila of aliases) {
     directo.set(fila.clave_variante, fila.clave_canonica);
@@ -66,6 +161,8 @@ async function buildResolver() {
   return {
     resolver,
     nombreDe: (clave) => nombres.get(clave) || "",
+    // El renombre manual manda sobre cualquier otro nombre.
+    nombrePersonalizadoDe: (clave) => nombresPersonalizados.get(clave) || "",
     total: aliases.length,
     // Para mostrar en la vista que un producto agrupa nombres unificados a mano.
     variantesDe: (claveCanonica) =>
@@ -183,4 +280,7 @@ module.exports = {
   buildResolver,
   createAlias,
   deleteAlias,
+  listNombresPersonalizados,
+  setNombrePersonalizado,
+  deleteNombrePersonalizado,
 };

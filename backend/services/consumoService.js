@@ -106,6 +106,8 @@ function recolectarPedidos(solicitudes, alias, agrupacion) {
         solicitud_id: solicitud.id,
         cantidad,
         equipo,
+        solicitante:
+          solicitud.solicitante_name || solicitud.solicitante_nombre || solicitud.solicitante || "-",
         fecha: solicitud.created_at,
         fecha_corta: periodos.fechaCorta(solicitud.created_at),
         periodo: periodo?.clave || "",
@@ -239,9 +241,13 @@ async function getConsumo(actor, filters = {}) {
       // Cuanto se va a pedir el proximo periodo, con su nivel de confianza.
       const proyeccion = estadistica.proyectarProximo(serieConfiable);
 
+      // Precedencia del nombre visible: el renombre manual manda, despues el
+      // elegido al unificar, y al final el automatico (la escritura mas comun).
+      const nombrePersonalizado = alias.nombrePersonalizadoDe(registro.clave);
       const nombreElegido = alias.nombreDe(registro.clave);
       const unificadosAMano = alias.variantesDe(registro.clave);
-      const nombre = nombreElegido || pickNombreVisible(variantes) || registro.clave;
+      const nombre =
+        nombrePersonalizado || nombreElegido || pickNombreVisible(variantes) || registro.clave;
 
       for (const atipico of atipicos) {
         atipicosGlobales.push({ ...atipico, producto: nombre, clave: registro.clave });
@@ -250,6 +256,9 @@ async function getConsumo(actor, filters = {}) {
       return {
         clave: registro.clave,
         nombre,
+        // Distingue el nombre automatico de uno puesto a mano: la vista usa
+        // esto para ofrecer "Quitar renombre" en vez de "Renombrar".
+        nombre_personalizado: Boolean(nombrePersonalizado),
         variantes,
         escrito_de_formas: variantes.length,
         unidad: unidadMasUsada ? unidadMasUsada[0] : "",
@@ -362,6 +371,69 @@ async function getConsumo(actor, filters = {}) {
   };
 }
 
+/**
+ * Cada pedido individual de un producto: fecha, cantidad, equipo, quien lo
+ * pidio y el numero de la solicitud para ir a verla. Es el detalle que pide
+ * la secretaria al abrir un producto puntual -"cuando se pidio, para quien"-
+ * y por eso queda en un endpoint aparte: cargarlo siempre en getConsumo
+ * repetiria esta lista dentro de cada uno de los productos del periodo.
+ */
+async function getPedidosDeProducto(actor, filters = {}) {
+  const claveBuscada = buildProductoKey(filters.clave);
+  if (!claveBuscada) {
+    throw new Error("Falta indicar el producto");
+  }
+
+  const [solicitudes, alias] = await Promise.all([
+    solicitudesService.listSolicitudesForExport(actor, filters),
+    productoAliasService.buildResolver(),
+  ]);
+
+  const { productos } = recolectarPedidos(
+    solicitudes,
+    alias,
+    periodos.normalizarAgrupacion(filters.agrupacion)
+  );
+
+  const registro = productos.get(claveBuscada);
+  if (!registro) {
+    return { producto: null, pedidos: [] };
+  }
+
+  const atipicos = estadistica.detectarAtipicos(registro.pedidos);
+  const idsAtipicos = new Set(
+    atipicos.map((a) => `${a.solicitud_id}|${a.nombre_escrito}|${a.cantidad}`)
+  );
+
+  const nombre =
+    alias.nombrePersonalizadoDe(claveBuscada) ||
+    alias.nombreDe(claveBuscada) ||
+    pickNombreVisible(
+      [...registro.variantes.entries()].map(([nombre_, conteo]) => ({ nombre: nombre_, conteo }))
+    ) ||
+    claveBuscada;
+
+  const pedidos = [...registro.pedidos]
+    .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)))
+    .map((p) => ({
+      solicitud_id: p.solicitud_id,
+      fecha: p.fecha,
+      fecha_corta: p.fecha_corta,
+      cantidad: p.cantidad,
+      equipo: p.equipo,
+      solicitante: p.solicitante,
+      nombre_escrito: p.nombre_escrito,
+      atipico: idsAtipicos.has(`${p.solicitud_id}|${p.nombre_escrito}|${p.cantidad}`),
+    }));
+
+  return {
+    producto: { clave: claveBuscada, nombre },
+    total_pedidos: pedidos.length,
+    pedidos,
+  };
+}
+
 module.exports = {
   getConsumo,
+  getPedidosDeProducto,
 };
