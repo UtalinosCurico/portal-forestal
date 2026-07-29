@@ -1,10 +1,8 @@
-// Vista de consumo por producto. El objetivo concreto es que se pueda mirar un
-// periodo y decidir cuanto stock conviene tener de cada cosa.
-
-const NOMBRE_MESES = [
-  "ene", "feb", "mar", "abr", "may", "jun",
-  "jul", "ago", "sep", "oct", "nov", "dic",
-];
+// Vista de consumo por producto.
+//
+// Dividida en tres pestanas porque cumplen roles distintos: Resumen es lo que
+// se mira siempre, Detalle es para buscar un producto puntual, y Nombres es
+// mantencion que no deberia estorbar el uso diario.
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -15,68 +13,54 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
-function etiquetaMes(clave) {
-  const [ano, mes] = String(clave || "").split("-");
-  const indice = Number(mes) - 1;
-  if (!ano || Number.isNaN(indice) || !NOMBRE_MESES[indice]) {
-    return clave || "-";
-  }
-  return `${NOMBRE_MESES[indice]} ${ano}`;
-}
-
 function fechaISO(date) {
   return date.toISOString().slice(0, 10);
 }
 
-/** Rango de fechas para los botones de periodo rapido. */
 function calcularPeriodo(clave) {
   const hoy = new Date();
   const ano = hoy.getFullYear();
   const mes = hoy.getMonth();
 
-  if (clave === "mes-actual") {
-    return { desde: fechaISO(new Date(ano, mes, 1)), hasta: fechaISO(hoy) };
-  }
-  if (clave === "mes-anterior") {
-    return {
-      desde: fechaISO(new Date(ano, mes - 1, 1)),
-      hasta: fechaISO(new Date(ano, mes, 0)),
-    };
-  }
-  if (clave === "ultimos-3") {
-    return { desde: fechaISO(new Date(ano, mes - 2, 1)), hasta: fechaISO(hoy) };
-  }
-  if (clave === "ultimos-6") {
-    return { desde: fechaISO(new Date(ano, mes - 5, 1)), hasta: fechaISO(hoy) };
-  }
-  if (clave === "ano") {
-    return { desde: fechaISO(new Date(ano, 0, 1)), hasta: fechaISO(hoy) };
-  }
-  return { desde: "", hasta: "" };
+  const rangos = {
+    "mes-actual": [new Date(ano, mes, 1), hoy],
+    "mes-anterior": [new Date(ano, mes - 1, 1), new Date(ano, mes, 0)],
+    "ultimos-3": [new Date(ano, mes - 2, 1), hoy],
+    "ultimos-6": [new Date(ano, mes - 5, 1), hoy],
+    ano: [new Date(ano, 0, 1), hoy],
+  };
+
+  const rango = rangos[clave];
+  return rango ? { desde: fechaISO(rango[0]), hasta: fechaISO(rango[1]) } : { desde: "", hasta: "" };
 }
 
-/** Barras proporcionales para comparar meses de un vistazo, sin librerias. */
-function renderBarrasMeses(porMes, meses) {
-  if (!meses.length) {
-    return "<p class='muted-text'>Sin meses en el periodo.</p>";
+/** Barras verticales de evolucion. Marca el periodo incompleto para que nadie
+ *  lea una caida donde solo faltan dias por transcurrir. */
+function renderBarras(valoresPorClave, periodo) {
+  const { claves, etiquetas, incompleto } = periodo;
+
+  if (!claves.length) {
+    return "<p class='muted-text'>Sin datos en el periodo.</p>";
   }
 
-  const valores = meses.map((mes) => Number(porMes[mes] || 0));
+  const valores = claves.map((c) => Number(valoresPorClave[c] || 0));
   const maximo = Math.max(...valores, 1);
 
   return `
     <div class="reportes-barras">
-      ${meses
-        .map((mes, i) => {
+      ${claves
+        .map((clave, i) => {
           const valor = valores[i];
           const alto = Math.round((valor / maximo) * 100);
+          const esIncompleto = clave === incompleto;
           return `
-            <div class="reportes-barra" title="${escapeHtml(etiquetaMes(mes))}: ${valor}">
+            <div class="reportes-barra ${esIncompleto ? "incompleta" : ""}"
+                 title="${escapeHtml(etiquetas[i])}: ${valor}${esIncompleto ? " (periodo en curso)" : ""}">
               <div class="reportes-barra-valor">${valor}</div>
               <div class="reportes-barra-riel">
                 <div class="reportes-barra-relleno" style="height:${alto}%"></div>
               </div>
-              <div class="reportes-barra-mes">${escapeHtml(etiquetaMes(mes))}</div>
+              <div class="reportes-barra-mes">${escapeHtml(etiquetas[i])}</div>
             </div>
           `;
         })
@@ -85,10 +69,6 @@ function renderBarrasMeses(porMes, meses) {
   `;
 }
 
-/**
- * Los productos que concentran el consumo, en barras horizontales. Responde de
- * un vistazo "que es lo que mas se pide", sin tener que leer la tabla entera.
- */
 function renderTopProductos(productos, contenedor, limite = 7) {
   const top = productos.slice(0, limite);
 
@@ -116,20 +96,9 @@ function renderTopProductos(productos, contenedor, limite = 7) {
     .join("");
 }
 
-/** Suma de todos los productos por mes: muestra si el consumo sube o baja. */
-function renderTendencia(productos, meses, contenedor) {
-  const totalPorMes = {};
-  for (const mes of meses) {
-    totalPorMes[mes] = productos.reduce((acc, p) => acc + (p.por_mes[mes] || 0), 0);
-  }
-  contenedor.innerHTML = renderBarrasMeses(totalPorMes, meses);
-}
-
 function renderDesgloseEquipos(porEquipo) {
   const filas = Object.entries(porEquipo || {}).sort((a, b) => b[1] - a[1]);
-  if (!filas.length) {
-    return "";
-  }
+  if (!filas.length) return "";
   const total = filas.reduce((acc, [, valor]) => acc + valor, 0) || 1;
 
   return `
@@ -152,24 +121,61 @@ function renderDesgloseEquipos(porEquipo) {
 }
 
 function renderVariantes(variantes = []) {
-  if (variantes.length <= 1) {
-    return "";
-  }
+  if (variantes.length <= 1) return "";
   return `
     <div class="reportes-variantes">
       <strong>Se escribio de ${variantes.length} formas distintas:</strong>
       ${variantes
-        .map(
-          (v) =>
-            `<span class="mini-chip">${escapeHtml(v.nombre)} (${v.conteo})</span>`
-        )
+        .map((v) => `<span class="mini-chip">${escapeHtml(v.nombre)} (${v.conteo})</span>`)
         .join(" ")}
     </div>
   `;
 }
 
-/** Mismo contenido que la tabla, en tarjetas: en telefono la tabla no cabe. */
-function renderTarjetasMovil(visibles, meses, lista) {
+function chipRegularidad(regularidad = {}) {
+  return `<span class="reportes-chip nivel-${escapeHtml(regularidad.nivel || "")}">${escapeHtml(
+    regularidad.etiqueta || ""
+  )}</span>`;
+}
+
+function chipTendencia(tendencia = {}) {
+  const flechas = { sube: "▲", baja: "▼", estable: "=", sin_datos: "" };
+  return `<span class="reportes-chip dir-${escapeHtml(tendencia.direccion || "")}">${
+    flechas[tendencia.direccion] || ""
+  } ${escapeHtml(tendencia.etiqueta || "")}</span>`;
+}
+
+function renderAtipicos(atipicos, card, lista) {
+  if (!atipicos.length) {
+    card.classList.add("hidden");
+    lista.innerHTML = "";
+    return;
+  }
+
+  card.classList.remove("hidden");
+  lista.innerHTML = atipicos
+    .map(
+      (a) => `
+      <div class="reportes-atipico">
+        <div class="reportes-atipico-principal">
+          <strong>${escapeHtml(a.producto)}</strong>
+          <span class="reportes-atipico-meta">
+            ${escapeHtml(a.fecha_corta)} · solicitud #${a.solicitud_id} · ${escapeHtml(a.equipo)}
+          </span>
+        </div>
+        <div class="reportes-atipico-cifras">
+          <span class="reportes-atipico-cantidad">${a.cantidad}</span>
+          <span class="reportes-atipico-comparacion">
+            lo normal es ${a.valor_tipico}${a.veces_lo_tipico ? ` · ${a.veces_lo_tipico}x` : ""}
+          </span>
+        </div>
+      </div>
+    `
+    )
+    .join("");
+}
+
+function renderTarjetasMovil(visibles, periodo, lista) {
   lista.innerHTML = visibles
     .map(
       (p) => `
@@ -188,18 +194,18 @@ function renderTarjetasMovil(visibles, meses, lista) {
           </span>
         </div>
         <div class="reportes-card-datos">
+          <span><em>Tipico</em> ${p.tipico}</span>
+          <span><em>Stock</em> ${p.sugerido_min} a ${p.sugerido_max}</span>
           <span><em>Solicitudes</em> ${p.total_solicitudes}</span>
-          <span><em>Promedio mes</em> ${p.promedio_mensual}</span>
-          <span><em>Stock</em> min ${p.sugerido_min} · max ${p.sugerido_max}</span>
         </div>
-        ${
-          p.meses_con_datos <= 1
-            ? `<div class="table-subline reportes-aviso">Solo ${p.meses_con_datos} mes con datos: sugerencia referencial.</div>`
-            : ""
-        }
+        <div class="reportes-card-chips">
+          ${chipRegularidad(p.regularidad)}
+          ${chipTendencia(p.tendencia)}
+          ${p.atipicos?.length ? `<span class="reportes-chip alerta">${p.atipicos.length} a revisar</span>` : ""}
+        </div>
         <div class="reportes-card-detalle hidden">
-          <h5>Consumo por mes</h5>
-          ${renderBarrasMeses(p.por_mes, meses)}
+          <h5>Evolucion</h5>
+          ${renderBarras(p.por_periodo, periodo)}
           <h5>Por equipo</h5>
           ${renderDesgloseEquipos(p.por_equipo) || "<p class='muted-text'>Sin desglose.</p>"}
           ${renderVariantes(p.variantes)}
@@ -211,7 +217,7 @@ function renderTarjetasMovil(visibles, meses, lista) {
     .join("");
 }
 
-function renderFilas(productos, meses, tbody, filtroTexto = "", mobileList = null) {
+function renderFilas(productos, periodo, tbody, filtroTexto, mobileList) {
   const filtro = filtroTexto.trim().toLowerCase();
   const visibles = filtro
     ? productos.filter((p) => p.nombre.toLowerCase().includes(filtro))
@@ -222,55 +228,55 @@ function renderFilas(productos, meses, tbody, filtroTexto = "", mobileList = nul
       ? "Ningun producto coincide con la busqueda."
       : "Sin consumo registrado en el periodo.";
     tbody.innerHTML = `<tr><td colspan="5">${mensaje}</td></tr>`;
-    if (mobileList) {
-      mobileList.innerHTML = `<div class="history-empty">${mensaje}</div>`;
-    }
+    if (mobileList) mobileList.innerHTML = `<div class="history-empty">${mensaje}</div>`;
     return;
   }
 
-  if (mobileList) {
-    renderTarjetasMovil(visibles, meses, mobileList);
-  }
+  if (mobileList) renderTarjetasMovil(visibles, periodo, mobileList);
 
   tbody.innerHTML = visibles
-    .map((producto) => {
-      const unidad = producto.unidad ? ` ${escapeHtml(producto.unidad)}` : "";
-      const avisoPocosDatos =
-        producto.meses_con_datos <= 1
-          ? `<div class="table-subline reportes-aviso">Solo hay ${producto.meses_con_datos} mes con datos: la sugerencia es referencial.</div>`
+    .map((p) => {
+      const unidad = p.unidad ? ` ${escapeHtml(p.unidad)}` : "";
+      const pocosDatos =
+        p.periodos_con_consumo <= 1
+          ? `<div class="table-subline reportes-aviso">Solo ${p.periodos_con_consumo} periodo con consumo: referencial.</div>`
           : "";
 
       return `
-        <tr class="reportes-row" data-clave="${escapeHtml(producto.clave)}" tabindex="0" role="button">
+        <tr class="reportes-row" data-clave="${escapeHtml(p.clave)}" tabindex="0" role="button">
           <td>
-            <strong>${escapeHtml(producto.nombre)}</strong>
+            <strong>${escapeHtml(p.nombre)}</strong>
             ${
-              producto.escrito_de_formas > 1
-                ? `<div class="table-subline reportes-aviso">agrupa ${producto.escrito_de_formas} escrituras</div>`
+              p.escrito_de_formas > 1
+                ? `<div class="table-subline reportes-aviso">agrupa ${p.escrito_de_formas} escrituras</div>`
                 : ""
             }
           </td>
-          <td><strong>${producto.total_unidades}</strong>${unidad}</td>
-          <td>${producto.total_solicitudes}</td>
-          <td>${producto.promedio_mensual}</td>
+          <td><strong>${p.total_unidades}</strong>${unidad}</td>
+          <td>${p.tipico}</td>
           <td>
-            <span class="reportes-stock">min <strong>${producto.sugerido_min}</strong> · max <strong>${producto.sugerido_max}</strong></span>
-            ${avisoPocosDatos}
+            <span class="reportes-stock">${p.sugerido_min} a <strong>${p.sugerido_max}</strong></span>
+            ${pocosDatos}
+          </td>
+          <td>
+            ${chipRegularidad(p.regularidad)}
+            ${chipTendencia(p.tendencia)}
+            ${p.atipicos?.length ? `<span class="reportes-chip alerta">${p.atipicos.length} a revisar</span>` : ""}
           </td>
         </tr>
-        <tr class="reportes-detalle hidden" data-detalle="${escapeHtml(producto.clave)}">
+        <tr class="reportes-detalle hidden" data-detalle="${escapeHtml(p.clave)}">
           <td colspan="5">
             <div class="reportes-detalle-grid">
               <div>
-                <h5>Consumo por mes</h5>
-                ${renderBarrasMeses(producto.por_mes, meses)}
+                <h5>Evolucion</h5>
+                ${renderBarras(p.por_periodo, periodo)}
               </div>
               <div>
                 <h5>Por equipo</h5>
-                ${renderDesgloseEquipos(producto.por_equipo) || "<p class='muted-text'>Sin desglose.</p>"}
+                ${renderDesgloseEquipos(p.por_equipo) || "<p class='muted-text'>Sin desglose.</p>"}
               </div>
             </div>
-            ${renderVariantes(producto.variantes)}
+            ${renderVariantes(p.variantes)}
           </td>
         </tr>
       `;
@@ -278,14 +284,13 @@ function renderFilas(productos, meses, tbody, filtroTexto = "", mobileList = nul
     .join("");
 }
 
-function renderDuplicados(sugerencias, card, lista, puedeUnificar) {
+function renderDuplicados(sugerencias, lista, puedeUnificar) {
   if (!sugerencias.length) {
-    card.classList.add("hidden");
-    lista.innerHTML = "";
+    lista.innerHTML =
+      "<p class='muted-text'>No hay nombres parecidos pendientes de revisar.</p>";
     return;
   }
 
-  card.classList.remove("hidden");
   lista.innerHTML = sugerencias
     .map(
       (s, i) => `
@@ -327,11 +332,7 @@ function renderUnificados(alias, card, lista, puedeUnificar) {
           <strong>${escapeHtml(a.nombre_canonico || a.clave_canonica)}</strong>
         </span>
         <span class="reportes-duplicado-acciones">
-          ${
-            a.creado_por_nombre
-              ? `<span class="table-subline">${escapeHtml(a.creado_por_nombre)}</span>`
-              : ""
-          }
+          ${a.creado_por_nombre ? `<span class="table-subline">${escapeHtml(a.creado_por_nombre)}</span>` : ""}
           ${
             puedeUnificar
               ? `<button class="action-btn secondary table-btn" data-deshacer="${a.id}" type="button">Deshacer</button>`
@@ -344,88 +345,97 @@ function renderUnificados(alias, card, lista, puedeUnificar) {
     .join("");
 }
 
-function construirCSV(productos, meses) {
-  const cabecera = [
-    "Producto",
-    "Unidad",
-    "Total pedido",
-    "Solicitudes",
-    "Promedio mensual",
-    "Stock minimo sugerido",
-    "Stock maximo sugerido",
-    "Escrituras agrupadas",
-    ...meses.map((m) => etiquetaMes(m)),
-  ];
+async function descargarExcel(context, query) {
+  const response = await fetch(`/api/reportes/excel/consumo${query}`, {
+    headers: { Authorization: `Bearer ${context.state.token}` },
+  });
 
-  const filas = productos.map((p) => [
-    p.nombre,
-    p.unidad || "",
-    p.total_unidades,
-    p.total_solicitudes,
-    p.promedio_mensual,
-    p.sugerido_min,
-    p.sugerido_max,
-    p.variantes.map((v) => v.nombre).join(" | "),
-    ...meses.map((m) => p.por_mes[m] || 0),
-  ]);
+  if (!response.ok) {
+    let mensaje = "No se pudo generar el Excel";
+    try {
+      const payload = await response.json();
+      mensaje = payload.mensaje || payload.error?.message || mensaje;
+    } catch {
+      // Respuesta no JSON: se queda el mensaje generico.
+    }
+    throw new Error(mensaje);
+  }
 
-  const escapar = (valor) => {
-    const texto = String(valor ?? "");
-    return /[";\n]/.test(texto) ? `"${texto.replaceAll('"', '""')}"` : texto;
-  };
+  const blob = await response.blob();
+  const nombre =
+    response.headers.get("content-disposition")?.split("filename=")?.at(1)?.replaceAll('"', "") ||
+    "consumo.xlsx";
 
-  // Punto y coma: es lo que espera Excel en configuracion regional chilena.
-  return [cabecera, ...filas].map((fila) => fila.map(escapar).join(";")).join("\n");
+  const url = URL.createObjectURL(blob);
+  const enlace = document.createElement("a");
+  enlace.href = url;
+  enlace.download = nombre;
+  document.body.appendChild(enlace);
+  enlace.click();
+  enlace.remove();
+  URL.revokeObjectURL(url);
 }
 
 export async function initReportesView(context) {
   const { apiRequest, showToast, state } = context;
 
-  const form = document.getElementById("reportes-filter-form");
-  const desdeInput = document.getElementById("reportes-fecha-desde");
-  const hastaInput = document.getElementById("reportes-fecha-hasta");
-  const equipoSelect = document.getElementById("reportes-equipo-id");
-  const equipoField = document.getElementById("reportes-equipo-field");
-  const tbody = document.getElementById("reportes-table-body");
-  const mobileList = document.getElementById("reportes-mobile-list");
-  const topProductos = document.getElementById("reportes-top-productos");
-  const tendencia = document.getElementById("reportes-tendencia");
-  const searchInput = document.getElementById("reportes-search");
-  const lastUpdate = document.getElementById("reportes-last-update");
-  const quickStrip = document.getElementById("reportes-quick-periodos");
-  const duplicadosCard = document.getElementById("reportes-duplicados-card");
-  const duplicadosList = document.getElementById("reportes-duplicados-list");
-  const unificadosCard = document.getElementById("reportes-unificados-card");
-  const unificadosList = document.getElementById("reportes-unificados-list");
-  const unificarModal = document.getElementById("reportes-unificar-modal");
-  const unificarOpciones = document.getElementById("reportes-unificar-opciones");
-  const unificarAviso = document.getElementById("reportes-unificar-aviso");
-  const unificarManualBtn = document.getElementById("reportes-unificar-manual-btn");
-  const selectA = document.getElementById("reportes-unificar-a");
-  const selectB = document.getElementById("reportes-unificar-b");
+  const el = (id) => document.getElementById(id);
+
+  const form = el("reportes-filter-form");
+  const desdeInput = el("reportes-fecha-desde");
+  const hastaInput = el("reportes-fecha-hasta");
+  const equipoSelect = el("reportes-equipo-id");
+  const equipoField = el("reportes-equipo-field");
+  const tbody = el("reportes-table-body");
+  const mobileList = el("reportes-mobile-list");
+  const topProductos = el("reportes-top-productos");
+  const tendenciaBox = el("reportes-tendencia");
+  const searchInput = el("reportes-search");
+  const quickStrip = el("reportes-quick-periodos");
+  const duplicadosList = el("reportes-duplicados-list");
+  const unificadosCard = el("reportes-unificados-card");
+  const unificadosList = el("reportes-unificados-list");
+  const unificarModal = el("reportes-unificar-modal");
+  const unificarOpciones = el("reportes-unificar-opciones");
+  const unificarAviso = el("reportes-unificar-aviso");
+  const unificarManualBtn = el("reportes-unificar-manual-btn");
+  const selectA = el("reportes-unificar-a");
+  const selectB = el("reportes-unificar-b");
+  const atipicosCard = el("reportes-atipicos-card");
+  const atipicosList = el("reportes-atipicos-list");
+  const tabs = el("reportes-tabs");
+  const nombresBadge = el("reportes-tab-nombres-badge");
 
   const role = state.user?.role || state.user?.rol || "";
   const esRolGlobal = role === "ADMIN" || role === "SUPERVISOR";
-  // Unificar cambia los totales de todos, asi que solo los roles de gestion.
   const puedeUnificar = esRolGlobal;
 
-  let datos = { productos: [], periodo: { meses: [] }, posibles_duplicados: [] };
+  let datos = {
+    productos: [],
+    periodo: { claves: [], etiquetas: [], agrupacion: "mes" },
+    posibles_duplicados: [],
+    atipicos: [],
+  };
   let aliasGuardados = [];
-  let unificacionPendiente = null;
+  let agrupacion = "mes";
 
-  // Un jefe de faena solo ve su equipo: el selector no le aporta nada.
-  if (!esRolGlobal && equipoField) {
-    equipoField.classList.add("hidden");
-  }
+  if (!esRolGlobal && equipoField) equipoField.classList.add("hidden");
+  if (puedeUnificar) unificarManualBtn?.classList.remove("hidden");
 
-  if (puedeUnificar) {
-    unificarManualBtn?.classList.remove("hidden");
-  }
+  // ── Pestanas ──────────────────────────────────────────────────────────
+  tabs.addEventListener("click", (event) => {
+    const boton = event.target.closest("[data-tab]");
+    if (!boton) return;
+    tabs.querySelectorAll(".reportes-tab").forEach((t) => t.classList.remove("active"));
+    boton.classList.add("active");
+    document.querySelectorAll(".reportes-panel").forEach((panel) => {
+      panel.classList.toggle("hidden", panel.dataset.panel !== boton.dataset.tab);
+    });
+  });
 
+  // ── Carga ─────────────────────────────────────────────────────────────
   async function cargarEquipos() {
-    if (!esRolGlobal || !equipoSelect) {
-      return;
-    }
+    if (!esRolGlobal || !equipoSelect) return;
     try {
       const respuesta = await apiRequest("/api/equipos");
       const equipos = respuesta.data || respuesta || [];
@@ -433,9 +443,7 @@ export async function initReportesView(context) {
         '<option value="">Todos los equipos</option>',
         ...equipos.map(
           (e) =>
-            `<option value="${e.id}">${escapeHtml(
-              e.nombre_equipo || e.nombre || `Equipo ${e.id}`
-            )}</option>`
+            `<option value="${e.id}">${escapeHtml(e.nombre_equipo || e.nombre || `Equipo ${e.id}`)}</option>`
         ),
       ].join("");
     } catch {
@@ -448,31 +456,52 @@ export async function initReportesView(context) {
     if (desdeInput.value) params.set("fechaDesde", desdeInput.value);
     if (hastaInput.value) params.set("fechaHasta", hastaInput.value);
     if (esRolGlobal && equipoSelect?.value) params.set("equipoId", equipoSelect.value);
-    const query = params.toString();
-    return query ? `?${query}` : "";
+    params.set("agrupacion", agrupacion);
+    return `?${params.toString()}`;
   }
 
-  function pintarResumen(payload) {
-    document.getElementById("reportes-total-productos").textContent =
-      payload.totales.productos_distintos;
-    document.getElementById("reportes-total-unidades").textContent =
-      payload.totales.unidades;
-    document.getElementById("reportes-total-solicitudes").textContent =
-      payload.totales.solicitudes;
-    document.getElementById("reportes-total-meses").textContent =
-      payload.periodo.meses.length;
+  function pintarResumen() {
+    el("reportes-total-unidades").textContent = datos.totales.unidades;
+    el("reportes-total-productos").textContent = datos.totales.productos_distintos;
+    el("reportes-total-solicitudes").textContent = datos.totales.solicitudes;
+    el("reportes-total-atipicos").textContent = datos.totales.pedidos_atipicos;
+
+    el("reportes-kpi-atipicos").classList.toggle(
+      "con-alerta",
+      datos.totales.pedidos_atipicos > 0
+    );
+    el("reportes-tendencia-general").innerHTML = chipTendencia(datos.tendencia_general);
+
+    const unidad = agrupacion === "semana" ? "semana" : "mes";
+    el("reportes-tendencia-titulo").textContent = `Consumo total por ${unidad}`;
+    el("reportes-th-tipico").textContent = `Tipico por ${unidad}`;
+
+    const avisoIncompleto = el("reportes-aviso-incompleto");
+    if (datos.periodo.incompleto) {
+      avisoIncompleto.textContent = `"${datos.periodo.etiqueta_incompleto}" aun no termina. Se muestra, pero no se usa para calcular tendencia ni stock.`;
+      avisoIncompleto.classList.remove("hidden");
+    } else {
+      avisoIncompleto.classList.add("hidden");
+    }
+
+    const cantidad = datos.periodo.claves.length;
+    const plural = cantidad === 1 ? unidad : unidad === "mes" ? "meses" : "semanas";
+    el("reportes-rango-texto").textContent =
+      `${cantidad} ${plural} · ${datos.totales.unidades} unidades · ` +
+      `${datos.totales.productos_distintos} productos`;
+
+    const pendientes = datos.posibles_duplicados.length;
+    nombresBadge.textContent = pendientes;
+    nombresBadge.classList.toggle("hidden", pendientes === 0);
   }
 
   async function cargarAlias() {
-    if (!puedeUnificar) {
-      return;
-    }
+    if (!puedeUnificar) return;
     try {
       const respuesta = await apiRequest("/api/reportes/alias");
       aliasGuardados = respuesta.data || [];
       renderUnificados(aliasGuardados, unificadosCard, unificadosList, puedeUnificar);
     } catch {
-      // Sin unificaciones la vista sigue siendo util: no es un error bloqueante.
       aliasGuardados = [];
     }
   }
@@ -482,32 +511,94 @@ export async function initReportesView(context) {
     try {
       const respuesta = await apiRequest(`/api/reportes/consumo${construirQuery()}`);
       datos = respuesta.data;
-      pintarResumen(datos);
+      pintarResumen();
       renderTopProductos(datos.productos, topProductos);
-      renderTendencia(datos.productos, datos.periodo.meses, tendencia);
-      renderFilas(datos.productos, datos.periodo.meses, tbody, searchInput.value, mobileList);
-      renderDuplicados(
-        datos.posibles_duplicados,
-        duplicadosCard,
-        duplicadosList,
-        puedeUnificar
-      );
-      lastUpdate.textContent = `Actualizado ${new Date().toLocaleTimeString("es-CL", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })}`;
+      tendenciaBox.innerHTML = renderBarras(datos.consumo_por_periodo, datos.periodo);
+      renderAtipicos(datos.atipicos, atipicosCard, atipicosList);
+      renderFilas(datos.productos, datos.periodo, tbody, searchInput.value, mobileList);
+      renderDuplicados(datos.posibles_duplicados, duplicadosList, puedeUnificar);
     } catch (error) {
       tbody.innerHTML = `<tr><td colspan="5">${escapeHtml(error.message)}</td></tr>`;
       showToast(error.message, true);
     }
   }
 
-  /** Llena los dos selectores con los productos del periodo cargado. */
-  function poblarSelectoresProductos(claveA, claveB) {
+  // ── Filtros ───────────────────────────────────────────────────────────
+  quickStrip.addEventListener("click", (event) => {
+    const boton = event.target.closest("[data-periodo]");
+    if (!boton) return;
+    quickStrip.querySelectorAll(".periodo-chip").forEach((t) => t.classList.remove("active"));
+    boton.classList.add("active");
+    const { desde, hasta } = calcularPeriodo(boton.dataset.periodo);
+    desdeInput.value = desde;
+    hastaInput.value = hasta;
+    cargar();
+  });
+
+  document.querySelectorAll("[data-agrupacion]").forEach((boton) => {
+    boton.addEventListener("click", () => {
+      agrupacion = boton.dataset.agrupacion;
+      document
+        .querySelectorAll("[data-agrupacion]")
+        .forEach((b) => b.classList.toggle("active", b === boton));
+      cargar();
+    });
+  });
+
+  el("reportes-filter-btn").addEventListener("click", cargar);
+  el("reportes-refresh-btn").addEventListener("click", cargar);
+  el("reportes-clear-btn").addEventListener("click", () => {
+    form.reset();
+    quickStrip.querySelectorAll(".periodo-chip").forEach((t) => t.classList.remove("active"));
+    cargar();
+  });
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    cargar();
+  });
+
+  el("reportes-excel-btn").addEventListener("click", async () => {
+    try {
+      await descargarExcel(context, construirQuery());
+      showToast("Excel descargado");
+    } catch (error) {
+      showToast(error.message, true);
+    }
+  });
+
+  // ── Detalle ───────────────────────────────────────────────────────────
+  searchInput.addEventListener("input", () => {
+    renderFilas(datos.productos, datos.periodo, tbody, searchInput.value, mobileList);
+  });
+
+  tbody.addEventListener("click", (event) => {
+    const fila = event.target.closest(".reportes-row");
+    if (!fila) return;
+    tbody.querySelector(`[data-detalle="${CSS.escape(fila.dataset.clave)}"]`)?.classList.toggle("hidden");
+    fila.classList.toggle("abierta");
+  });
+
+  tbody.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const fila = event.target.closest(".reportes-row");
+    if (!fila || event.target !== fila) return;
+    event.preventDefault();
+    fila.click();
+  });
+
+  mobileList.addEventListener("click", (event) => {
+    const card = event.target.closest(".reportes-card");
+    if (!card) return;
+    card.querySelector(".reportes-card-detalle")?.classList.toggle("hidden");
+    card.classList.toggle("abierta");
+  });
+
+  // ── Unificar nombres ──────────────────────────────────────────────────
+  function poblarSelectores(claveA, claveB) {
     const opciones = datos.productos
       .map(
-        (p) =>
-          `<option value="${escapeHtml(p.clave)}">${escapeHtml(p.nombre)} (${p.total_unidades})</option>`
+        (p) => `<option value="${escapeHtml(p.clave)}">${escapeHtml(p.nombre)} (${p.total_unidades})</option>`
       )
       .join("");
 
@@ -516,18 +607,15 @@ export async function initReportesView(context) {
     if (claveA) selectA.value = claveA;
     if (claveB) selectB.value = claveB;
 
-    // Si no vino un par sugerido, dejamos el segundo distinto del primero para
-    // que la ventana no abra proponiendo unir algo consigo mismo.
     if (!claveB && datos.productos.length > 1 && selectB.value === selectA.value) {
       selectB.selectedIndex = selectA.selectedIndex === 0 ? 1 : 0;
     }
   }
 
-  /** Radios para elegir con que nombre queda el producto unificado. */
   function renderOpcionesNombre() {
     const a = datos.productos.find((p) => p.clave === selectA.value);
     const b = datos.productos.find((p) => p.clave === selectB.value);
-    const confirmar = document.getElementById("reportes-unificar-confirm");
+    const confirmar = el("reportes-unificar-confirm");
 
     if (!a || !b || a.clave === b.clave) {
       unificarOpciones.innerHTML = "";
@@ -543,9 +631,7 @@ export async function initReportesView(context) {
       .map(
         (p, i) => `
         <label class="reportes-unificar-opcion">
-          <input type="radio" name="reportes-canonico" value="${escapeHtml(p.clave)}" ${
-            i === 0 ? "checked" : ""
-          } />
+          <input type="radio" name="reportes-canonico" value="${escapeHtml(p.clave)}" ${i === 0 ? "checked" : ""} />
           <span>
             <strong>${escapeHtml(p.nombre)}</strong>
             <span class="table-subline">Se queda con este nombre (${p.total_unidades} unidades hoy)</span>
@@ -557,36 +643,26 @@ export async function initReportesView(context) {
   }
 
   function abrirModalUnificar(claveA = "", claveB = "") {
-    if (!datos.productos.length) {
-      showToast("No hay productos en el periodo para unificar", true);
-      return;
-    }
     if (datos.productos.length < 2) {
       showToast("Se necesitan al menos dos productos para unificar", true);
       return;
     }
-
-    poblarSelectoresProductos(claveA, claveB);
+    poblarSelectores(claveA, claveB);
     renderOpcionesNombre();
     unificarModal.classList.remove("hidden");
   }
 
   function cerrarModalUnificar() {
     unificarModal.classList.add("hidden");
-    unificacionPendiente = null;
   }
 
   async function confirmarUnificacion() {
     const claveCanonica = unificarOpciones.querySelector(
       'input[name="reportes-canonico"]:checked'
     )?.value;
-    if (!claveCanonica) {
-      return;
-    }
+    if (!claveCanonica) return;
 
-    // La que no quedo elegida es la que se absorbe.
-    const claveVariante =
-      selectA.value === claveCanonica ? selectB.value : selectA.value;
+    const claveVariante = selectA.value === claveCanonica ? selectB.value : selectA.value;
     const canonico = datos.productos.find((p) => p.clave === claveCanonica);
 
     try {
@@ -613,10 +689,6 @@ export async function initReportesView(context) {
     if (sugerencia) abrirModalUnificar(sugerencia.claves[0], sugerencia.claves[1]);
   });
 
-  selectA.addEventListener("change", renderOpcionesNombre);
-  selectB.addEventListener("change", renderOpcionesNombre);
-  unificarManualBtn?.addEventListener("click", () => abrirModalUnificar());
-
   unificadosList.addEventListener("click", async (event) => {
     const boton = event.target.closest("[data-deshacer]");
     if (!boton) return;
@@ -632,88 +704,19 @@ export async function initReportesView(context) {
     }
   });
 
-  document.getElementById("reportes-unificar-close").addEventListener("click", cerrarModalUnificar);
-  document.getElementById("reportes-unificar-cancel").addEventListener("click", cerrarModalUnificar);
-  document.getElementById("reportes-unificar-confirm").addEventListener("click", confirmarUnificacion);
+  selectA.addEventListener("change", renderOpcionesNombre);
+  selectB.addEventListener("change", renderOpcionesNombre);
+  unificarManualBtn?.addEventListener("click", () => abrirModalUnificar());
+  el("reportes-unificar-close").addEventListener("click", cerrarModalUnificar);
+  el("reportes-unificar-cancel").addEventListener("click", cerrarModalUnificar);
+  el("reportes-unificar-confirm").addEventListener("click", confirmarUnificacion);
   unificarModal.addEventListener("click", (event) => {
     if (event.target.dataset.close === "true") cerrarModalUnificar();
   });
 
-  quickStrip?.addEventListener("click", (event) => {
-    const boton = event.target.closest("[data-periodo]");
-    if (!boton) return;
-    quickStrip.querySelectorAll(".quick-tile").forEach((t) => t.classList.remove("active"));
-    boton.classList.add("active");
-    const { desde, hasta } = calcularPeriodo(boton.dataset.periodo);
-    desdeInput.value = desde;
-    hastaInput.value = hasta;
-    cargar();
-  });
-
-  // Abrir el desglose de un producto.
-  tbody.addEventListener("click", (event) => {
-    const fila = event.target.closest(".reportes-row");
-    if (!fila) return;
-    const detalle = tbody.querySelector(`[data-detalle="${CSS.escape(fila.dataset.clave)}"]`);
-    detalle?.classList.toggle("hidden");
-    fila.classList.toggle("abierta");
-  });
-
-  tbody.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    const fila = event.target.closest(".reportes-row");
-    if (!fila || event.target !== fila) return;
-    event.preventDefault();
-    fila.click();
-  });
-
-  searchInput.addEventListener("input", () => {
-    renderFilas(datos.productos, datos.periodo.meses, tbody, searchInput.value, mobileList);
-  });
-
-  // En telefono la tarjeta cumple el rol de la fila: se toca y despliega igual.
-  mobileList.addEventListener("click", (event) => {
-    const card = event.target.closest(".reportes-card");
-    if (!card) return;
-    card.querySelector(".reportes-card-detalle")?.classList.toggle("hidden");
-    card.classList.toggle("abierta");
-  });
-
-  document.getElementById("reportes-filter-btn").addEventListener("click", cargar);
-  document.getElementById("reportes-refresh-btn").addEventListener("click", cargar);
-
-  document.getElementById("reportes-clear-btn").addEventListener("click", () => {
-    form.reset();
-    quickStrip?.querySelectorAll(".quick-tile").forEach((t) => t.classList.remove("active"));
-    cargar();
-  });
-
-  document.getElementById("reportes-export-btn").addEventListener("click", () => {
-    if (!datos.productos.length) {
-      showToast("No hay datos para descargar", true);
-      return;
-    }
-    // BOM para que Excel respete las tildes.
-    const contenido = `﻿${construirCSV(datos.productos, datos.periodo.meses)}`;
-    const blob = new Blob([contenido], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const enlace = document.createElement("a");
-    enlace.href = url;
-    enlace.download = `consumo_${desdeInput.value || "inicio"}_${hastaInput.value || "hoy"}.csv`;
-    enlace.click();
-    URL.revokeObjectURL(url);
-    showToast("Archivo descargado");
-  });
-
-  form.addEventListener("submit", (event) => {
-    event.preventDefault();
-    cargar();
-  });
-
+  // ── Arranque ──────────────────────────────────────────────────────────
   await cargarEquipos();
 
-  // Por defecto se muestran los ultimos 3 meses: da contexto suficiente para
-  // ver una tendencia sin abrumar con historia antigua.
   const inicial = calcularPeriodo("ultimos-3");
   desdeInput.value = inicial.desde;
   hastaInput.value = inicial.hasta;

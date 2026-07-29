@@ -2259,6 +2259,282 @@ th {
   color: #426657;
 }
 
+/* --- Reportes: pestanas, filtros y KPIs -------------------------------- */
+
+.reportes-filtros-card {
+  padding-bottom: 0.9rem;
+}
+
+.reportes-filtros-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.reportes-periodo-chips,
+.reportes-agrupacion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.reportes-agrupacion-label {
+  margin-right: 0.2rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.periodo-chip,
+.agrupacion-btn {
+  width: auto;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s var(--ease-smooth);
+}
+
+.periodo-chip:hover,
+.agrupacion-btn:hover {
+  border-color: var(--forest-500);
+  background: var(--forest-50);
+}
+
+.periodo-chip.active,
+.agrupacion-btn.active {
+  border-color: var(--forest-700);
+  background: var(--forest-700);
+  color: #ffffff;
+}
+
+.reportes-filtros-avanzados {
+  margin-top: 0.9rem;
+}
+
+.reportes-filtros-avanzados summary {
+  color: var(--forest-700);
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.reportes-filtros-avanzados[open] summary {
+  margin-bottom: 0.8rem;
+}
+
+.reportes-barra-estado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--line);
+}
+
+/* Pestanas */
+.reportes-tabs {
+  display: flex;
+  grid-column: 1 / -1;
+  gap: 0.3rem;
+  padding: 0.3rem;
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+.reportes-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: auto;
+  flex: 1 1 auto;
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s var(--ease-smooth);
+}
+
+.reportes-tab:hover {
+  color: var(--forest-700);
+}
+
+.reportes-tab.active {
+  background: var(--surface);
+  color: var(--forest-700);
+  box-shadow: var(--shadow-card);
+}
+
+.reportes-tab-badge {
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--warning);
+  color: #ffffff;
+  font-size: 0.72rem;
+}
+
+.reportes-panel {
+  display: contents;
+}
+
+.reportes-panel.hidden {
+  display: none;
+}
+
+/* KPIs */
+.reportes-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.reportes-kpi {
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--forest-500);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.reportes-kpi.con-alerta {
+  border-left-color: var(--warning);
+  background: #fffbf0;
+}
+
+.reportes-kpi-label {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.reportes-kpi-valor {
+  display: block;
+  margin: 0.25rem 0;
+  color: var(--forest-700);
+  font-size: 1.75rem;
+  line-height: 1.1;
+}
+
+.reportes-kpi-nota {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+/* Chips de comportamiento */
+.reportes-chip {
+  display: inline-block;
+  margin: 0.12rem 0.25rem 0.12rem 0;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  background: var(--forest-100);
+  color: var(--forest-700);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.reportes-chip.nivel-erratico,
+.reportes-chip.alerta {
+  background: #fdeaea;
+  color: #9f2e2e;
+}
+
+.reportes-chip.nivel-variable {
+  background: #fff4de;
+  color: #7c5100;
+}
+
+.reportes-chip.dir-sube {
+  background: #e6f4ec;
+  color: #1a7545;
+}
+
+.reportes-chip.dir-baja {
+  background: #eaf1fb;
+  color: #1f5aa8;
+}
+
+/* Pedidos atipicos */
+.reportes-atipicos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.reportes-atipico {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--warning);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.reportes-atipico-meta {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.reportes-atipico-cifras {
+  text-align: right;
+}
+
+.reportes-atipico-cantidad {
+  display: block;
+  color: #9f2e2e;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.reportes-atipico-comparacion {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+/* Barra del periodo aun en curso: se muestra pero se distingue */
+.reportes-barra.incompleta .reportes-barra-relleno {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--forest-200),
+    var(--forest-200) 5px,
+    var(--forest-100) 5px,
+    var(--forest-100) 10px
+  );
+}
+
+.reportes-barra.incompleta .reportes-barra-mes,
+.reportes-barra.incompleta .reportes-barra-valor {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.reportes-card-chips {
+  margin-top: 0.5rem;
+}
+
 /* --- Reportes: consumo por producto ------------------------------------ */
 
 .reportes-nota {
