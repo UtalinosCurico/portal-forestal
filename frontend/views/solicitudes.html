@@ -30,7 +30,7 @@
         <strong id="summary-pendientes" class="quick-value">0</strong>
       </button>
       <button class="quick-tile" data-quick-filter="EN_REVISION" type="button">
-        <span class="quick-label">En gestion</span>
+        <span class="quick-label">En gestión</span>
         <strong id="summary-revision" class="quick-value">0</strong>
       </button>
       <button class="quick-tile" data-quick-filter="EN_DESPACHO" type="button">
@@ -95,7 +95,7 @@
         <select id="solicitud-filter-estado" name="estado">
           <option value="">Todos</option>
           <option value="PENDIENTE">Pendiente</option>
-          <option value="EN_REVISION">En gestion</option>
+          <option value="EN_REVISION">En gestión</option>
           <option value="APROBADO">Aprobada</option>
           <option value="EN_DESPACHO">En despacho</option>
           <option value="ENTREGADO">Entregada</option>
@@ -120,7 +120,7 @@
           id="solicitud-filter-texto"
           name="texto"
           type="search"
-          placeholder="Producto, codigo, equipo o comentario"
+          placeholder="Producto, código, equipo o comentario"
         />
       </div>
       <div>
@@ -131,7 +131,7 @@
         <input id="solicitud-filter-urgentes" name="soloUrgentes" type="checkbox" value="1" />
         <span>
           <strong>Solo urgentes</strong>
-          <small>3 o mas dias sin movimiento</small>
+          <small>3 o más días sin movimiento</small>
         </span>
       </label>
     </form>
@@ -172,7 +172,7 @@
             <th class="col-resumen">Resumen</th>
             <th class="col-estado">Estado</th>
             <th class="col-seguimiento">Seguimiento</th>
-            <th class="col-accion">Accion</th>
+            <th class="col-accion">Acción</th>
           </tr>
         </thead>
         <tbody id="solicitudes-table-body"></tbody>
@@ -280,7 +280,7 @@
               <label for="solicitud-detail-status">Estado operativo</label>
               <select id="solicitud-detail-status" name="estado" class="hidden">
                 <option value="PENDIENTE">Pendiente</option>
-                <option value="EN_REVISION">En gestion</option>
+                <option value="EN_REVISION">En gestión</option>
                 <option value="APROBADO">Aprobada</option>
                 <option value="EN_DESPACHO">En despacho</option>
                 <option value="ENTREGADO">Entregada</option>
@@ -288,7 +288,7 @@
               </select>
               <div id="solicitud-status-actions" class="status-action-grid"></div>
               <p class="form-hint">
-                Puedes cambiar el estado directamente segun la gestion realizada.
+                Puedes cambiar el estado directamente según la gestión realizada.
               </p>
             </div>
             <div class="full">
@@ -298,10 +298,10 @@
           </form>
 
           <div id="solicitud-confirm-box" class="confirm-box hidden">
-            <strong>Recepcion pendiente</strong>
-            <p>Confirma aqui cuando el pedido ya este recibido en tu equipo.</p>
+            <strong>Recepción pendiente</strong>
+            <p>Confirma aquí cuando el pedido ya este recibido en tu equipo.</p>
             <button id="solicitud-confirm-btn" class="action-btn" type="button">
-              Confirmar recepcion
+              Confirmar recepción
             </button>
           </div>
 
@@ -373,7 +373,7 @@
             data-detail-tab-panel="historial"
           >
             <div class="section-head compact-head">
-              <h5>Linea de tiempo</h5>
+              <h5>Línea de tiempo</h5>
               <button id="solicitud-history-pdf-btn" class="action-btn secondary" type="button">
                 Exportar PDF
               </button>
@@ -458,11 +458,11 @@
           <input id="solicitud-item-name-input" name="nombre_item" />
         </div>
         <div>
-          <label for="solicitud-item-code-input">Numero de parte</label>
+          <label for="solicitud-item-code-input">Número de parte</label>
           <input
             id="solicitud-item-code-input"
             name="codigo_referencia"
-            placeholder="Ej: REP-001 / numero de parte"
+            placeholder="Ej: REP-001 / número de parte"
           />
         </div>
         <div>
@@ -478,7 +478,7 @@
           <input
             id="solicitud-item-final-user-input"
             name="usuario_final"
-            placeholder="Nombre trabajador, codigo equipo, etc"
+            placeholder="Nombre trabajador, código equipo, etc"
           />
         </div>
         <div class="full">
@@ -502,7 +502,7 @@
           <select id="solicitud-item-receiver-input" name="recepcionado_por_id"></select>
         </div>
         <div class="full" id="solicitud-item-management-comment-field">
-          <label for="solicitud-item-management-comment-input">Comentario de gestion</label>
+          <label for="solicitud-item-management-comment-input">Comentario de gestión</label>
           <textarea
             id="solicitud-item-management-comment-input"
             name="comentario_gestion"

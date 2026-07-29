@@ -522,16 +522,26 @@ function renderPedidosIndividuales(datos, contenedor) {
   contenedor.innerHTML = `
     <h5>Pedido por pedido (${datos.total_pedidos})</h5>
     <div class="reportes-pedidos-lista">
+      <div class="reportes-pedido-fila encabezado" role="row">
+        <span>Fecha</span>
+        <span>Cantidad</span>
+        <span>Equipo</span>
+        <span>Pedido por</span>
+        <span>Solicitud</span>
+        <span></span>
+      </div>
       ${datos.pedidos
         .map(
           (p) => `
-        <div class="reportes-pedido-fila ${p.atipico ? "atipico" : ""}">
-          <span class="reportes-pedido-fecha">${escapeHtml(p.fecha_corta)}</span>
-          <span class="reportes-pedido-cantidad">${p.cantidad}</span>
-          <span class="reportes-pedido-equipo">${escapeHtml(p.equipo)}</span>
-          <span class="reportes-pedido-solicitante">${escapeHtml(p.solicitante)}</span>
-          <span class="reportes-pedido-solicitud">#${p.solicitud_id}</span>
-          ${p.atipico ? `<span class="reportes-chip alerta">atipico</span>` : ""}
+        <div class="reportes-pedido-fila ${p.atipico ? "atipico" : ""}" role="row">
+          <span class="reportes-pedido-fecha" data-etiqueta="Fecha">${escapeHtml(p.fecha_corta)}</span>
+          <span class="reportes-pedido-cantidad" data-etiqueta="Cantidad">${p.cantidad}</span>
+          <span class="reportes-pedido-equipo" data-etiqueta="Equipo">${escapeHtml(p.equipo)}</span>
+          <span class="reportes-pedido-solicitante" data-etiqueta="Pedido por">${escapeHtml(p.solicitante)}</span>
+          <span class="reportes-pedido-solicitud" data-etiqueta="Solicitud">#${p.solicitud_id}</span>
+          <span class="reportes-pedido-marca">${
+            p.atipico ? `<span class="reportes-chip alerta">atípico</span>` : ""
+          }</span>
         </div>
       `
         )

@@ -1,12 +1,12 @@
 <div class="view-grid">
   <section class="card full reportes-filtros-card">
     <div class="reportes-filtros-fila">
-      <div class="reportes-periodo-chips" id="reportes-quick-periodos" aria-label="Periodos rapidos">
+      <div class="reportes-periodo-chips" id="reportes-quick-periodos" aria-label="Períodos rapidos">
         <button class="periodo-chip" data-periodo="mes-actual" type="button">Este mes</button>
         <button class="periodo-chip" data-periodo="mes-anterior" type="button">Mes pasado</button>
         <button class="periodo-chip active" data-periodo="ultimos-3" type="button">3 meses</button>
         <button class="periodo-chip" data-periodo="ultimos-6" type="button">6 meses</button>
-        <button class="periodo-chip" data-periodo="ano" type="button">Este ano</button>
+        <button class="periodo-chip" data-periodo="ano" type="button">Este año</button>
       </div>
 
       <div class="reportes-agrupacion" role="group" aria-label="Agrupar por">
@@ -54,7 +54,7 @@
   <nav class="reportes-tabs" id="reportes-tabs" role="tablist">
     <button class="reportes-tab active" data-tab="resumen" role="tab" type="button">Resumen</button>
     <button class="reportes-tab" data-tab="detalle" role="tab" type="button">Detalle</button>
-    <button class="reportes-tab" data-tab="analisis" role="tab" type="button">Analisis</button>
+    <button class="reportes-tab" data-tab="analisis" role="tab" type="button">Análisis</button>
     <button class="reportes-tab" data-tab="nombres" role="tab" type="button">
       Nombres
       <span id="reportes-tab-nombres-badge" class="reportes-tab-badge hidden">0</span>
@@ -79,7 +79,7 @@
           <strong class="reportes-kpi-valor" id="reportes-total-solicitudes">0</strong>
         </div>
         <div class="reportes-kpi reportes-kpi-proyeccion">
-          <span class="reportes-kpi-label" id="reportes-proyeccion-label">Proximo mes</span>
+          <span class="reportes-kpi-label" id="reportes-proyeccion-label">Próximo mes</span>
           <strong class="reportes-kpi-valor" id="reportes-proyeccion-valor">-</strong>
           <span class="reportes-kpi-nota" id="reportes-proyeccion-confianza"></span>
         </div>
@@ -94,7 +94,7 @@
     <section class="card full">
       <div class="reportes-visual-grid">
         <div class="reportes-visual-bloque">
-          <h5>Lo que mas se consume</h5>
+          <h5>Lo que más se consume</h5>
           <div id="reportes-top-productos" class="reportes-top"></div>
         </div>
         <div class="reportes-visual-bloque">
@@ -140,28 +140,28 @@
       </div>
 
       <details class="reportes-glosario">
-        <summary>Que significa cada numero</summary>
+        <summary>Que significa cada número</summary>
         <dl class="reportes-glosario-lista">
           <dt>Tipico</dt>
           <dd>
-            Lo que se pide en un periodo normal. Se usa la mediana y no el
+            Lo que se pide en un período normal. Se usa la mediana y no el
             promedio, porque un solo pedido raro puede inflar el promedio y
             dejarlo muy lejos de la realidad.
           </dd>
           <dt>Stock sugerido</dt>
           <dd>
-            El minimo cubre un periodo normal; el maximo cubre 9 de cada 10
-            periodos. Los pedidos anomalos no entran en este calculo.
+            El mínimo cubre un período normal; el máximo cubre 9 de cada 10
+            períodos. Los pedidos anomalos no entran en este cálculo.
           </dd>
-          <dt>Proximo mes</dt>
+          <dt>Próximo mes</dt>
           <dd>
-            Estimacion a partir del promedio de los ultimos periodos, corregida
+            Estimación a partir del promedio de los últimos períodos, corregida
             si hay una tendencia clara. La etiqueta dice que tan confiable es:
             un consumo parejo se puede planificar, uno irregular no.
           </dd>
           <dt>Comportamiento</dt>
           <dd>
-            Si el consumo es parejo o salta mucho de un periodo a otro, y si
+            Si el consumo es parejo o salta mucho de un período a otro, y si
             viene subiendo o bajando.
           </dd>
         </dl>
@@ -175,7 +175,7 @@
               <th>Total</th>
               <th id="reportes-th-tipico">Tipico por mes</th>
               <th>Stock sugerido</th>
-              <th id="reportes-th-proyeccion">Proximo mes</th>
+              <th id="reportes-th-proyeccion">Próximo mes</th>
               <th>Comportamiento</th>
             </tr>
           </thead>
@@ -219,9 +219,9 @@
     <section class="card full">
       <div class="section-head">
         <div>
-          <h4>Temporadas del ano</h4>
+          <h4>Temporadas del año</h4>
           <p class="muted-text">
-            En que meses se pide mas. Necesita al menos un ano de registros para
+            En que meses se pide más. Necesita al menos un año de registros para
             distinguir una temporada real de una casualidad.
           </p>
         </div>
@@ -257,7 +257,7 @@
           <h4>Productos unificados</h4>
           <p class="muted-text">
             Nombres que ya marcaste como el mismo producto. Se aplican a todos los
-            periodos y a lo que se escriba de aqui en adelante.
+            períodos y a lo que se escriba de aquí en adelante.
           </p>
         </div>
       </div>
@@ -272,7 +272,7 @@
         <div>
           <h4>Renombrar producto</h4>
           <p class="muted-text">
-            Este nombre reemplaza al automatico en el reporte, el Excel y el
+            Este nombre reemplaza al automático en el reporte, el Excel y el
             asistente. No cambia nada en las solicitudes.
           </p>
         </div>
@@ -287,7 +287,7 @@
         <button id="reportes-renombrar-confirm" class="action-btn" type="button">Guardar</button>
         <button id="reportes-renombrar-cancel" class="action-btn secondary" type="button">Cancelar</button>
         <button id="reportes-renombrar-quitar" class="action-btn secondary hidden" type="button">
-          Volver al automatico
+          Volver al automático
         </button>
       </div>
     </section>
@@ -301,7 +301,7 @@
           <h4>Unificar productos</h4>
           <p class="muted-text">
             Marca dos nombres como el mismo producto. Sus cantidades se suman y
-            de aqui en adelante siempre se cuentan juntos.
+            de aquí en adelante siempre se cuentan juntos.
           </p>
         </div>
         <button id="reportes-unificar-close" class="icon-btn" type="button" aria-label="Cerrar">x</button>

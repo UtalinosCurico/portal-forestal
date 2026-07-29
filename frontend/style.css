@@ -2789,29 +2789,84 @@ th {
   border-top: 1px solid var(--line);
 }
 
+/* Pedido por pedido: se lee como tabla, no como una pila de tarjetas. Antes
+   cada fila era una caja con borde propio y sin encabezado, asi que la fecha,
+   la cantidad y el equipo aparecian sueltos y no se sabia que era cada dato. */
 .reportes-pedidos-lista {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
   margin-top: 0.7rem;
-  max-height: 260px;
+  max-height: 280px;
   overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
 }
 
 .reportes-pedido-fila {
   display: grid;
-  grid-template-columns: 70px 50px 1fr 1fr 55px auto;
+  grid-template-columns: 76px 68px minmax(0, 1fr) minmax(0, 1fr) 62px auto;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
+  padding: 0.45rem 0.7rem;
+  border-bottom: 1px solid var(--line);
   font-size: 0.82rem;
+}
+
+.reportes-pedido-fila:last-child {
+  border-bottom: none;
+}
+
+/* Se queda arriba al desplazar: con 30 pedidos, si el encabezado se va se
+   pierde otra vez la referencia de que columna es cada una. */
+.reportes-pedido-fila.encabezado {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface-2, var(--surface));
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .reportes-pedido-fila.atipico {
   border-left: 3px solid var(--warning);
+}
+
+/* Los nombres largos de equipo o persona no deben empujar las columnas. */
+.reportes-pedido-equipo,
+.reportes-pedido-solicitante {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* En el celular no caben seis columnas: cada pedido pasa a ser un bloque con
+   el nombre del dato al lado, que es lo unico que se lee bien en pantalla
+   chica. */
+@media (max-width: 640px) {
+  .reportes-pedido-fila.encabezado {
+    display: none;
+  }
+
+  .reportes-pedido-fila {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.15rem 0.6rem;
+    padding: 0.6rem 0.7rem;
+  }
+
+  .reportes-pedido-fila > span[data-etiqueta]::before {
+    content: attr(data-etiqueta) ": ";
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .reportes-pedido-fila > span {
+    grid-column: 1 / -1;
+    white-space: normal;
+  }
 }
 
 .reportes-pedido-cantidad {
