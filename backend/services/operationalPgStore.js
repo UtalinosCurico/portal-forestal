@@ -175,8 +175,16 @@ async function ensureSchema() {
       referencia_id INTEGER,
       leida BOOLEAN NOT NULL DEFAULT FALSE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      read_at TIMESTAMPTZ
+      read_at TIMESTAMPTZ,
+      agrupadas INTEGER NOT NULL DEFAULT 1
     )
+  `);
+
+  // Cuantos avisos quedaron resumidos en esta fila. Un trabajador que carga sus
+  // productos uno por uno generaba antes un aviso por producto.
+  await pg.query(`
+    ALTER TABLE notificaciones
+    ADD COLUMN IF NOT EXISTS agrupadas INTEGER NOT NULL DEFAULT 1
   `);
 
   await pg.query(`

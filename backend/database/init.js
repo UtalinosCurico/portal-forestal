@@ -218,10 +218,15 @@ async function createTables() {
       leida INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       read_at TEXT,
+      agrupadas INTEGER NOT NULL DEFAULT 1,
       FOREIGN KEY (usuario_destino_id) REFERENCES usuarios(id),
       FOREIGN KEY (equipo_id) REFERENCES equipos(id)
     )
   `);
+
+  // Cuantos avisos quedaron resumidos en esta fila. Un trabajador que carga sus
+  // productos uno por uno generaba antes un aviso por producto.
+  await ensureColumn("notificaciones", "agrupadas", "agrupadas INTEGER NOT NULL DEFAULT 1");
 
   await run(`
     CREATE TABLE IF NOT EXISTS push_subscriptions (

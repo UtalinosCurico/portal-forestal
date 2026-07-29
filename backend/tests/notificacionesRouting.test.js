@@ -104,6 +104,76 @@ test("crear solicitud y agregar producto desde faena notifican a admin y supervi
   );
 });
 
+// Un trabajador arma su pedido agregando los productos de a uno. Antes eso
+// generaba un aviso identico por producto y a la secretaria le llegaban todos
+// juntos; deben quedar resumidos en uno solo por solicitud.
+test("varios productos agregados a la misma solicitud dejan un solo aviso", async () => {
+  const { all, get, run, solicitudesService } = await setupSqliteScenario();
+  const jefe = await getUserByRole(get, "JEFE_FAENA");
+
+  const solicitud = await solicitudesService.createSolicitud(jefe, {
+    client_request_id: "notif-agrupa-create-001",
+    comentario: "Pedido armado de a poco",
+    items: [{ nombre_item: "Casco", cantidad: 1 }],
+  });
+
+  await run("DELETE FROM notificaciones");
+
+  for (const [indice, nombre] of ["Guantes", "Botas", "Lentes", "Chaleco"].entries()) {
+    await solicitudesService.createSolicitudItem(jefe, solicitud.id, {
+      nombre_item: nombre,
+      cantidad: 1,
+      client_request_id: `notif-agrupa-item-00${indice}`,
+    });
+  }
+
+  assert.deepEqual(
+    await listNotificationTargets(all, "SOLICITUD_ITEM"),
+    ["ADMIN", "SUPERVISOR"],
+    "cuatro productos deben dejar un aviso por destinatario, no cuatro"
+  );
+
+  const aviso = await get(
+    "SELECT mensaje, agrupadas FROM notificaciones WHERE tipo = 'SOLICITUD_ITEM' AND rol_destino = 'ADMIN'"
+  );
+  assert.equal(Number(aviso.agrupadas), 4, "el aviso debe contar los cuatro cambios");
+  assert.match(aviso.mensaje, /4 cambios/, "el mensaje debe decir cuantos cambios resume");
+});
+
+test("dos solicitudes distintas conservan su propio aviso de productos", async () => {
+  const { all, get, run, solicitudesService } = await setupSqliteScenario();
+  const jefe = await getUserByRole(get, "JEFE_FAENA");
+
+  const primera = await solicitudesService.createSolicitud(jefe, {
+    client_request_id: "notif-agrupa-sol-a",
+    items: [{ nombre_item: "Casco", cantidad: 1 }],
+  });
+  const segunda = await solicitudesService.createSolicitud(jefe, {
+    client_request_id: "notif-agrupa-sol-b",
+    items: [{ nombre_item: "Motosierra", cantidad: 1 }],
+  });
+
+  assert.notEqual(primera.id, segunda.id, "deben ser dos solicitudes distintas");
+
+  await run("DELETE FROM notificaciones");
+
+  await solicitudesService.createSolicitudItem(jefe, primera.id, {
+    nombre_item: "Guantes",
+    cantidad: 1,
+    client_request_id: "notif-agrupa-item-a",
+  });
+  await solicitudesService.createSolicitudItem(jefe, segunda.id, {
+    nombre_item: "Aceite",
+    cantidad: 1,
+    client_request_id: "notif-agrupa-item-b",
+  });
+
+  const referencias = await all(
+    "SELECT DISTINCT referencia_id FROM notificaciones WHERE tipo = 'SOLICITUD_ITEM' ORDER BY referencia_id ASC"
+  );
+  assert.equal(referencias.length, 2, "agrupar no debe mezclar solicitudes distintas");
+});
+
 test("cuando gestion cambia el estado, la notificacion va directo al solicitante", async () => {
   const { all, get, run, solicitudesService } = await setupSqliteScenario();
   const admin = await getUserByRole(get, "ADMIN");

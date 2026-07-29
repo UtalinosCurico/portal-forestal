@@ -79,6 +79,15 @@ function buildSolicitudItemMessage({ equipoNombre, itemNombre, accion, estadoIte
   return parts.join(" | ") || "Hubo cambios en un producto de la solicitud";
 }
 
+// Debe coincidir con notificacionesService.js: el comportamiento tiene que ser
+// el mismo corriendo sobre SQLite o sobre PostgreSQL.
+const VENTANA_AGRUPACION_ITEMS_MINUTOS = 30;
+
+function buildSolicitudItemGroupedMessage({ equipoNombre, cantidadCambios }) {
+  const equipo = equipoNombre ? `Equipo: ${equipoNombre} | ` : "";
+  return `${equipo}${cantidadCambios} cambios en los productos de esta solicitud`;
+}
+
 async function insertNotificationsForRoles(basePayload, roles = []) {
   const notifications = [];
 
@@ -443,18 +452,54 @@ async function createSolicitudItemNotification({
   accion,
   estadoItem = null,
 }) {
-  const notifications = await insertNotificationsForRoles(
-    {
+  const pg = getOperationalPool();
+  const notifications = [];
+
+  for (const role of MANAGEMENT_NOTIFICATION_ROLES) {
+    const { rows } = await pg.query(
+      `
+        SELECT id, agrupadas
+        FROM notificaciones
+        WHERE tipo = 'SOLICITUD_ITEM'
+          AND leida = FALSE
+          AND referencia_id = $1
+          AND rol_destino = $2
+          AND created_at >= NOW() - ($3 || ' minutes')::interval
+        ORDER BY id DESC
+        LIMIT 1
+      `,
+      [solicitudId || null, role, String(VENTANA_AGRUPACION_ITEMS_MINUTOS)]
+    );
+
+    // Ya hay un aviso sin leer de esta misma solicitud: se actualiza en vez de
+    // apilar otro. Al no devolverlo, no se emite ni se manda push, que es lo
+    // que hacia que llegaran todas de una.
+    const [existente] = rows;
+    if (existente) {
+      const cantidadCambios = Number(existente.agrupadas || 1) + 1;
+      await pg.query("UPDATE notificaciones SET mensaje = $1, agrupadas = $2 WHERE id = $3", [
+        buildSolicitudItemGroupedMessage({ equipoNombre, cantidadCambios }),
+        cantidadCambios,
+        existente.id,
+      ]);
+      continue;
+    }
+
+    const creada = await insertNotification({
       tipo: "SOLICITUD_ITEM",
       titulo: "Cambio en producto de solicitud",
       mensaje: buildSolicitudItemMessage({ equipoNombre, itemNombre, accion, estadoItem }),
+      rolDestino: role,
       equipoId: equipoId || null,
       referenciaId: solicitudId || null,
-    },
-    MANAGEMENT_NOTIFICATION_ROLES
-  );
+    });
 
-  return notifications.filter(Boolean);
+    if (creada) {
+      notifications.push(creada);
+    }
+  }
+
+  return notifications;
 }
 
 module.exports = {

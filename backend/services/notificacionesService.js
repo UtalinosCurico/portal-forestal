@@ -90,6 +90,20 @@ function buildSolicitudItemMessage({ equipoNombre, itemNombre, accion, estadoIte
   return parts.join(" | ") || "Hubo cambios en un producto de la solicitud";
 }
 
+// Minutos durante los cuales varios cambios sobre la MISMA solicitud se
+// resumen en un solo aviso, en vez de generar uno por producto.
+//
+// Un trabajador arma su pedido agregando los productos de a uno, asi que una
+// sola solicitud disparaba una tanda de avisos identicos ("Cambio en producto
+// de solicitud") separados por segundos. Media hora cubre de sobra ese armado
+// sin tapar un cambio hecho mas tarde, que si merece aviso propio.
+const VENTANA_AGRUPACION_ITEMS_MINUTOS = 30;
+
+function buildSolicitudItemGroupedMessage({ equipoNombre, cantidadCambios }) {
+  const equipo = equipoNombre ? `Equipo: ${equipoNombre} | ` : "";
+  return `${equipo}${cantidadCambios} cambios en los productos de esta solicitud`;
+}
+
 function buildSolicitudStatusMessage({ equipoNombre, repuesto, estado }) {
   const parts = [
     equipoNombre ? `Equipo: ${equipoNombre}` : null,
@@ -553,17 +567,52 @@ async function createSolicitudItemNotification({
     return latest;
   }
 
-  const notifications = await insertNotificationsForRoles(
-    {
+  const notifications = [];
+
+  for (const role of MANAGEMENT_NOTIFICATION_ROLES) {
+    const existente = await get(
+      `
+        SELECT id, agrupadas
+        FROM notificaciones
+        WHERE tipo = 'SOLICITUD_ITEM'
+          AND leida = 0
+          AND referencia_id = ?
+          AND rol_destino = ?
+          AND created_at >= datetime('now', ?)
+        ORDER BY id DESC
+        LIMIT 1
+      `,
+      [solicitudId || null, role, `-${VENTANA_AGRUPACION_ITEMS_MINUTOS} minutes`]
+    );
+
+    // Ya hay un aviso sin leer de esta misma solicitud: se actualiza en vez de
+    // apilar otro. No se emite ni se manda push, que es justo lo que hacia que
+    // llegaran todas de una.
+    if (existente) {
+      const cantidadCambios = Number(existente.agrupadas || 1) + 1;
+      await run("UPDATE notificaciones SET mensaje = ?, agrupadas = ? WHERE id = ?", [
+        buildSolicitudItemGroupedMessage({ equipoNombre, cantidadCambios }),
+        cantidadCambios,
+        existente.id,
+      ]);
+      continue;
+    }
+
+    const creada = await insertNotification({
       tipo: "SOLICITUD_ITEM",
       titulo: "Cambio en producto de solicitud",
       mensaje: buildSolicitudItemMessage({ equipoNombre, itemNombre, accion, estadoItem }),
+      rolDestino: role,
       equipoId: equipoId || null,
       referenciaId: solicitudId || null,
-    },
-    MANAGEMENT_NOTIFICATION_ROLES
-  );
+    });
 
+    if (creada) {
+      notifications.push(creada);
+    }
+  }
+
+  // insertNotification ya emite cada una al bus; no se reemite aca.
   dispatchPushNotifications(notifications);
   return notifications.at(-1) || null;
 }
