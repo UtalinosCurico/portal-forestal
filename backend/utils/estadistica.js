@@ -229,10 +229,132 @@ function calcularTendencia(valoresEnOrden = []) {
     : { direccion: "baja", variacion, etiqueta: `Bajo ${Math.abs(variacion)}%` };
 }
 
+/**
+ * Media movil: suaviza el ruido para que se vea la tendencia de fondo. Cada
+ * punto es el promedio de los ultimos `ventana` periodos, incluido el actual.
+ * Los primeros puntos usan menos datos, que es lo esperable.
+ */
+function mediaMovil(valores = [], ventana = 3) {
+  const datos = valores.map((v) => Number(v) || 0);
+  return datos.map((_, i) => {
+    const desde = Math.max(0, i - ventana + 1);
+    const trozo = datos.slice(desde, i + 1);
+    return Math.round(promedio(trozo) * 10) / 10;
+  });
+}
+
+/**
+ * Recta que mejor se ajusta a la serie (minimos cuadrados) y su R².
+ *
+ * El R² dice que porcentaje del movimiento explica la tendencia: 0.9 es un
+ * consumo que sube o baja de forma pareja y se puede proyectar con confianza;
+ * 0.1 es puro vaiven y cualquier proyeccion es una apuesta.
+ */
+function regresionLineal(valores = []) {
+  const y = valores.map((v) => Number(v) || 0);
+  const n = y.length;
+  if (n < 2) {
+    return { pendiente: 0, intercepto: y[0] || 0, r2: 0 };
+  }
+
+  const x = y.map((_, i) => i);
+  const mediaX = promedio(x);
+  const mediaY = promedio(y);
+
+  let numerador = 0;
+  let denominador = 0;
+  for (let i = 0; i < n; i += 1) {
+    numerador += (x[i] - mediaX) * (y[i] - mediaY);
+    denominador += (x[i] - mediaX) ** 2;
+  }
+
+  const pendiente = denominador === 0 ? 0 : numerador / denominador;
+  const intercepto = mediaY - pendiente * mediaX;
+
+  // R² = 1 - (error de la recta / variacion total).
+  let sumaResiduos = 0;
+  let sumaTotal = 0;
+  for (let i = 0; i < n; i += 1) {
+    sumaResiduos += (y[i] - (pendiente * x[i] + intercepto)) ** 2;
+    sumaTotal += (y[i] - mediaY) ** 2;
+  }
+
+  // Serie plana: la recta acierta perfecto, pero no hay nada que explicar.
+  const r2 = sumaTotal === 0 ? 0 : Math.max(0, 1 - sumaResiduos / sumaTotal);
+
+  return {
+    pendiente: Math.round(pendiente * 100) / 100,
+    intercepto: Math.round(intercepto * 100) / 100,
+    r2: Math.round(r2 * 100) / 100,
+  };
+}
+
+/**
+ * Que tan confiable es la proyeccion.
+ *
+ * Ojo con el R² solo: en una serie plana como 30, 32, 29, 31 el R² da casi 0
+ * porque no hay tendencia que explicar, y sin embargo es el consumo MAS
+ * predecible que existe. Lo predecible se mide con la variabilidad; el R² solo
+ * agrega confianza cuando ademas hay una tendencia clara que seguir.
+ */
+function clasificarConfianza(r2, cantidadPeriodos, cv = 1) {
+  if (cantidadPeriodos < 3) {
+    return { nivel: "baja", etiqueta: "Pocos datos" };
+  }
+  // Consumo parejo: se repite mes a mes, se puede planificar tranquilo.
+  if (cv <= 0.3) {
+    return { nivel: "alta", etiqueta: "Estimacion confiable" };
+  }
+  // Varia, pero lo hace siguiendo una tendencia clara.
+  if (r2 >= 0.7) {
+    return { nivel: "alta", etiqueta: "Estimacion confiable" };
+  }
+  if (r2 >= 0.4 || cv <= 0.6) {
+    return { nivel: "media", etiqueta: "Estimacion aproximada" };
+  }
+  return { nivel: "baja", etiqueta: "Consumo poco predecible" };
+}
+
+/**
+ * Cuanto se va a pedir el proximo periodo.
+ *
+ * Base: media movil de los ultimos periodos, que es lo que mejor funciona para
+ * demanda operativa sin estacionalidad marcada. Si ademas la tendencia es clara
+ * (R² alto) se corrige un paso en esa direccion; si el consumo es puro vaiven,
+ * proyectar la pendiente solo agrega error, asi que se deja la media movil sola.
+ */
+function proyectarProximo(valores = [], ventana = 3) {
+  const datos = valores.map((v) => Number(v) || 0);
+
+  if (datos.length < 2) {
+    return null;
+  }
+
+  const base = promedio(datos.slice(-ventana));
+  const { pendiente, r2 } = regresionLineal(datos);
+  const confianza = clasificarConfianza(r2, datos.length, coeficienteVariacion(datos));
+
+  const ajuste = r2 >= 0.4 ? pendiente : 0;
+  const estimado = Math.max(0, Math.round(base + ajuste));
+
+  return {
+    valor: estimado,
+    base: Math.round(base * 10) / 10,
+    r2,
+    pendiente,
+    confianza,
+    ventana: Math.min(ventana, datos.length),
+  };
+}
+
 module.exports = {
   percentil,
   mediana,
   promedio,
+  mediaMovil,
+  regresionLineal,
+  proyectarProximo,
+  clasificarConfianza,
   desviacionEstandar,
   coeficienteVariacion,
   clasificarRegularidad,

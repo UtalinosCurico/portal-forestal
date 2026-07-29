@@ -23,11 +23,6 @@ const periodos = require("../utils/periodos");
 // Una solicitud rechazada no representa consumo real, no debe inflar el stock.
 const ESTADOS_EXCLUIDOS = new Set(["RECHAZADO"]);
 
-function redondear(valor, decimales = 1) {
-  const factor = 10 ** decimales;
-  return Math.round((Number(valor) || 0) * factor) / factor;
-}
-
 /**
  * Recorre las solicitudes y arma, por producto, la lista de pedidos
  * individuales. Es la materia prima de todo lo demas.
@@ -207,11 +202,8 @@ async function getConsumo(actor, filters = {}) {
       const stock = estadistica.sugerirStock(serieConfiable);
       const tendencia = estadistica.calcularTendencia(serieConfiable);
 
-      // Promedio crudo, con atipicos incluidos. Solo sirve para mostrar cuanto
-      // se habria desviado la sugerencia si no se hubieran descartado.
-      const promedioSinCorregir = estadistica.promedio(
-        clavesPeriodo.map((c) => porPeriodo[c])
-      );
+      // Cuanto se va a pedir el proximo periodo, con su nivel de confianza.
+      const proyeccion = estadistica.proyectarProximo(serieConfiable);
 
       const nombreElegido = alias.nombreDe(registro.clave);
       const unificadosAMano = alias.variantesDe(registro.clave);
@@ -226,42 +218,53 @@ async function getConsumo(actor, filters = {}) {
         nombre,
         variantes,
         escrito_de_formas: variantes.length,
-        unificado_a_mano: unificadosAMano.length > 0,
-        nombres_unificados: unificadosAMano,
         unidad: unidadMasUsada ? unidadMasUsada[0] : "",
 
         total_unidades: totalUnidadesProducto,
         total_solicitudes: registro.solicitudes.size,
-        por_periodo: porPeriodo,
-        por_periodo_normal: porPeriodoNormal,
+
+        // Serie alineada a periodo.claves. Como arreglo y no como objeto: en la
+        // vista semanal la mayoria de los valores son 0, y repetir la clave en
+        // cada uno multiplicaba por diez el peso de la respuesta.
+        serie: clavesPeriodo.map((c) => porPeriodo[c] || 0),
         por_equipo: sumarPorEquipo(registro.pedidos),
 
         // Estadistica robusta: la mediana no se mueve por un pedido raro.
         tipico: stock.tipico,
-        promedio: stock.promedio,
-        promedio_sin_corregir: redondear(promedioSinCorregir),
         sugerido_min: stock.minimo,
         sugerido_max: stock.maximo,
         regularidad: stock.regularidad,
         periodos_con_consumo: stock.periodos_con_consumo,
         tendencia,
+        proyeccion,
 
-        atipicos,
+        // Solo el conteo: el detalle de cada pedido anomalo viaja una vez en la
+        // lista global, no repetido dentro de cada producto.
+        atipicos: atipicos.length,
         unidades_atipicas: unidadesAtipicas,
+
+        // Uso interno del calculo general, no se envia al navegador.
+        __porPeriodoNormal: porPeriodoNormal,
       };
     })
     .sort((a, b) => b.total_unidades - a.total_unidades);
 
   // El grafico muestra el consumo real -incluidos los atipicos, porque se
   // pidieron de verdad- pero la tendencia se lee sobre los datos limpios.
-  const consumoPorPeriodo = {};
-  const consumoPorPeriodoNormal = {};
-  for (const clave of clavesPeriodo) {
-    consumoPorPeriodo[clave] = filas.reduce((acc, f) => acc + (f.por_periodo[clave] || 0), 0);
-    consumoPorPeriodoNormal[clave] = filas.reduce(
-      (acc, f) => acc + (f.por_periodo_normal[clave] || 0),
-      0
-    );
+  const serieGeneral = clavesPeriodo.map((_, i) =>
+    filas.reduce((acc, f) => acc + (f.serie[i] || 0), 0)
+  );
+  const serieGeneralNormal = clavesPeriodo.map((clave) =>
+    filas.reduce((acc, f) => acc + (f.__porPeriodoNormal[clave] || 0), 0)
+  );
+
+  const indicesCompletos = clavesPeriodo
+    .map((c, i) => (c === periodoIncompleto ? -1 : i))
+    .filter((i) => i >= 0);
+
+  // Campo de trabajo interno: no tiene por que viajar al navegador.
+  for (const fila of filas) {
+    delete fila.__porPeriodoNormal;
   }
 
   return {
@@ -285,9 +288,16 @@ async function getConsumo(actor, filters = {}) {
       periodos: clavesPeriodo.length,
       pedidos_atipicos: atipicosGlobales.length,
     },
-    consumo_por_periodo: consumoPorPeriodo,
+    // Serie general alineada a periodo.claves, mas su media movil para dibujar
+    // la tendencia de fondo sin el ruido de los altibajos.
+    serie_general: serieGeneral,
+    media_movil: estadistica.mediaMovil(serieGeneral, agrupacion === "semana" ? 4 : 3),
     tendencia_general: estadistica.calcularTendencia(
-      clavesCompletas.map((c) => consumoPorPeriodoNormal[c])
+      indicesCompletos.map((i) => serieGeneralNormal[i])
+    ),
+    proyeccion_general: estadistica.proyectarProximo(
+      indicesCompletos.map((i) => serieGeneralNormal[i]),
+      agrupacion === "semana" ? 4 : 3
     ),
     equipos: [...equiposVistos].sort(),
     productos: filas,
@@ -310,5 +320,4 @@ async function getConsumo(actor, filters = {}) {
 
 module.exports = {
   getConsumo,
-  redondear,
 };

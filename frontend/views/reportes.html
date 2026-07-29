@@ -77,6 +77,11 @@
           <span class="reportes-kpi-label">Solicitudes</span>
           <strong class="reportes-kpi-valor" id="reportes-total-solicitudes">0</strong>
         </div>
+        <div class="reportes-kpi reportes-kpi-proyeccion">
+          <span class="reportes-kpi-label" id="reportes-proyeccion-label">Proximo mes</span>
+          <strong class="reportes-kpi-valor" id="reportes-proyeccion-valor">-</strong>
+          <span class="reportes-kpi-nota" id="reportes-proyeccion-confianza"></span>
+        </div>
         <div class="reportes-kpi" id="reportes-kpi-atipicos">
           <span class="reportes-kpi-label">Pedidos a revisar</span>
           <strong class="reportes-kpi-valor" id="reportes-total-atipicos">0</strong>
@@ -133,6 +138,34 @@
         </div>
       </div>
 
+      <details class="reportes-glosario">
+        <summary>Que significa cada numero</summary>
+        <dl class="reportes-glosario-lista">
+          <dt>Tipico</dt>
+          <dd>
+            Lo que se pide en un periodo normal. Se usa la mediana y no el
+            promedio, porque un solo pedido raro puede inflar el promedio y
+            dejarlo muy lejos de la realidad.
+          </dd>
+          <dt>Stock sugerido</dt>
+          <dd>
+            El minimo cubre un periodo normal; el maximo cubre 9 de cada 10
+            periodos. Los pedidos anomalos no entran en este calculo.
+          </dd>
+          <dt>Proximo mes</dt>
+          <dd>
+            Estimacion a partir del promedio de los ultimos periodos, corregida
+            si hay una tendencia clara. La etiqueta dice que tan confiable es:
+            un consumo parejo se puede planificar, uno irregular no.
+          </dd>
+          <dt>Comportamiento</dt>
+          <dd>
+            Si el consumo es parejo o salta mucho de un periodo a otro, y si
+            viene subiendo o bajando.
+          </dd>
+        </dl>
+      </details>
+
       <div class="table-wrap mobile-hide-on-phone">
         <table>
           <thead>
@@ -141,6 +174,7 @@
               <th>Total</th>
               <th id="reportes-th-tipico">Tipico por mes</th>
               <th>Stock sugerido</th>
+              <th id="reportes-th-proyeccion">Proximo mes</th>
               <th>Comportamiento</th>
             </tr>
           </thead>

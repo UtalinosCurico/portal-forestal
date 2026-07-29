@@ -83,11 +83,6 @@ function anchos(sheet, medidas) {
   });
 }
 
-function etiquetaPeriodo(datos, clave) {
-  const i = datos.periodo.claves.indexOf(clave);
-  return i >= 0 ? datos.periodo.etiquetas[i] : clave;
-}
-
 /** Hoja 1: la que responde "cuanto stock tengo que tener". */
 function hojaResumen(libro, datos, filtros) {
   const sheet = libro.addWorksheet("Resumen por producto");
@@ -129,7 +124,7 @@ function hojaResumen(libro, datos, filtros) {
         p.sugerido_max,
         p.regularidad?.etiqueta || "",
         p.tendencia?.etiqueta || "",
-        p.atipicos?.length || 0,
+        p.atipicos || 0,
         p.variantes.map((v) => v.nombre).join(" | "),
       ],
       i + 4,
@@ -137,7 +132,7 @@ function hojaResumen(libro, datos, filtros) {
     );
 
     // Se resalta lo que necesita revision humana, no lo que es normal.
-    if (p.atipicos?.length) {
+    if (p.atipicos) {
       row.getCell(10).fill = fill(C.alerta);
       row.getCell(10).font = { bold: true, color: { argb: C.alertaFg } };
     }
@@ -172,7 +167,7 @@ function hojaEvolucion(libro, datos) {
       sheet,
       [
         p.nombre,
-        ...datos.periodo.claves.map((c) => p.por_periodo[c] || 0),
+        ...p.serie,
         p.total_unidades,
       ],
       i + 4,
@@ -185,7 +180,7 @@ function hojaEvolucion(libro, datos) {
     sheet,
     [
       "TOTAL",
-      ...datos.periodo.claves.map((c) => datos.consumo_por_periodo[c] || 0),
+      ...datos.serie_general,
       datos.totales.unidades,
     ],
     filaTotal,

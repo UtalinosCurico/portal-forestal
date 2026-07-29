@@ -34,37 +34,71 @@ function calcularPeriodo(clave) {
   return rango ? { desde: fechaISO(rango[0]), hasta: fechaISO(rango[1]) } : { desde: "", hasta: "" };
 }
 
-/** Barras verticales de evolucion. Marca el periodo incompleto para que nadie
- *  lea una caida donde solo faltan dias por transcurrir. */
-function renderBarras(valoresPorClave, periodo) {
-  const { claves, etiquetas, incompleto } = periodo;
-
-  if (!claves.length) {
-    return "<p class='muted-text'>Sin datos en el periodo.</p>";
+/**
+ * Linea de media movil sobre las barras. Se dibuja como SVG que se estira al
+ * ancho del contenedor, asi queda alineada con las barras sin depender de
+ * medir posiciones en pixeles.
+ */
+function renderLineaMediaMovil(mediaMovil, maximo) {
+  if (!mediaMovil?.length || mediaMovil.length < 2) {
+    return "";
   }
 
-  const valores = claves.map((c) => Number(valoresPorClave[c] || 0));
-  const maximo = Math.max(...valores, 1);
+  const paso = 100 / mediaMovil.length;
+  const puntos = mediaMovil
+    .map((valor, i) => {
+      const x = paso * i + paso / 2;
+      const y = 100 - Math.min(100, (valor / maximo) * 100);
+      return `${x.toFixed(2)},${y.toFixed(2)}`;
+    })
+    .join(" ");
 
   return `
-    <div class="reportes-barras">
-      ${claves
-        .map((clave, i) => {
-          const valor = valores[i];
-          const alto = Math.round((valor / maximo) * 100);
-          const esIncompleto = clave === incompleto;
-          return `
-            <div class="reportes-barra ${esIncompleto ? "incompleta" : ""}"
-                 title="${escapeHtml(etiquetas[i])}: ${valor}${esIncompleto ? " (periodo en curso)" : ""}">
-              <div class="reportes-barra-valor">${valor}</div>
-              <div class="reportes-barra-riel">
-                <div class="reportes-barra-relleno" style="height:${alto}%"></div>
+    <svg class="reportes-linea-media" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      <polyline points="${puntos}" />
+    </svg>
+  `;
+}
+
+/**
+ * Barras verticales de evolucion, con la media movil encima para ver la
+ * tendencia de fondo. Marca el periodo incompleto para que nadie lea una caida
+ * donde solo faltan dias por transcurrir.
+ *
+ * @param {number[]} serie valores alineados a periodo.claves
+ */
+function renderBarras(serie, periodo, mediaMovil = null) {
+  const { claves, etiquetas, incompleto } = periodo;
+
+  if (!claves.length || !serie?.length) {
+    return "<p class='muted-text'>Sin movimiento en este periodo.</p>";
+  }
+
+  const valores = serie.map((v) => Number(v) || 0);
+  const maximo = Math.max(...valores, ...(mediaMovil || []), 1);
+
+  return `
+    <div class="reportes-barras-wrap">
+      ${mediaMovil ? renderLineaMediaMovil(mediaMovil, maximo) : ""}
+      <div class="reportes-barras">
+        ${claves
+          .map((clave, i) => {
+            const valor = valores[i];
+            const alto = Math.round((valor / maximo) * 100);
+            const esIncompleto = clave === incompleto;
+            return `
+              <div class="reportes-barra ${esIncompleto ? "incompleta" : ""}"
+                   title="${escapeHtml(etiquetas[i])}: ${valor}${esIncompleto ? " (aun no termina)" : ""}">
+                <div class="reportes-barra-valor">${valor}</div>
+                <div class="reportes-barra-riel">
+                  <div class="reportes-barra-relleno" style="height:${alto}%"></div>
+                </div>
+                <div class="reportes-barra-mes">${escapeHtml(etiquetas[i])}</div>
               </div>
-              <div class="reportes-barra-mes">${escapeHtml(etiquetas[i])}</div>
-            </div>
-          `;
-        })
-        .join("")}
+            `;
+          })
+          .join("")}
+      </div>
     </div>
   `;
 }
@@ -138,6 +172,21 @@ function chipRegularidad(regularidad = {}) {
   )}</span>`;
 }
 
+/** Cuanto se estima para el proximo periodo, con su nivel de confianza. */
+function celdaProyeccion(proyeccion) {
+  if (!proyeccion) {
+    return '<span class="muted-text">Sin historial</span>';
+  }
+  return `
+    <span class="reportes-proyeccion">
+      <strong>~${proyeccion.valor}</strong>
+      <span class="reportes-chip confianza-${escapeHtml(proyeccion.confianza.nivel)}">${escapeHtml(
+        proyeccion.confianza.etiqueta
+      )}</span>
+    </span>
+  `;
+}
+
 function chipTendencia(tendencia = {}) {
   const flechas = { sube: "▲", baja: "▼", estable: "=", sin_datos: "" };
   return `<span class="reportes-chip dir-${escapeHtml(tendencia.direccion || "")}">${
@@ -201,11 +250,11 @@ function renderTarjetasMovil(visibles, periodo, lista) {
         <div class="reportes-card-chips">
           ${chipRegularidad(p.regularidad)}
           ${chipTendencia(p.tendencia)}
-          ${p.atipicos?.length ? `<span class="reportes-chip alerta">${p.atipicos.length} a revisar</span>` : ""}
+          ${p.atipicos ? `<span class="reportes-chip alerta">${p.atipicos} a revisar</span>` : ""}
         </div>
         <div class="reportes-card-detalle hidden">
           <h5>Evolucion</h5>
-          ${renderBarras(p.por_periodo, periodo)}
+          ${renderBarras(p.serie, periodo)}
           <h5>Por equipo</h5>
           ${renderDesgloseEquipos(p.por_equipo) || "<p class='muted-text'>Sin desglose.</p>"}
           ${renderVariantes(p.variantes)}
@@ -224,11 +273,19 @@ function renderFilas(productos, periodo, tbody, filtroTexto, mobileList) {
     : productos;
 
   if (!visibles.length) {
-    const mensaje = filtro
-      ? "Ningun producto coincide con la busqueda."
-      : "Sin consumo registrado en el periodo.";
-    tbody.innerHTML = `<tr><td colspan="5">${mensaje}</td></tr>`;
-    if (mobileList) mobileList.innerHTML = `<div class="history-empty">${mensaje}</div>`;
+    // Estado vacio con salida: decir que pasa y que hacer, no solo "sin datos".
+    const vacio = filtro
+      ? `<div class="reportes-vacio">
+           <strong>Ningun producto coincide con "${escapeHtml(filtro)}"</strong>
+           <p class="muted-text">Prueba con parte del nombre, o revisa si se escribio distinto en las solicitudes.</p>
+         </div>`
+      : `<div class="reportes-vacio">
+           <strong>No hubo pedidos en este periodo</strong>
+           <p class="muted-text">Elige un rango de fechas mas amplio, o quita el filtro por equipo.</p>
+         </div>`;
+
+    tbody.innerHTML = `<tr><td colspan="6">${vacio}</td></tr>`;
+    if (mobileList) mobileList.innerHTML = vacio;
     return;
   }
 
@@ -258,18 +315,19 @@ function renderFilas(productos, periodo, tbody, filtroTexto, mobileList) {
             <span class="reportes-stock">${p.sugerido_min} a <strong>${p.sugerido_max}</strong></span>
             ${pocosDatos}
           </td>
+          <td>${celdaProyeccion(p.proyeccion)}</td>
           <td>
             ${chipRegularidad(p.regularidad)}
             ${chipTendencia(p.tendencia)}
-            ${p.atipicos?.length ? `<span class="reportes-chip alerta">${p.atipicos.length} a revisar</span>` : ""}
+            ${p.atipicos ? `<span class="reportes-chip alerta">${p.atipicos} a revisar</span>` : ""}
           </td>
         </tr>
         <tr class="reportes-detalle hidden" data-detalle="${escapeHtml(p.clave)}">
-          <td colspan="5">
+          <td colspan="6">
             <div class="reportes-detalle-grid">
               <div>
                 <h5>Evolucion</h5>
-                ${renderBarras(p.por_periodo, periodo)}
+                ${renderBarras(p.serie, periodo)}
               </div>
               <div>
                 <h5>Por equipo</h5>
@@ -286,8 +344,13 @@ function renderFilas(productos, periodo, tbody, filtroTexto, mobileList) {
 
 function renderDuplicados(sugerencias, lista, puedeUnificar) {
   if (!sugerencias.length) {
-    lista.innerHTML =
-      "<p class='muted-text'>No hay nombres parecidos pendientes de revisar.</p>";
+    lista.innerHTML = `
+      <div class="reportes-vacio ok">
+        <strong>Nada pendiente por revisar</strong>
+        <p class="muted-text">
+          No se detectaron nombres parecidos que pudieran ser el mismo producto.
+        </p>
+      </div>`;
     return;
   }
 
@@ -475,6 +538,19 @@ export async function initReportesView(context) {
     const unidad = agrupacion === "semana" ? "semana" : "mes";
     el("reportes-tendencia-titulo").textContent = `Consumo total por ${unidad}`;
     el("reportes-th-tipico").textContent = `Tipico por ${unidad}`;
+    el("reportes-th-proyeccion").textContent = `Proxima ${unidad}`.replace(
+      "Proxima mes",
+      "Proximo mes"
+    );
+
+    // Proyeccion general del proximo periodo.
+    const proy = datos.proyeccion_general;
+    el("reportes-proyeccion-label").textContent =
+      unidad === "semana" ? "Proxima semana" : "Proximo mes";
+    el("reportes-proyeccion-valor").textContent = proy ? `~${proy.valor}` : "-";
+    el("reportes-proyeccion-confianza").textContent = proy
+      ? `${proy.confianza.etiqueta} · media movil de ${proy.ventana}`
+      : "Sin historial suficiente";
 
     const avisoIncompleto = el("reportes-aviso-incompleto");
     if (datos.periodo.incompleto) {
@@ -507,18 +583,18 @@ export async function initReportesView(context) {
   }
 
   async function cargar() {
-    tbody.innerHTML = '<tr><td colspan="5">Calculando consumo...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6">Calculando consumo...</td></tr>';
     try {
       const respuesta = await apiRequest(`/api/reportes/consumo${construirQuery()}`);
       datos = respuesta.data;
       pintarResumen();
       renderTopProductos(datos.productos, topProductos);
-      tendenciaBox.innerHTML = renderBarras(datos.consumo_por_periodo, datos.periodo);
+      tendenciaBox.innerHTML = renderBarras(datos.serie_general, datos.periodo, datos.media_movil);
       renderAtipicos(datos.atipicos, atipicosCard, atipicosList);
       renderFilas(datos.productos, datos.periodo, tbody, searchInput.value, mobileList);
       renderDuplicados(datos.posibles_duplicados, duplicadosList, puedeUnificar);
     } catch (error) {
-      tbody.innerHTML = `<tr><td colspan="5">${escapeHtml(error.message)}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6">${escapeHtml(error.message)}</td></tr>`;
       showToast(error.message, true);
     }
   }
