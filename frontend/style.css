@@ -7022,3 +7022,22 @@ tbody tr {
 
 .status-error { color: #9f2e2e; font-weight: 700; }
 .status-warn  { color: #7a5200; font-weight: 700; }
+
+/* Producto con pedidos en unidades distintas (litros y unidades, por ejemplo).
+   Se muestra el desglose en vez de un total unico: sumar 100 unidades con 60
+   litros da 160 de nada, y presentarlo como un numero redondo lo esconde. */
+.reportes-unidades-mezcladas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.45rem;
+}
+
+.reportes-unidad-parte {
+  white-space: nowrap;
+}
+
+.reportes-unidad-parte + .reportes-unidad-parte::before {
+  content: "+ ";
+  color: var(--muted);
+}

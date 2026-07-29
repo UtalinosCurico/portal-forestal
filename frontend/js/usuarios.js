@@ -270,7 +270,7 @@ export async function initUsuariosView(context) {
     if (storageState.lockUserMutations) {
       throw new Error(
         storageState.message ||
-          "Administracion de usuarios bloqueada por seguridad en este entorno."
+          "Administración de usuarios bloqueada por seguridad en este entorno."
       );
     }
   }

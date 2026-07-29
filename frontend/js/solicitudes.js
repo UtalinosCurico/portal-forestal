@@ -1595,7 +1595,7 @@ export async function initSolicitudesView(context) {
       ? "Registra un nuevo producto dentro de esta solicitud."
       : canManageItem
         ? "Configura el producto y su seguimiento sin mezclarlo con el resto de la solicitud."
-        : "Edita solo los datos del producto. El seguimiento queda a cargo de administracion o supervision.";
+        : "Edita solo los datos del producto. El seguimiento queda a cargo de administración o supervisión.";
 
     itemNameInput.value = item?.nombre_item || "";
     itemCodeInput.value = item?.codigo_referencia || item?.codigo || "";

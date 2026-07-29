@@ -276,7 +276,7 @@ function renderAsociados(asociados, contenedor) {
         <strong>No se detectaron productos que se pidan juntos</strong>
         <p class="muted-text">
           Se revisaron ${asociados.solicitudes_analizadas} solicitudes con más de un
-          producto y no aparecio ninguna combinacion que se repita más de lo que
+          producto y no aparecio ninguna combinación que se repita más de lo que
           cabria esperar por azar.
         </p>
       </div>`;
@@ -474,7 +474,25 @@ function renderFilas(productos, periodo, tbody, filtroTexto, mobileList, puedeRe
                 : ""
             }
           </td>
-          <td><strong>${p.total_unidades}</strong>${unidad}</td>
+          <td>
+            ${
+              p.unidad_en_conflicto
+                ? // El total es una suma de unidades distintas: mostrarlo a
+                  // secas seria mentir. Se muestra el desglose real.
+                  `<span class="reportes-unidades-mezcladas" title="Este producto tiene pedidos en unidades distintas: el total no se puede sumar">
+                     ${(p.desglose_unidades || [])
+                       .map(
+                         (d) =>
+                           `<span class="reportes-unidad-parte"><strong>${d.total}</strong> ${escapeHtml(
+                             d.unidad || "sin unidad"
+                           )}</span>`
+                       )
+                       .join("")}
+                     <span class="reportes-chip alerta">unidades mezcladas</span>
+                   </span>`
+                : `<strong>${p.total_unidades}</strong>${unidad}`
+            }
+          </td>
           <td>${p.tipico}</td>
           <td>
             <span class="reportes-stock">${p.sugerido_min} a <strong>${p.sugerido_max}</strong></span>
@@ -1077,12 +1095,12 @@ export async function initReportesView(context) {
   unificadosList.addEventListener("click", async (event) => {
     const boton = event.target.closest("[data-deshacer]");
     if (!boton) return;
-    if (!window.confirm("Deshacer esta unificacion? Los productos volveran a contarse por separado.")) {
+    if (!window.confirm("Deshacer esta unificación? Los productos volveran a contarse por separado.")) {
       return;
     }
     try {
       await apiRequest(`/api/reportes/alias/${boton.dataset.deshacer}`, { method: "DELETE" });
-      showToast("Unificacion deshecha");
+      showToast("Unificación deshecha");
       await Promise.all([cargar(), cargarAlias()]);
     } catch (error) {
       showToast(error.message, true);

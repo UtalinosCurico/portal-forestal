@@ -30,7 +30,10 @@ router.post(
     const data = await productoAliasService.createAlias(req.user, req.body || {});
     res.status(201).json({
       status: "ok",
-      mensaje: "Productos unificados",
+      // Si las unidades no calzan hay que decirlo en el mismo momento de unir,
+      // no dejar que el total quede mal en silencio.
+      mensaje: data.aviso_unidades ? data.aviso_unidades.mensaje : "Productos unificados",
+      aviso: data.aviso_unidades || null,
       data,
     });
   })
@@ -43,7 +46,7 @@ router.delete(
     const data = await productoAliasService.deleteAlias(req.params.id);
     res.json({
       status: "ok",
-      mensaje: "Unificacion deshecha",
+      mensaje: "Unificación deshecha",
       data,
     });
   })

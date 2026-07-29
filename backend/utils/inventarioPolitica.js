@@ -100,7 +100,7 @@ function calcularPolitica({ demandaSemanal = [], leadTime = null, stockActual = 
       semanas_necesarias: MINIMO_SEMANAS_DEMANDA,
       mensaje:
         `Se necesitan al menos ${MINIMO_SEMANAS_DEMANDA} semanas de consumo para calcular ` +
-        `cuanto pedir. Hay ${demandaSemanal.length}.`,
+        `cuánto pedir. Hay ${demandaSemanal.length}.`,
     };
   }
 
@@ -110,7 +110,7 @@ function calcularPolitica({ demandaSemanal = [], leadTime = null, stockActual = 
       motivo: "sin_lead_time",
       mensaje:
         "Todavia no hay entregas suficientes para saber cuanto demora en llegar. " +
-        "Se necesita que se registre la recepcion de al menos " +
+        "Se necesita que se registre la recepción de al menos " +
         `${MINIMO_ENTREGAS_LEAD_TIME} pedidos.`,
     };
   }
@@ -170,7 +170,7 @@ function calcularPolitica({ demandaSemanal = [], leadTime = null, stockActual = 
  */
 function clasificarConfianza(cv, semanas) {
   if (cv <= 0.35 && semanas >= 12) {
-    return { nivel: "alta", texto: "El consumo es parejo: el numero es confiable" };
+    return { nivel: "alta", texto: "El consumo es parejo: el número es confiable" };
   }
   if (cv <= 0.75) {
     return { nivel: "media", texto: "El consumo varia algo: usar como referencia" };

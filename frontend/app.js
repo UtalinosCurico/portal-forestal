@@ -277,7 +277,7 @@ const VIEWS = {
   usuarios: {
     file: `/views/usuarios.html?v=${ASSET_VERSION}`,
     title: "Usuarios",
-    subtitle: "Administracion de usuarios",
+    subtitle: "Administración de usuarios",
     roles: ["ADMIN", "SUPERVISOR"],
   },
   powerbi: {
@@ -288,7 +288,7 @@ const VIEWS = {
   },
   "como-usar": {
     file: `/views/como-usar.html?v=${ASSET_VERSION}`,
-    title: "Como usar",
+    title: "Cómo usar",
     subtitle: "Guia del portal y apoyo para capacitacion",
     roles: ["ADMIN", "SUPERVISOR", "JEFE_FAENA", "MECANICO", "OPERADOR"],
   },

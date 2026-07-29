@@ -110,7 +110,7 @@ function renderTableHead(headEl, listConfig) {
       <th>Fecha recepción</th>
       <th>Tracking</th>
       ${optionalHeaders.join("")}
-      <th>Accion</th>
+      <th>Acción</th>
     </tr>
   `;
 }

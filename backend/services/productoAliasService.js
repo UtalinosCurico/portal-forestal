@@ -7,11 +7,68 @@
 
 const { all: sqliteAll, get: sqliteGet, run: sqliteRun } = require("../db/database");
 const { isOperationalPgEnabled, getOperationalPool } = require("./operationalPgStore");
-const { buildProductoKey } = require("../utils/productoKey");
+const { buildProductoKey, normalizeUnidad } = require("../utils/productoKey");
 const { HttpError } = require("../utils/httpError");
 
 // Corta cadenas circulares por si un dato quedara inconsistente.
 const MAX_SALTOS = 10;
+
+/**
+ * Unidades de medida usadas por cada producto, agrupadas por su clave
+ * normalizada.
+ *
+ * Se leen solo los pares distintos (nombre, unidad), que son pocos aunque haya
+ * miles de solicitudes: la normalizacion del nombre ocurre en JavaScript
+ * (buildProductoKey), asi que no se puede agrupar en SQL.
+ */
+async function unidadesPorClave() {
+  const filas = isOperationalPgEnabled()
+    ? (
+        await getOperationalPool().query(
+          "SELECT DISTINCT nombre_item, unidad_medida FROM solicitud_items"
+        )
+      ).rows
+    : await sqliteAll("SELECT DISTINCT nombre_item, unidad_medida FROM solicitud_items");
+
+  const porClave = new Map();
+  for (const fila of filas) {
+    const clave = buildProductoKey(fila.nombre_item);
+    const unidad = normalizeUnidad(fila.unidad_medida);
+    if (!clave || !unidad) continue;
+    if (!porClave.has(clave)) porClave.set(clave, new Set());
+    porClave.get(clave).add(unidad);
+  }
+
+  return porClave;
+}
+
+/**
+ * Avisa si unir estos dos productos mezclaria unidades distintas (litros con
+ * unidades, por ejemplo). No lo impide: puede que el ADMIN sepa que una de las
+ * dos esta mal escrita y quiera unirlos igual para despues corregir. Pero el
+ * total del reporte pasa a ser una suma de peras con manzanas, y eso hay que
+ * decirlo antes y no despues.
+ */
+async function detectarConflictoDeUnidades(claveVariante, claveCanonica) {
+  const porClave = await unidadesPorClave();
+  const deVariante = [...(porClave.get(claveVariante) || [])];
+  const deCanonica = [...(porClave.get(claveCanonica) || [])];
+
+  const juntas = new Set([...deVariante, ...deCanonica]);
+  if (juntas.size < 2) {
+    return null;
+  }
+
+  return {
+    unidades: [...juntas],
+    variante: { clave: claveVariante, unidades: deVariante },
+    canonica: { clave: claveCanonica, unidades: deCanonica },
+    mensaje:
+      `Ojo: estos productos no usan la misma unidad (${[...juntas].join(", ")}). ` +
+      "Si los unes, el total va a sumar cantidades que no son comparables. " +
+      "Conviene corregir antes la unidad en los pedidos.",
+  };
+}
 
 async function listAliases() {
   if (isOperationalPgEnabled()) {
@@ -211,19 +268,23 @@ async function createAlias(actor, payload = {}) {
 
   // Si la canonica resuelve hacia la variante, unirlos crearia un ciclo.
   if (resolver(canonica) === variante) {
-    throw new HttpError(400, "Esa unificacion crearia una referencia circular");
+    throw new HttpError(400, "Esa unificación crearia una referencia circular");
   }
 
   const existente = await findAliasByVariante(variante);
   if (existente) {
     throw new HttpError(
       409,
-      "Ese producto ya esta unificado con otro. Deshace la unificacion actual antes de cambiarla"
+      "Ese producto ya esta unificado con otro. Deshace la unificación actual antes de cambiarla"
     );
   }
 
   const actorId = Number(actor?.id) || null;
   const actorNombre = actor?.nombre || actor?.name || "Admin";
+
+  // Se avisa, no se bloquea: el ADMIN puede saber que una de las dos unidades
+  // esta mal escrita y querer unirlos igual.
+  const conflictoUnidades = await detectarConflictoDeUnidades(variante, canonica);
 
   if (isOperationalPgEnabled()) {
     const pg = getOperationalPool();
@@ -234,7 +295,7 @@ async function createAlias(actor, payload = {}) {
        RETURNING *`,
       [variante, canonica, nombreCanonico, actorId, actorNombre]
     );
-    return rows[0];
+    return { ...rows[0], aviso_unidades: conflictoUnidades };
   }
 
   const resultado = await sqliteRun(
@@ -245,6 +306,7 @@ async function createAlias(actor, payload = {}) {
   );
 
   return {
+    aviso_unidades: conflictoUnidades,
     id: resultado.lastID,
     clave_variante: variante,
     clave_canonica: canonica,
@@ -263,14 +325,14 @@ async function deleteAlias(aliasId) {
     const pg = getOperationalPool();
     const { rowCount } = await pg.query("DELETE FROM producto_alias WHERE id = $1", [id]);
     if (!rowCount) {
-      throw new HttpError(404, "La unificacion no existe");
+      throw new HttpError(404, "La unificación no existe");
     }
     return { id };
   }
 
   const resultado = await sqliteRun("DELETE FROM producto_alias WHERE id = ?", [id]);
   if (!resultado.changes) {
-    throw new HttpError(404, "La unificacion no existe");
+    throw new HttpError(404, "La unificación no existe");
   }
   return { id };
 }
@@ -279,6 +341,8 @@ module.exports = {
   listAliases,
   buildResolver,
   createAlias,
+  detectarConflictoDeUnidades,
+  unidadesPorClave,
   deleteAlias,
   listNombresPersonalizados,
   setNombrePersonalizado,

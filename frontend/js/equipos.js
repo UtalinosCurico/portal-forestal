@@ -69,7 +69,7 @@ function renderStockGroups(rows, container, formatDate) {
             <table>
               <thead>
                 <tr>
-                  <th>Codigo</th>
+                  <th>Código</th>
                   <th>Repuesto</th>
                   <th>Stock</th>
                   <th>Estado</th>

@@ -88,6 +88,8 @@ function recolectarPedidos(solicitudes, alias, agrupacion) {
           clave,
           variantes: new Map(),
           unidades: new Map(),
+          cantidadPorUnidad: new Map(),
+          sinUnidad: 0,
           solicitudes: new Set(),
           pedidos: [],
         });
@@ -100,6 +102,15 @@ function recolectarPedidos(solicitudes, alias, agrupacion) {
       const unidad = normalizeUnidad(item.unidad_medida);
       if (unidad) {
         registro.unidades.set(unidad, (registro.unidades.get(unidad) || 0) + 1);
+        // Ademas de cuantas veces se uso cada unidad, cuanto se pidio en cada
+        // una. Sin esto no hay forma de mostrar el desglose cuando un producto
+        // quedo con litros y unidades mezclados.
+        registro.cantidadPorUnidad.set(
+          unidad,
+          (registro.cantidadPorUnidad.get(unidad) || 0) + cantidad
+        );
+      } else {
+        registro.sinUnidad += cantidad;
       }
 
       registro.pedidos.push({
@@ -197,6 +208,22 @@ async function getConsumo(actor, filters = {}) {
 
       const unidadMasUsada = [...registro.unidades.entries()].sort((a, b) => b[1] - a[1])[0];
 
+      // Un mismo producto puede haber quedado con unidades distintas: 100
+      // "unidades" de agua potable y 60 "litros" de agua. Sumarlos da 160 de
+      // nada. Se detecta y se muestra el desglose en vez de esconderlo bajo la
+      // unidad mas frecuente, que era lo que pasaba antes.
+      const desgloseUnidades = [...registro.cantidadPorUnidad.entries()]
+        .map(([unidad, total]) => ({ unidad, total, pedidos: registro.unidades.get(unidad) || 0 }))
+        .sort((a, b) => b.total - a.total);
+
+      // Las lineas sin unidad escrita no son un conflicto: son datos sin
+      // etiquetar. El conflicto real es tener dos unidades distintas de verdad.
+      const unidadEnConflicto = desgloseUnidades.length > 1;
+
+      if (registro.sinUnidad > 0) {
+        desgloseUnidades.push({ unidad: "", total: registro.sinUnidad, pedidos: 0, sin_unidad: true });
+      }
+
       // 1. Pedidos anormalmente altos, mirando las lineas individuales.
       const atipicos = estadistica.detectarAtipicos(registro.pedidos);
       const idsAtipicos = new Set(
@@ -262,6 +289,13 @@ async function getConsumo(actor, filters = {}) {
         variantes,
         escrito_de_formas: variantes.length,
         unidad: unidadMasUsada ? unidadMasUsada[0] : "",
+
+        // Cuando hay mas de una unidad, el total de arriba es una suma de peras
+        // con manzanas. Se marca para que la vista lo advierta y para que el
+        // calculo de reposicion se niegue a dar una politica sobre datos que no
+        // se pueden sumar.
+        unidad_en_conflicto: unidadEnConflicto,
+        desglose_unidades: desgloseUnidades,
 
         total_unidades: totalUnidadesProducto,
         total_solicitudes: registro.solicitudes.size,
