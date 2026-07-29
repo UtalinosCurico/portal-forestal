@@ -137,7 +137,7 @@ async function notifyStaleItems() {
         equipoId: row.equipo_id,
         equipoNombre: row.equipo_nombre,
         itemNombre: toNotificationItemName(row),
-        accion: `Atraso: lleva ${Number(row.dias_sin_movimiento || 0)} dias sin movimiento`,
+        accion: `Atraso: lleva ${Number(row.dias_sin_movimiento || 0)} días sin movimiento`,
         estadoItem: SOLICITUD_ITEM_STATUS.POR_GESTIONAR,
       });
       notified += 1;

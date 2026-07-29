@@ -59,7 +59,7 @@ router.post(
     const endpoint = String(req.body?.endpoint || "").trim();
 
     if (!isPushConfigured()) {
-      return res.status(503).json({ error: "Las notificaciones push no estan configuradas en el servidor." });
+      return res.status(503).json({ error: "Las notificaciones push no están configuradas en el servidor." });
     }
 
     if (endpoint) {

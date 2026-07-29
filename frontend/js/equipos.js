@@ -55,7 +55,7 @@ function renderStockGroups(rows, container, formatDate) {
               <td>${item.repuesto_codigo}</td>
               <td>${item.repuesto}</td>
               <td>${item.stock}</td>
-              <td><span class='${badgeClass}'>${item.estado_stock}</span></td>
+              <td><span class='3'>${item.estado_stock}</span></td>
               <td>${formatDate(item.ultima_actualizacion)}</td>
             </tr>
           `;
@@ -73,7 +73,7 @@ function renderStockGroups(rows, container, formatDate) {
                   <th>Repuesto</th>
                   <th>Stock</th>
                   <th>Estado</th>
-                  <th>Ultima actualizacion</th>
+                  <th>Última actualización</th>
                 </tr>
               </thead>
               <tbody>${rowsHtml}</tbody>

@@ -30,7 +30,7 @@ function extractTokenFromRequest(req) {
 
 async function resolveUserFromToken(token) {
   if (!token) {
-    throw new HttpError(401, "Token de autenticacion requerido");
+    throw new HttpError(401, "Token de autenticación requerido");
   }
 
   const payload = jwt.verify(token, JWT_SECRET);

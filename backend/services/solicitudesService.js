@@ -40,7 +40,7 @@ function getSolicitudStatusLabel(status) {
   const normalized = String(status || "").trim().toUpperCase();
   const labels = {
     PENDIENTE: "Pendiente",
-    EN_REVISION: "En gestion",
+    EN_REVISION: "En gestión",
     APROBADO: "Aprobada",
     EN_DESPACHO: "En despacho",
     ENTREGADO: "Entregada",
@@ -402,7 +402,7 @@ function buildSolicitudSummary(items) {
     totalItems,
     totalUnidades,
     repuestoResumen:
-      totalItems === 1 ? firstItem : `${firstItem} y ${Math.max(totalItems - 1, 0)} item(s) mas`,
+      totalItems === 1 ? firstItem : `${firstItem} y ${Math.max(totalItems - 1, 0)} item(s) más`,
     cantidadResumen: totalUnidades,
   };
 }
@@ -1286,7 +1286,7 @@ async function refreshSolicitudSummary(solicitudId, options = {}) {
         solicitudId,
         currentSolicitud.estado,
         nextStatus,
-        options.reason || "El estado general se ajusto segun el avance de los productos",
+        options.reason || "El estado general se ajusto según el avance de los productos",
         options.actorId,
         options.actorName,
       ]
@@ -1559,7 +1559,7 @@ async function createSolicitud(actor, payload) {
       const existing = await findSolicitudIdByClientRequestId(clientRequestId);
       if (existing) {
         console.warn(
-          `[FMN] Solicitud duplicada evitada por indice unico para actor ${actor.id} con client_request_id=${clientRequestId}`
+          `[FMN] Solicitud duplicada evitada por indice único para actor ${actor.id} con client_request_id=${clientRequestId}`
         );
         return getSolicitudById(existing.id, actor);
       }
@@ -1605,7 +1605,7 @@ async function updateSolicitud(actor, solicitudId, payload) {
 
     const requestedEstado = payload.estado ? String(payload.estado).trim().toUpperCase() : null;
     if (requestedEstado && requestedEstado !== SOLICITUD_STATUS.ENTREGADO) {
-      throw new HttpError(403, "Desde este perfil solo puedes confirmar la recepcion");
+      throw new HttpError(403, "Desde este perfil solo puedes confirmar la recepción");
     }
     if (
       requestedEstado === SOLICITUD_STATUS.ENTREGADO &&
@@ -1614,7 +1614,7 @@ async function updateSolicitud(actor, solicitudId, payload) {
     ) {
       throw new HttpError(
         409,
-        "Solo puedes confirmar la recepcion cuando la solicitud este en despacho"
+        "Solo puedes confirmar la recepción cuando la solicitud este en despacho"
       );
     }
 
@@ -1625,7 +1625,7 @@ async function updateSolicitud(actor, solicitudId, payload) {
     ) {
       throw new HttpError(
         409,
-        "Solo puedes actualizar comentarios en pendiente o al confirmar la recepcion"
+        "Solo puedes actualizar comentarios en pendiente o al confirmar la recepción"
       );
     }
   }
@@ -1775,7 +1775,7 @@ async function updateSolicitud(actor, solicitudId, payload) {
           ? String(payload.comentario)
           : items
             ? "Detalle de solicitud actualizado"
-            : "Actualizacion de solicitud"),
+            : "Actualización de solicitud"),
         actor.id,
         actorName,
       ]
@@ -1987,7 +1987,7 @@ async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
       payload.codigo_referencia ?? payload.codigoReferencia ?? payload.codigo ?? ""
     ).trim();
     if (!codigoReferenciaNueva) {
-      throw new HttpError(400, "numero de parte invalido");
+      throw new HttpError(400, "número de parte invalido");
     }
     updates.push("codigo_referencia = ?");
     params.push(codigoReferenciaNueva);
@@ -2150,7 +2150,7 @@ async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
     refreshResult = await refreshSolicitudSummary(solicitudId, {
       actorId: actor.id,
       actorName: actor.nombre || actor.name || "Sistema",
-      reason: "El estado general se ajusto segun el avance de los productos",
+      reason: "El estado general se ajusto según el avance de los productos",
     });
 
     const historialDetalle = [
@@ -2165,7 +2165,7 @@ async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
       payload.codigo_referencia !== undefined ||
       payload.codigoReferencia !== undefined ||
       payload.codigo !== undefined
-        ? `Numero de parte: ${codigoReferenciaNueva}`
+        ? `Número de parte: ${codigoReferenciaNueva}`
         : null,
       payload.usuario_final !== undefined || payload.usuarioFinal !== undefined
         ? `Usuario final: ${usuarioFinalNuevo}`
@@ -2190,7 +2190,7 @@ async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
           ? `Recepcionado por: ${receiver?.nombre || actor.nombre || actor.name || "Sistema"}`
           : null,
       payload.comentario_gestion !== undefined || payload.comentarioGestion !== undefined
-        ? `Comentario de gestion: ${String(payload.comentario_gestion ?? payload.comentarioGestion ?? "").trim() || "Sin comentario"}`
+        ? `Comentario de gestión: ${String(payload.comentario_gestion ?? payload.comentarioGestion ?? "").trim() || "Sin comentario"}`
         : null,
     ]
       .filter(Boolean)
@@ -2367,7 +2367,7 @@ async function createSolicitudItem(actor, solicitudId, payload = {}) {
       const existing = await findSolicitudItemByClientRequestId(clientRequestId);
       if (existing && Number(existing.solicitud_id) === Number(solicitudId)) {
         console.warn(
-          `[FMN] Producto duplicado evitado por indice unico en solicitud ${solicitudId} con client_request_id=${clientRequestId}`
+          `[FMN] Producto duplicado evitado por indice único en solicitud ${solicitudId} con client_request_id=${clientRequestId}`
         );
         return {
           item: await loadSolicitudItemRecord(solicitudId, existing.id),
@@ -2632,7 +2632,7 @@ async function removeSolicitudMessageImage(actor, solicitudId, mensajeId) {
       solicitudId,
       solicitud.estado,
       solicitud.estado,
-      "Se elimino una imagen del chat de la solicitud",
+      "Se eliminó una imagen del chat de la solicitud",
       actor.id,
       actor.nombre || actor.name || "Sistema",
     ]

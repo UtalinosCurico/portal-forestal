@@ -28,7 +28,7 @@ function parseCommitMessage(raw) {
     return null;
   }
 
-  // Formato convencional: "tipo(scope): titulo" o "tipo: titulo"
+  // Formato convencional: "tipo(scope): título" o "tipo: título"
   const match = msg.match(/^([a-z]+)(?:\([^)]*\))?[!]?:\s*(.+)/i);
   if (match) {
     const prefix = match[1].toLowerCase();

@@ -92,8 +92,8 @@ function hojaResumen(libro, datos, filtros) {
     "Total pedido",
     "Solicitudes",
     `Consumo tipico por ${datos.periodo.agrupacion}`,
-    "Stock minimo sugerido",
-    "Stock maximo sugerido",
+    "Stock mínimo sugerido",
+    "Stock máximo sugerido",
     "Regularidad",
     "Tendencia",
     "Pedidos anomalos",
@@ -103,7 +103,7 @@ function hojaResumen(libro, datos, filtros) {
   titulo(sheet, "Consumo por producto — Portal FMN", cols.length);
   meta(
     sheet,
-    `Periodo: ${filtros.fechaDesde || "inicio"} a ${filtros.fechaHasta || "hoy"}  |  ` +
+    `Período: ${filtros.fechaDesde || "inicio"} a ${filtros.fechaHasta || "hoy"}  |  ` +
       `Agrupado por ${datos.periodo.agrupacion}  |  ` +
       `${datos.totales.productos_distintos} productos, ${datos.totales.unidades} unidades`,
     cols.length,
@@ -155,8 +155,8 @@ function hojaEvolucion(libro, datos) {
   meta(
     sheet,
     datos.periodo.incompleto
-      ? `Atencion: "${datos.periodo.etiqueta_incompleto}" esta incompleto y no se uso para calcular tendencias.`
-      : "Todos los periodos mostrados estan completos.",
+      ? `Atención: "${datos.periodo.etiqueta_incompleto}" esta incompleto y no se uso para calcular tendencias.`
+      : "Todos los períodos mostrados están completos.",
     cols.length,
     2
   );
@@ -201,7 +201,7 @@ function hojaEquipos(libro, datos) {
   const cols = ["Producto", ...datos.equipos, "Total"];
 
   titulo(sheet, "Consumo por equipo", cols.length);
-  meta(sheet, "Unidades pedidas por cada equipo en el periodo.", cols.length, 2);
+  meta(sheet, "Unidades pedidas por cada equipo en el período.", cols.length, 2);
   encabezados(sheet, cols, 3);
 
   datos.productos.forEach((p, i) => {
@@ -242,7 +242,7 @@ function hojaAtipicos(libro, datos) {
   encabezados(sheet, cols, 3);
 
   if (!datos.atipicos.length) {
-    const row = filaDatos(sheet, ["No se detectaron pedidos anomalos en el periodo."], 4, false);
+    const row = filaDatos(sheet, ["No se detectaron pedidos anomalos en el período."], 4, false);
     row.getCell(1).fill = fill(C.ok);
     sheet.mergeCells(4, 1, 4, cols.length);
   } else {

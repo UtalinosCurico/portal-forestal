@@ -18,7 +18,7 @@ function animateCount(el, target) {
 
 const STATUS_LABELS = {
   PENDIENTE: "Pendiente",
-  EN_REVISION: "En gestion",
+  EN_REVISION: "En gestión",
   APROBADO: "Aprobada",
   EN_DESPACHO: "En despacho",
   ENTREGADO: "Entregada",
@@ -27,8 +27,8 @@ const STATUS_LABELS = {
 
 const STATUS_OPTIONS = [
   { key: "PENDIENTE", label: "Pendiente", hint: "Recien creada o en espera" },
-  { key: "EN_REVISION", label: "En gestion", hint: "Se encuentra en gestion" },
-  { key: "APROBADO", label: "Aprobada", hint: "Lista para gestion" },
+  { key: "EN_REVISION", label: "En gestión", hint: "Se encuentra en gestión" },
+  { key: "APROBADO", label: "Aprobada", hint: "Lista para gestión" },
   { key: "EN_DESPACHO", label: "En despacho", hint: "Va en camino" },
   { key: "ENTREGADO", label: "Entregada", hint: "Recibida por el equipo" },
   { key: "RECHAZADO", label: "Rechazada", hint: "No sigue adelante" },
@@ -93,7 +93,7 @@ const ROLE_ACTIONS = {
   },
   SUPERVISOR: {
     pill: "Supervision",
-    title: "Gestion diaria",
+    title: "Gestión diaria",
     text: "Prioriza pendientes y solicitudes en despacho para mantener continuidad operativa.",
     primary: { label: "Ver pendientes", action: "FILTER_PENDING" },
     secondary: { label: "Ver en despacho", action: "FILTER_DISPATCH" },
@@ -101,14 +101,14 @@ const ROLE_ACTIONS = {
   JEFE_FAENA: {
     pill: "Jefatura",
     title: "Seguimiento del equipo",
-    text: "Revisa solicitudes de tu equipo, deja observaciones y confirma recepcion cuando corresponda.",
+    text: "Revisa solicitudes de tu equipo, deja observaciones y confirma recepción cuando corresponda.",
     primary: { label: "Nueva solicitud", action: "OPEN_CREATE" },
     secondary: { label: "Ver en despacho", action: "FILTER_DISPATCH" },
   },
   MECANICO: {
     pill: "Mecanico",
     title: "Solicitudes del taller",
-    text: "Registra pedidos, revisa el estado del encargo y confirma recepcion cuando corresponda.",
+    text: "Registra pedidos, revisa el estado del encargo y confirma recepción cuando corresponda.",
     primary: { label: "Nueva solicitud", action: "OPEN_CREATE" },
     secondary: { label: "Ver pendientes", action: "FILTER_PENDING" },
   },
@@ -149,7 +149,7 @@ function getStatusClass(status) {
 }
 
 function renderStatusBadge(status) {
-  return `<span class="${getStatusClass(status)}">${getStatusLabel(status)}</span>`;
+  return `<span class="0">${getStatusLabel(status)}</span>`;
 }
 
 function getUrgencyClass(days = 0) {
@@ -161,7 +161,7 @@ function getUrgencyClass(days = 0) {
 
 function renderUrgencyBadge(days = 0) {
   const value = Math.max(0, Number(days || 0));
-  return `<span class="urgencia-badge ${getUrgencyClass(value)}">${value} dia${value !== 1 ? "s" : ""} sin movimiento</span>`;
+  return `<span class="urgencia-badge 0">${value} día${value !== 1 ? "s" : ""} sin movimiento</span>`;
 }
 
 function getItemStatusLabel(status) {
@@ -174,7 +174,7 @@ function getItemStatusClass(status) {
 }
 
 function renderItemStatusBadge(status) {
-  return `<span class="${getItemStatusClass(status)}">${getItemStatusLabel(status)}</span>`;
+  return `<span class="0">${getItemStatusLabel(status)}</span>`;
 }
 
 function renderSolicitudStepper(status) {
@@ -224,8 +224,8 @@ function renderStatusActions(currentStatus, canManage) {
       option.key === currentStatus ? "status-action-btn active" : "status-action-btn";
     return `
       <button
-        class="${className}"
-        data-status-value="${option.key}"
+        class="0"
+        data-status-value="1"
         type="button"
       >
         <strong>${option.label}</strong>
@@ -310,8 +310,8 @@ function renderHistoryMore(meta = {}) {
     return "";
   }
   return `
-    <button class="action-btn secondary history-load-more-btn" data-history-next-page="${page + 1}" type="button">
-      Ver mas historial (${page} de ${pages})
+    <button class="action-btn secondary history-load-more-btn" data-history-next-page="0" type="button">
+      Ver más historial (${page} de ${pages})
     </button>
   `;
 }
@@ -368,7 +368,7 @@ function renderProgressSummary(items = []) {
   return `
     <div class="progress-bar-wrap">
       <div class="progress-bar-track">
-        <div class="progress-bar-fill" style="width: ${pct}%"></div>
+        <div class="progress-bar-fill" style="width: 0%"></div>
       </div>
       <span class="progress-bar-label">${progressLabel}</span>
     </div>
@@ -425,16 +425,16 @@ function renderDeliveryAssistant(solicitud, options = {}) {
 
   let title = "Seguimiento de entrega";
   let text =
-    "Puedes revisar cada producto por separado o aplicar una accion completa sobre toda la solicitud.";
+    "Puedes revisar cada producto por separado o aplicar una acción completa sobre toda la solicitud.";
 
   if (allDelivered) {
     title = "Solicitud completa";
-    text = "Todos los productos ya estan entregados y la solicitud queda cerrada.";
+    text = "Todos los productos ya están entregados y la solicitud queda cerrada.";
   } else if (allShipped) {
     title = "Solicitud lista para cierre";
-    text = `Todos los productos ya estan enviados. Quedan ${pendingDelivery} por recepcionar. Puedes entregarlos uno a uno o cerrar toda la solicitud.`;
+    text = `Todos los productos ya están enviados. Quedan ${pendingDelivery} por recepcionar. Puedes entregarlos uno a uno o cerrar toda la solicitud.`;
   } else if (pendingDispatch > 0 || pendingDelivery > 0) {
-    text = `Aun faltan ${pendingDispatch} producto(s) por despachar y ${pendingDelivery} por entregar. Puedes seguir uno a uno desde cada producto o usar una accion masiva.`;
+    text = `Aun faltan ${pendingDispatch} producto(s) por despachar y ${pendingDelivery} por entregar. Puedes seguir uno a uno desde cada producto o usar una acción masiva.`;
   }
 
   const actions = [];
@@ -455,7 +455,7 @@ function renderDeliveryAssistant(solicitud, options = {}) {
 
   if (!canManage && canConfirm && !allDelivered) {
     text =
-      "Puedes confirmar toda la recepcion de una vez o revisar el detalle de cada producto antes de cerrar.";
+      "Puedes confirmar toda la recepción de una vez o revisar el detalle de cada producto antes de cerrar.";
   }
 
   const itemsHint = !allDelivered
@@ -481,14 +481,14 @@ function buildBulkStatusWarning(solicitud, targetStatus) {
   if (targetStatus === "EN_DESPACHO") {
     const remaining = Math.max(summary.totalTrackable - (summary.enviados + summary.entregados), 0);
     if (remaining > 0) {
-      return `Esta accion marcara ${remaining} producto(s) pendiente(s) como enviados. Deseas continuar?`;
+      return `Esta acción marcara ${remaining} producto(s) pendiente(s) como enviados. Deseas continuar?`;
     }
   }
 
   if (targetStatus === "ENTREGADO") {
     const remaining = Math.max(summary.totalTrackable - summary.entregados, 0);
     if (remaining > 0) {
-      return `Esta accion marcara ${remaining} producto(s) pendiente(s) como entregados y cerrara toda la solicitud. Deseas continuar?`;
+      return `Esta acción marcara ${remaining} producto(s) pendiente(s) como entregados y cerrara toda la solicitud. Deseas continuar?`;
     }
   }
 
@@ -510,7 +510,7 @@ function getSolicitudPrimaryAction(item, role) {
 
   if (canConfirm) {
     return {
-      label: "Confirmar recepcion",
+      label: "Confirmar recepción",
       hint: "Cierra la solicitud cuando el pedido llegue",
       emphasis: true,
     };
@@ -575,7 +575,7 @@ function renderMessages(messages = [], options = {}) {
         message.imagen_data && (canRemoveImage || Number(message.remitente_id) === Number(currentUserId))
           ? `<button
                class="chat-remove-image-btn"
-               data-message-id="${message.id}"
+               data-message-id="0"
                type="button"
              >
                Quitar imagen
@@ -584,8 +584,8 @@ function renderMessages(messages = [], options = {}) {
 
       const imagen = message.imagen_data
         ? `<div class="chat-image-block">
-             <a href="${message.imagen_data}" target="_blank" rel="noreferrer">
-               <img src="${message.imagen_data}" alt="${message.imagen_nombre || "Adjunto"}" class="chat-image" />
+             <a href="0" target="_blank" rel="noreferrer">
+               <img src="1" alt="${message.imagen_nombre || "Adjunto"}" class="chat-image" />
              </a>
              ${imageActions}
            </div>`
@@ -818,12 +818,12 @@ function buildDetailItemRow(item = {}, options = {}) {
   const summaryLine = [
     ["Cantidad", item.cantidad || 1],
     ["Unidad / talla", item.unidad_medida || "Sin unidad o talla"],
-    ["Numero de parte", item.codigo_referencia || "Sin numero de parte"],
+    ["Número de parte", item.codigo_referencia || "Sin número de parte"],
     ["Usuario final", item.usuario_final || "Sin usuario final"],
   ];
   const detailText = item.detalle || item.comentario || "Sin detalle";
   const gestion = item.comentario_gestion
-    ? `<div class="table-subline">Comentario de gestion: ${item.comentario_gestion}</div>`
+    ? `<div class="table-subline">Comentario de gestión: ${item.comentario_gestion}</div>`
     : "";
   const encargado = item.encargado_nombre
     ? `<div class="table-subline">Encargado: ${item.encargado_nombre}</div>`
@@ -857,7 +857,7 @@ function buildDetailItemRow(item = {}, options = {}) {
           ${canManageItem ? `
           <div class="item-quick-actions">
             ${["GESTIONADO", "ENVIADO", "ENTREGADO"].map((s) => `
-              <button class="item-quick-btn${item.estado_item === s ? " item-quick-active" : ""}" data-quick-status="${s}" type="button">${getItemStatusLabel(s)}</button>
+              <button class="item-quick-btn0" data-quick-status="1" type="button">${getItemStatusLabel(s)}</button>
             `).join("")}
           </div>` : ""}
         </div>
@@ -1005,7 +1005,7 @@ async function optimizeImageFile(file) {
   }
 
   if (dataUrl.length > TARGET_IMAGE_LIMIT) {
-    throw new Error("La imagen sigue siendo muy grande. Prueba con una captura o foto mas liviana.");
+    throw new Error("La imagen sigue siendo muy grande. Prueba con una captura o foto más liviana.");
   }
 
   const safeName = file.name.replace(/\.[^.]+$/, "") || "imagen";
@@ -1271,7 +1271,7 @@ export async function initSolicitudesView(context) {
       groups.get(item.solicitud_id).push(item);
     }
 
-    const statusLabel = { PENDIENTE: "Pendiente", EN_REVISION: "En gestion", APROBADO: "Aprobada", EN_DESPACHO: "En despacho" };
+    const statusLabel = { PENDIENTE: "Pendiente", EN_REVISION: "En gestión", APROBADO: "Aprobada", EN_DESPACHO: "En despacho" };
 
     let html = `<div class="inline-pending-table">`;
     let groupIndex = 0;
@@ -1280,13 +1280,13 @@ export async function initSolicitudesView(context) {
       const first = groupItems[0];
       const estado = statusLabel[first.solicitud_estado] || first.solicitud_estado || "";
       html += `
-        <div class="ipt-group" style="animation-delay:${delay}s">
+        <div class="ipt-group" style="animation-delay:0s">
           <div class="ipt-group-head">
             <span class="ipt-group-id">#${solicitudId}</span>
             <span class="ipt-group-equipo">${first.solicitud_equipo || "Sin equipo"}</span>
             <span class="ipt-group-quien">${first.solicitante_nombre || "?"}</span>
             <span class="mini-chip">${estado}</span>
-            <button class="ipt-open-btn" type="button" data-open-solicitud="${solicitudId}">Ver</button>
+            <button class="ipt-open-btn" type="button" data-open-solicitud="5">Ver</button>
           </div>`;
       for (const item of groupItems) {
         const ref = item.codigo_referencia ? `<span class="ipt-ref">${item.codigo_referencia}</span>` : "";
@@ -2739,7 +2739,7 @@ export async function initSolicitudesView(context) {
       <strong>${panelTitle}</strong>
       <p>${warning}</p>
       <div class="actions-inline">
-        <button class="action-btn" data-bulk-confirm="${targetStatus}" type="button">Confirmar</button>
+        <button class="action-btn" data-bulk-confirm="2" type="button">Confirmar</button>
         <button class="action-btn secondary" data-bulk-cancel type="button">Cancelar</button>
       </div>
     `;
@@ -2901,7 +2901,7 @@ export async function initSolicitudesView(context) {
       messageRemoveImageBtn.classList.remove("hidden");
       messagePreview.innerHTML = `
         <div class="image-preview-meta">Imagen lista para enviar: ${pendingImageName}</div>
-        <img src="${pendingImageData}" alt="${pendingImageName}" class="chat-image preview-image" />
+        <img src="1" alt="${pendingImageName}" class="chat-image preview-image" />
       `;
     } catch (error) {
       resetMessageComposer();
@@ -2933,7 +2933,7 @@ export async function initSolicitudesView(context) {
     try {
       const destinatarioId = destinatarioSelect.value ? Number(destinatarioSelect.value) : 0;
       if (!destinatarioId) {
-        throw new Error("Selecciona un destinatario para que el mensaje genere notificacion.");
+        throw new Error("Selecciona un destinatario para que el mensaje genere notificación.");
       }
 
       await context.apiRequest(`/api/solicitudes/${currentSolicitud.id}/mensajes`, {

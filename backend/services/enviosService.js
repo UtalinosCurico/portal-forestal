@@ -94,7 +94,7 @@ function buildScope(actor, filters = {}, alias = "es") {
   const search = normalizeSearch(filters.q || filters.buscar || filters.search);
   if (search) {
     conditions.push(
-      "(LOWER(i.nombre) LIKE ? OR LOWER(i.codigo) LIKE ? OR LOWER(e.nombre_equipo) LIKE ?)"
+      "(LOWER(i.nombre) LIKE ? OR LOWER(i.código) LIKE ? OR LOWER(e.nombre_equipo) LIKE ?)"
     );
     params.push(`%${search}%`, `%${search}%`, `%${search}%`);
   }
@@ -349,7 +349,7 @@ async function createEnvio(actor, payload) {
           (inventario_id, tipo, cantidad, detalle, actor_id)
         VALUES (?, 'ENVIO_FAENA_ENTRADA', ?, ?, ?)
       `,
-      [repuestoId, cantidad, `Recepcion teorica en ${equipo.nombre_equipo}`, actor.id]
+      [repuestoId, cantidad, `Recepción teorica en ${equipo.nombre_equipo}`, actor.id]
     );
 
     await syncInventarioFaena(repuestoId);
@@ -434,7 +434,7 @@ async function confirmRecepcion(actor, envioId, payload = {}) {
   const role = getActorRole(actor);
   const allowedRoles = [ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.SECRETARIA, ROLES.JEFE_FAENA, ROLES.MECANICO];
   if (!allowedRoles.includes(role)) {
-    throw new HttpError(403, "No tiene permisos para confirmar recepcion");
+    throw new HttpError(403, "No tiene permisos para confirmar recepción");
   }
 
   const current = await get("SELECT * FROM envios_stock WHERE id = ?", [envioId]);
@@ -445,7 +445,7 @@ async function confirmRecepcion(actor, envioId, payload = {}) {
   if (!isGlobalRole(role)) {
     requireTeamAssigned(actor);
     if (Number(current.equipo_destino_id) !== Number(actor.equipo_id)) {
-      throw new HttpError(403, "No puede confirmar recepcion de otro equipo");
+      throw new HttpError(403, "No puede confirmar recepción de otro equipo");
     }
   }
 
@@ -453,7 +453,7 @@ async function confirmRecepcion(actor, envioId, payload = {}) {
   const baseComment = current.comentario ? String(current.comentario).trim() : "";
   const mergedComment = comentarioExtra
     ? [baseComment, comentarioExtra].filter(Boolean).join(" | ")
-    : baseComment || "Recepcion confirmada en faena";
+    : baseComment || "Recepción confirmada en faena";
 
   await run(
     `

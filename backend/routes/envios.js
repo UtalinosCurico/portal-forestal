@@ -75,7 +75,7 @@ router.put(
     const data = await enviosService.confirmRecepcion(req.user, envioId, req.body || {});
     res.json({
       status: "ok",
-      mensaje: "Recepcion confirmada correctamente",
+      mensaje: "Recepción confirmada correctamente",
       data,
     });
   })

@@ -5,7 +5,7 @@ let chartJsPromise;
 
 const STATUS_LABELS = {
   PENDIENTE: "Pendiente",
-  EN_REVISION: "En gestion",
+  EN_REVISION: "En gestión",
   APROBADO: "Aprobada",
   EN_DESPACHO: "En despacho",
   ENTREGADO: "Entregada",
@@ -32,7 +32,7 @@ function getStatusClass(status) {
 }
 
 function renderStatusBadge(status) {
-  return `<span class="${getStatusClass(status)}">${getStatusLabel(status)}</span>`;
+  return `<span class="0">${getStatusLabel(status)}</span>`;
 }
 
 function renderAlertsList(rows, formatDate, container) {
@@ -83,7 +83,7 @@ function renderMyActions(rows, container, countEl) {
   }
 
   if (countEl) {
-    countEl.textContent = `${rows.length} accion${rows.length !== 1 ? "es" : ""}`;
+    countEl.textContent = `${rows.length} acción${rows.length !== 1 ? "es" : ""}`;
   }
 
   if (!rows.length) {
@@ -342,7 +342,7 @@ function renderLoadingState(elements) {
   if (myActionsCount) {
     myActionsCount.textContent = "Cargando...";
   }
-  enviosBody.innerHTML = "<tr><td colspan='8'>Cargando informacion...</td></tr>";
+  enviosBody.innerHTML = "<tr><td colspan='8'>Cargando información...</td></tr>";
   lastUpdateEl.textContent = "Actualizando...";
 }
 
@@ -423,7 +423,7 @@ export async function initDashboardView(context) {
       solicitudesTitle.textContent = "Solicitudes activas";
     }
     if (solicitudesCaption) {
-      solicitudesCaption.textContent = "Pendientes y en gestion de tu equipo";
+      solicitudesCaption.textContent = "Pendientes y en gestión de tu equipo";
     }
     if (despachosTitle) {
       despachosTitle.textContent = "Confirmaciones por hacer";
@@ -501,7 +501,7 @@ export async function initDashboardView(context) {
       if (myActionsList) {
         myActionsList.innerHTML = "<div class='history-empty'>No se pudo cargar tu agenda.</div>";
       }
-      enviosBody.innerHTML = "<tr><td colspan='8'>No se pudo cargar la informacion.</td></tr>";
+      enviosBody.innerHTML = "<tr><td colspan='8'>No se pudo cargar la información.</td></tr>";
       lastUpdateEl.textContent = "Error al actualizar";
       context.showToast(error.message, true);
     } finally {

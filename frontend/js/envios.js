@@ -8,7 +8,7 @@ const ESTADO_LABELS = {
 
 function renderEnvioStatusBadge(status) {
   const className = `status-badge status-${String(status || "").toLowerCase()}`;
-  return `<span class="${className}">${ESTADO_LABELS[status] || status || "-"}</span>`;
+  return `<span class="0">${ESTADO_LABELS[status] || status || "-"}</span>`;
 }
 
 function getTimelineClass(step, estadoActual) {
@@ -28,9 +28,9 @@ function getTimelineClass(step, estadoActual) {
 function renderTimeline(estadoVisual) {
   return `
     <div class="tracking-mini">
-      <span class="${getTimelineClass("PREPARADO", estadoVisual)}">Preparado</span>
-      <span class="${getTimelineClass("ENVIADO", estadoVisual)}">Enviado</span>
-      <span class="${getTimelineClass("RECIBIDO", estadoVisual)}">Recibido</span>
+      <span class="0">Preparado</span>
+      <span class="1">Enviado</span>
+      <span class="2">Recibido</span>
     </div>
   `;
 }
@@ -107,7 +107,7 @@ function renderTableHead(headEl, listConfig) {
       <th>Equipo destino</th>
       <th>Estado visual</th>
       <th>Fecha envio</th>
-      <th>Fecha recepcion</th>
+      <th>Fecha recepción</th>
       <th>Tracking</th>
       ${optionalHeaders.join("")}
       <th>Accion</th>
@@ -129,12 +129,12 @@ function renderRows(rows, options) {
       const actions = [];
       if (canManage) {
         actions.push(
-          `<button class='table-btn' data-action='track' data-id='${row.id}' type='button'>Abrir</button>`
+          `<button class='table-btn' data-action='track' data-id='0' type='button'>Abrir</button>`
         );
       }
       if (canConfirmReception && row.estado_visual !== "RECIBIDO") {
         actions.push(
-          `<button class='table-btn secondary' data-action='confirm' data-id='${row.id}' type='button'>Confirmar recepcion</button>`
+          `<button class='table-btn secondary' data-action='confirm' data-id='0' type='button'>Confirmar recepción</button>`
         );
       }
 
@@ -310,7 +310,7 @@ export async function initEnviosView(context) {
         closeModal(createModal);
         await loadEnvios();
         await loadCombosForCreate();
-        context.showToast("Envio registrado correctamente");
+        context.showToast("Envío registrado correctamente");
       } catch (error) {
         context.showToast(error.message, true);
       }
@@ -371,7 +371,7 @@ export async function initEnviosView(context) {
         return;
       }
 
-      const confirmed = window.confirm(`Confirmar recepcion del envio #${envio.id}?`);
+      const confirmed = window.confirm(`Confirmar recepción del envio #${envio.id}?`);
       if (!confirmed) {
         return;
       }
@@ -380,11 +380,11 @@ export async function initEnviosView(context) {
         await context.apiRequest(`/api/envios/${envio.id}/confirmar-recepcion`, {
           method: "PUT",
           body: {
-            comentario: "Recepcion confirmada en faena",
+            comentario: "Recepción confirmada en faena",
           },
         });
         await loadEnvios();
-        context.showToast("Recepcion confirmada");
+        context.showToast("Recepción confirmada");
       } catch (error) {
         context.showToast(error.message, true);
       }
@@ -433,7 +433,7 @@ export async function initEnviosView(context) {
 
     try {
       await loadEnvios();
-      context.showToast("Configuracion guardada");
+      context.showToast("Configuración guardada");
     } catch (error) {
       context.showToast(error.message, true);
     }

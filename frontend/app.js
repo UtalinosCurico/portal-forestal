@@ -283,7 +283,7 @@ const VIEWS = {
   powerbi: {
     file: `/views/powerbi.html?v=${ASSET_VERSION}`,
     title: "Power BI",
-    subtitle: "Indicadores de gestion",
+    subtitle: "Indicadores de gestión",
     roles: ["ADMIN", "SUPERVISOR"],
   },
   "como-usar": {
@@ -955,7 +955,7 @@ function renderAlertsFeed() {
   }
 
   const unreadCount = state.notifications.filter((item) => Number(item.leida) !== 1).length;
-  alertsStatus.textContent = unreadCount > 0 ? `${unreadCount} sin leer` : "Todo al dia";
+  alertsStatus.textContent = unreadCount > 0 ? `${unreadCount} sin leer` : "Todo al día";
   alertsStatus.classList.toggle("active", unreadCount > 0);
 
   if (isPhoneLayout()) {
@@ -1002,7 +1002,7 @@ function renderAlertsFeed() {
     });
 
     alertsStatus.textContent =
-      unreadCount > 0 ? `${unreadCount} sin leer · resumen movil` : "Todo al dia";
+      unreadCount > 0 ? `${unreadCount} sin leer · resumen móvil` : "Todo al día";
 
     alertsList.innerHTML = grouped
       .map((group) => {
@@ -1833,7 +1833,7 @@ function updatePushControls() {
   }
 
   if (permission === "denied") {
-    pushStatusText.textContent = "El permiso esta bloqueado en este dispositivo. Debes habilitarlo desde la configuracion del navegador o de la app.";
+    pushStatusText.textContent = "El permiso está bloqueado en este dispositivo. Debes habilitarlo desde la configuración del navegador o de la app.";
     setPushChip("Permiso bloqueado", "danger");
     if (pushEnableBtn) pushEnableBtn.disabled = true;
     if (pushTestBtn) pushTestBtn.disabled = true;
@@ -1846,7 +1846,7 @@ function updatePushControls() {
     pushStatusText.textContent =
       deviceCount > 1
         ? `Este usuario tiene ${deviceCount} dispositivos suscritos. Puedes probar este celular o desactivarlo si ya no lo usaras.`
-        : "Este celular ya esta vinculado y deberia recibir avisos del portal.";
+        : "Este celular ya esta vinculado y debería recibir avisos del portal.";
     setPushChip("Activo en este celular", "active");
     if (pushEnableBtn) pushEnableBtn.disabled = state.pushBusy;
     if (pushTestBtn) pushTestBtn.disabled = state.pushBusy;
@@ -1956,7 +1956,7 @@ async function syncPushSubscription({ prompt = false } = {}) {
   let permission = getPushPermissionState();
 
   if (permission === "denied") {
-    throw new Error("Las notificaciones estan bloqueadas en este dispositivo.");
+    throw new Error("Las notificaciones están bloqueadas en este dispositivo.");
   }
 
   if (permission === "default" && prompt) {
@@ -2021,7 +2021,7 @@ async function handlePushTest() {
       method: "POST",
       body: endpoint ? { endpoint } : {},
     });
-    showToast("Se envio una notificacion de prueba al celular.");
+    showToast("Se envió una notificación de prueba al celular.");
   } finally {
     setPushButtonsBusy(false);
     updatePushControls();
@@ -2039,7 +2039,7 @@ async function handleDisablePush() {
     const subscription = await sw.pushManager.getSubscription();
     if (!subscription) {
       await refreshPushStatus({ silent: true });
-      showToast("Este celular ya no tenia una suscripcion activa.");
+      showToast("Este celular ya no tenía una suscripcion activa.");
       return;
     }
 
@@ -2094,7 +2094,7 @@ async function handleLoginSubmit(event) {
     startSessionPolling();
     scheduleTokenRefresh();
     setAuthenticatedUI(true);
-    showToast("Sesion iniciada");
+    showToast("Sesión iniciada");
     loginForm.reset();
     flushOfflineQueue();
     if (isIOSDevice() || state.deferredInstallPrompt) showInstallBanner();
@@ -2151,7 +2151,7 @@ function logout() {
   setAuthenticatedUI(false);
   updateDocumentTitle();
   updatePushControls();
-  showToast("Sesion cerrada");
+  showToast("Sesión cerrada");
 }
 
 async function restoreSession() {
@@ -2268,7 +2268,7 @@ function registerEvents() {
     try {
       if (button) {
         await markNotificationAsRead(Number(button.dataset.alertRead));
-        showToast("Alerta marcada como leida");
+        showToast("Alerta marcada como leída");
         return;
       }
 
@@ -2278,7 +2278,7 @@ function registerEvents() {
           .map((value) => value.trim())
           .filter(Boolean);
         await markNotificationsGroupAsRead(ids);
-        showToast("Grupo de alertas marcado como leido");
+        showToast("Grupo de alertas marcado como leído");
       }
     } catch (error) {
       showToast(error.message, true);

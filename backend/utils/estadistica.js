@@ -81,7 +81,7 @@ const MINIMO_DATOS_PARA_ATIPICOS = 5;
 // Se usa 3 y no el 1.5 clasico. Con 1.5 se marca lo que la estadistica llama
 // "atipico", que incluye una compra grande perfectamente legitima: en un
 // producto donde se piden 10 a 30 unidades, un pedido de 95 quedaba marcado y
-// al excluirlo el mes entero se iba a cero. Con 3 se marca solo lo "atipico
+// al excluirlo el mes entero se iba a cero. Con 3 se marca solo lo "atípico
 // extremo", que es lo que buscamos: el error de tipeo.
 const FACTOR_IQR = 3;
 
@@ -303,14 +303,14 @@ function clasificarConfianza(r2, cantidadPeriodos, cv = 1) {
   }
   // Consumo parejo: se repite mes a mes, se puede planificar tranquilo.
   if (cv <= 0.3) {
-    return { nivel: "alta", etiqueta: "Estimacion confiable" };
+    return { nivel: "alta", etiqueta: "Estimación confiable" };
   }
   // Varia, pero lo hace siguiendo una tendencia clara.
   if (r2 >= 0.7) {
-    return { nivel: "alta", etiqueta: "Estimacion confiable" };
+    return { nivel: "alta", etiqueta: "Estimación confiable" };
   }
   if (r2 >= 0.4 || cv <= 0.6) {
-    return { nivel: "media", etiqueta: "Estimacion aproximada" };
+    return { nivel: "media", etiqueta: "Estimación aproximada" };
   }
   return { nivel: "baja", etiqueta: "Consumo poco predecible" };
 }

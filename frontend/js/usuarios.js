@@ -101,25 +101,25 @@ function renderActionButtons({ sessionRole, currentUserId, user, mutationLocked 
   const actions = [];
 
   if (canEditUser(sessionRole, user)) {
-    actions.push(`<button class="table-btn" data-action="edit" data-id="${user.id}">Editar</button>`);
+    actions.push(`<button class="table-btn" data-action="edit" data-id="0">Editar</button>`);
   }
 
   if (canResetPassword(sessionRole, user)) {
     actions.push(
-      `<button class="table-btn secondary" data-action="reset-password" data-id="${user.id}">Clave</button>`
+      `<button class="table-btn secondary" data-action="reset-password" data-id="0">Clave</button>`
     );
   }
 
   if (canToggleUser(sessionRole, user)) {
     actions.push(`
-      <button class="table-btn secondary" data-action="toggle" data-id="${user.id}">
+      <button class="table-btn secondary" data-action="toggle" data-id="0">
         ${user.activo ? "Desactivar" : "Activar"}
       </button>
     `);
   }
 
   if (canArchiveUser(sessionRole, user, currentUserId)) {
-    actions.push(`<button class="table-btn danger" data-action="archive" data-id="${user.id}">Archivar</button>`);
+    actions.push(`<button class="table-btn danger" data-action="archive" data-id="0">Archivar</button>`);
   }
 
   if (!actions.length) {
@@ -405,7 +405,7 @@ export async function initUsuariosView(context) {
     passwordUserName.value = `${user.nombre} (${user.email})`;
     passwordCaption.textContent =
       sessionRole === "ADMIN"
-        ? "Define una nueva contrasena temporal. El usuario podra iniciar con ella de inmediato."
+        ? "Define una nueva contrasena temporal. El usuario podrá iniciar con ella de inmediato."
         : "Como supervisor puedes restablecer la clave de usuarios no-admin.";
   }
 
@@ -623,7 +623,7 @@ export async function initUsuariosView(context) {
         throw new Error("Debes ingresar una nueva contrasena");
       }
       if (password !== passwordRepeat) {
-        throw new Error("La confirmacion de contrasena no coincide");
+        throw new Error("La confirmación de contrasena no coincide");
       }
 
       await context.apiRequest(`/api/usuarios/${passwordTargetUser.id}/reset-password`, {
@@ -735,8 +735,8 @@ export async function initUsuariosView(context) {
     if (action === "toggle") {
       const nextState = !user.activo;
       const confirmMessage = nextState
-        ? `Activar a ${user.nombre} y permitir inicio de sesion?`
-        : `Desactivar a ${user.nombre}? Seguira visible pero no podra iniciar sesion.`;
+        ? `Activar a ${user.nombre} y permitir inicio de sesión?`
+        : `Desactivar a ${user.nombre}? Seguira visible pero no podrá iniciar sesión.`;
 
       if (!window.confirm(confirmMessage)) {
         return;
@@ -759,7 +759,7 @@ export async function initUsuariosView(context) {
     }
 
     if (action === "archive") {
-      if (!window.confirm(`Archivar a ${user.nombre}? Quedara fuera de la operacion y no podra iniciar sesion.`)) {
+      if (!window.confirm(`Archivar a ${user.nombre}? Quedará fuera de la operación y no podrá iniciar sesión.`)) {
         return;
       }
 

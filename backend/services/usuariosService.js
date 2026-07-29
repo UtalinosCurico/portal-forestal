@@ -284,14 +284,14 @@ async function ensureActiveAdminRemains(currentUser, nextRole, nextActive, nextA
 
 function assertAdmin(actor) {
   if (getActorRole(actor) !== ROLES.ADMIN) {
-    throw new HttpError(403, "No tiene permisos para esta accion");
+    throw new HttpError(403, "No tiene permisos para esta acción");
   }
 }
 
 function assertPrivilegedUserManager(actor) {
   const actorRole = getActorRole(actor);
   if (![ROLES.ADMIN, ROLES.SUPERVISOR].includes(actorRole)) {
-    throw new HttpError(403, "No tiene permisos para esta accion");
+    throw new HttpError(403, "No tiene permisos para esta acción");
   }
 }
 
@@ -425,7 +425,7 @@ async function createUsuario(payload, actor) {
 async function updateUsuario(actor, usuarioId, payload) {
   const actorRole = getActorRole(actor);
   if (![ROLES.ADMIN, ROLES.SUPERVISOR].includes(actorRole)) {
-    throw new HttpError(403, "No tiene permisos para esta accion");
+    throw new HttpError(403, "No tiene permisos para esta acción");
   }
 
   const current = await fetchUsuarioById(usuarioId);
@@ -603,7 +603,7 @@ async function updateUsuario(actor, usuarioId, payload) {
 async function resetUsuarioPassword(actor, usuarioId, password) {
   const actorRole = getActorRole(actor);
   if (![ROLES.ADMIN, ROLES.SUPERVISOR].includes(actorRole)) {
-    throw new HttpError(403, "No tiene permisos para esta accion");
+    throw new HttpError(403, "No tiene permisos para esta acción");
   }
 
   const current = await fetchUsuarioById(usuarioId);

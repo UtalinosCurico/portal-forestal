@@ -206,7 +206,7 @@ async function createAlias(actor, payload = {}) {
   canonica = resolver(canonica);
 
   if (variante === canonica) {
-    throw new HttpError(400, "Estos productos ya estan unificados");
+    throw new HttpError(400, "Estos productos ya están unificados");
   }
 
   // Si la canonica resuelve hacia la variante, unirlos crearia un ciclo.

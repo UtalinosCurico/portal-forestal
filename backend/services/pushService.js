@@ -42,14 +42,14 @@ function normalizePushError(error) {
 
   return {
     statusCode: error?.statusCode || null,
-    message: providerMessage || error?.message || "El proveedor push rechazo la notificacion.",
+    message: providerMessage || error?.message || "El proveedor push rechazo la notificación.",
   };
 }
 
 function buildDeliveryFailureMessage(result) {
   const failure = result?.failures?.[0];
   if (!failure) {
-    return "No se pudo entregar la notificacion de prueba. Desactiva y vuelve a activar las notificaciones en este celular.";
+    return "No se pudo entregar la notificación de prueba. Desactiva y vuelve a activar las notificaciones en este celular.";
   }
 
   if (failure.statusCode === 401 || failure.statusCode === 403) {
@@ -64,7 +64,7 @@ function buildDeliveryFailureMessage(result) {
     return "El proveedor de notificaciones no acepto el envio en este momento. Intenta nuevamente en unos minutos.";
   }
 
-  return `No se pudo entregar la notificacion de prueba: ${failure.message}`;
+  return `No se pudo entregar la notificación de prueba: ${failure.message}`;
 }
 
 async function saveSubscription(usuarioId, subscription) {
@@ -350,7 +350,7 @@ async function resolveNotificationRecipientIds(notification) {
 function buildPushPayload(notification) {
   return {
     title: notification?.titulo || "Portal FMN",
-    body: notification?.mensaje || "Tienes una notificacion nueva.",
+    body: notification?.mensaje || "Tienes una notificación nueva.",
     url: "/web",
     notificationId: notification?.id || null,
     solicitudId: notification?.referencia_id || null,

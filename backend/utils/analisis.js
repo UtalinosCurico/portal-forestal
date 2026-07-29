@@ -132,7 +132,7 @@ function calcularEstacionalidad(solicitudes) {
       meses_con_datos: mesesDistintos.size,
       meses_necesarios: MIN_MESES_ESTACIONALIDAD,
       mensaje:
-        `Se necesita al menos un ano completo para hablar de temporadas. ` +
+        `Se necesita al menos un año completo para hablar de temporadas. ` +
         `Hay ${mesesDistintos.size} ${mesesDistintos.size === 1 ? "mes" : "meses"} con registros.`,
     };
   }
@@ -163,7 +163,7 @@ function calcularEstacionalidad(solicitudes) {
  * si cada vez que piden cadena tambien piden lima, conviene tenerlas al lado.
  *
  * Se reporta la confianza en una direccion ("cuando se pide A, en el X% de los
- * casos tambien se pide B") porque la relacion rara vez es simetrica: la lima
+ * casos también se pide B") porque la relacion rara vez es simetrica: la lima
  * casi siempre acompana a la cadena, pero la cadena no siempre a la lima.
  */
 function detectarProductosAsociados(solicitudesConClaves, nombrePorClave) {

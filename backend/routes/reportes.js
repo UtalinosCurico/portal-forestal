@@ -122,7 +122,7 @@ router.delete(
     const data = await productoAliasService.deleteNombrePersonalizado(req.params.id);
     res.json({
       status: "ok",
-      mensaje: "Se volvio al nombre automatico",
+      mensaje: "Se volvió al nombre automático",
       data,
     });
   })

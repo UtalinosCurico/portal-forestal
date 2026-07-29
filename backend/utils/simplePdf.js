@@ -144,7 +144,7 @@ function buildHistoryPdf({ solicitud, historial = [], generatedAt }) {
   } else {
     historial.forEach((item) => {
       lines.push(`Fecha: ${item.created_at || "-"}`);
-      lines.push(`Accion: ${item.accion || "EVENTO"}`);
+      lines.push(`Acción: ${item.accion || "EVENTO"}`);
       lines.push(`Actor: ${item.actor_name || "Sistema"}`);
       if (item.estado_anterior || item.estado_nuevo) {
         lines.push(`Cambio: ${item.estado_anterior || "-"} -> ${item.estado_nuevo || "-"}`);

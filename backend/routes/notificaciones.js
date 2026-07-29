@@ -88,7 +88,7 @@ router.put(
     const data = await notificacionesService.markAsRead(req.user, notificationId);
     res.json({
       status: "ok",
-      mensaje: "Notificacion marcada como leida",
+      mensaje: "Notificación marcada como leída",
       data,
     });
   })

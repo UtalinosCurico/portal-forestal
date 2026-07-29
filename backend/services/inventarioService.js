@@ -112,7 +112,7 @@ async function createInventario(actor, payload) {
   const criticalLevel = Number(payload.critical_level || 5);
 
   if (!codigo || !nombre) {
-    throw new HttpError(400, "Los campos 'codigo' y 'nombre' son obligatorios");
+    throw new HttpError(400, "Los campos 'código' y 'nombre' son obligatorios");
   }
   if (!Number.isInteger(stockCentral) || stockCentral < 0) {
     throw new HttpError(400, "stock_central debe ser un entero mayor o igual a cero");
@@ -126,7 +126,7 @@ async function createInventario(actor, payload) {
 
   const exists = await get("SELECT id FROM inventario WHERE codigo = ?", [codigo]);
   if (exists) {
-    throw new HttpError(409, "Ya existe un item de inventario con ese codigo");
+    throw new HttpError(409, "Ya existe un item de inventario con ese código");
   }
 
   const result = await run(
@@ -144,7 +144,7 @@ async function createInventario(actor, payload) {
         (inventario_id, tipo, cantidad, detalle, actor_id)
       VALUES (?, 'CREACION', ?, ?, ?)
     `,
-    [result.lastID, stockCentral, "Creacion inicial de item", actor.id]
+    [result.lastID, stockCentral, "Creación inicial de item", actor.id]
   );
 
   await ensureEquipoStockRowsForRepuesto(result.lastID, stockFaena);
@@ -169,9 +169,9 @@ async function updateInventario(actor, inventarioId, payload) {
   if (payload.codigo !== undefined) {
     const codigo = String(payload.codigo).trim();
     if (!codigo) {
-      throw new HttpError(400, "codigo no puede estar vacio");
+      throw new HttpError(400, "código no puede estar vacio");
     }
-    updates.push("codigo = ?");
+    updates.push("código = ?");
     params.push(codigo);
   }
 

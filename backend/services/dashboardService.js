@@ -129,7 +129,7 @@ async function getSolicitudesPorEstado(actor, filters) {
 
   return [
     { estado: "Pendiente", total: map.get(SOLICITUD_STATUS.PENDIENTE) || 0 },
-    { estado: "En gestion", total: map.get(SOLICITUD_STATUS.EN_REVISION) || 0 },
+    { estado: "En gestión", total: map.get(SOLICITUD_STATUS.EN_REVISION) || 0 },
     { estado: "Despachado", total: map.get(SOLICITUD_STATUS.EN_DESPACHO) || 0 },
     { estado: "Entregado", total: map.get(SOLICITUD_STATUS.ENTREGADO) || 0 },
   ];
@@ -436,7 +436,7 @@ async function getMyActions(actor, filters = {}) {
         dias_sin_movimiento: days,
         solicitud_id: Number(row.solicitud_id),
         item_id: row.item_id ? Number(row.item_id) : null,
-        titulo: row.titulo || "Accion pendiente",
+        titulo: row.titulo || "Acción pendiente",
         descripcion:
           row.tipo === "SOLICITUD_PENDIENTE"
             ? `Revisar solicitud de ${row.solicitante || "usuario"}`

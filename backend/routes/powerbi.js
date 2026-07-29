@@ -15,7 +15,7 @@ router.get(
   (req, res) => {
     res.json({
       status: "ok",
-      mensaje: "Configuracion Power BI disponible",
+      mensaje: "Configuración Power BI disponible",
       powerbi: POWERBI_CONFIG,
     });
   }

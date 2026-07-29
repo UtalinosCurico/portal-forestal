@@ -88,7 +88,7 @@ function renderBarras(serie, periodo, mediaMovil = null) {
   const { claves, etiquetas, incompleto } = periodo;
 
   if (!claves.length || !serie?.length) {
-    return "<p class='muted-text'>Sin movimiento en este periodo.</p>";
+    return "<p class='muted-text'>Sin movimiento en este período.</p>";
   }
 
   const valores = serie.map((v) => Number(v) || 0);
@@ -138,7 +138,7 @@ function renderTopProductos(productos, contenedor, limite = 7) {
   const top = productos.slice(0, limite);
 
   if (!top.length) {
-    contenedor.innerHTML = "<p class='muted-text'>Sin consumo en el periodo.</p>";
+    contenedor.innerHTML = "<p class='muted-text'>Sin consumo en el período.</p>";
     return;
   }
 
@@ -152,7 +152,7 @@ function renderTopProductos(productos, contenedor, limite = 7) {
         <div class="reportes-top-fila" title="${escapeHtml(p.nombre)}: ${p.total_unidades} (${porcentaje}% del total)">
           <span class="reportes-top-nombre">${escapeHtml(p.nombre)}</span>
           <span class="reportes-top-riel">
-            <span class="reportes-top-relleno" style="width:${Math.max(2, Math.round((p.total_unidades / maximo) * 100))}%"></span>
+            <span class="reportes-top-relleno" style="width:4%"></span>
           </span>
           <span class="reportes-top-valor">${p.total_unidades}</span>
         </div>
@@ -198,7 +198,7 @@ function renderVariantes(variantes = []) {
 }
 
 function chipRegularidad(regularidad = {}) {
-  return `<span class="reportes-chip nivel-${escapeHtml(regularidad.nivel || "")}">${escapeHtml(
+  return `<span class="reportes-chip nivel-0">${escapeHtml(
     regularidad.etiqueta || ""
   )}</span>`;
 }
@@ -211,7 +211,7 @@ function celdaProyeccion(proyeccion) {
   return `
     <span class="reportes-proyeccion">
       <strong>~${proyeccion.valor}</strong>
-      <span class="reportes-chip confianza-${escapeHtml(proyeccion.confianza.nivel)}">${escapeHtml(
+      <span class="reportes-chip confianza-1">${escapeHtml(
         proyeccion.confianza.etiqueta
       )}</span>
     </span>
@@ -220,7 +220,7 @@ function celdaProyeccion(proyeccion) {
 
 function chipTendencia(tendencia = {}) {
   const flechas = { sube: "▲", baja: "▼", estable: "=", sin_datos: "" };
-  return `<span class="reportes-chip dir-${escapeHtml(tendencia.direccion || "")}">${
+  return `<span class="reportes-chip dir-0">${
     flechas[tendencia.direccion] || ""
   } ${escapeHtml(tendencia.etiqueta || "")}</span>`;
 }
@@ -266,7 +266,7 @@ function renderSinDatos(mensaje) {
 
 function renderAsociados(asociados, contenedor) {
   if (!asociados?.disponible) {
-    contenedor.innerHTML = renderSinDatos(asociados?.mensaje || "Sin informacion.");
+    contenedor.innerHTML = renderSinDatos(asociados?.mensaje || "Sin información.");
     return;
   }
 
@@ -275,8 +275,8 @@ function renderAsociados(asociados, contenedor) {
       <div class="reportes-vacio ok">
         <strong>No se detectaron productos que se pidan juntos</strong>
         <p class="muted-text">
-          Se revisaron ${asociados.solicitudes_analizadas} solicitudes con mas de un
-          producto y no aparecio ninguna combinacion que se repita mas de lo que
+          Se revisaron ${asociados.solicitudes_analizadas} solicitudes con más de un
+          producto y no aparecio ninguna combinacion que se repita más de lo que
           cabria esperar por azar.
         </p>
       </div>`;
@@ -320,7 +320,7 @@ function renderEquipos(datosEquipos, resumenEl, concentracionesEl) {
       </div>`
         )
         .join("")
-    : "<p class='muted-text'>Sin equipos con movimiento en el periodo.</p>";
+    : "<p class='muted-text'>Sin equipos con movimiento en el período.</p>";
 
   concentracionesEl.innerHTML = concentraciones.length
     ? `
@@ -350,7 +350,7 @@ function renderEquipos(datosEquipos, resumenEl, concentracionesEl) {
 
 function renderEstacionalidad(estacionalidad, contenedor) {
   if (!estacionalidad?.disponible) {
-    contenedor.innerHTML = renderSinDatos(estacionalidad?.mensaje || "Sin informacion.");
+    contenedor.innerHTML = renderSinDatos(estacionalidad?.mensaje || "Sin información.");
     return;
   }
 
@@ -433,8 +433,8 @@ function renderFilas(productos, periodo, tbody, filtroTexto, mobileList, puedeRe
            <p class="muted-text">Prueba con parte del nombre, o revisa si se escribio distinto en las solicitudes.</p>
          </div>`
       : `<div class="reportes-vacio">
-           <strong>No hubo pedidos en este periodo</strong>
-           <p class="muted-text">Elige un rango de fechas mas amplio, o quita el filtro por equipo.</p>
+           <strong>No hubo pedidos en este período</strong>
+           <p class="muted-text">Elige un rango de fechas más amplio, o quita el filtro por equipo.</p>
          </div>`;
 
     tbody.innerHTML = `<tr><td colspan="6">${vacio}</td></tr>`;
@@ -449,7 +449,7 @@ function renderFilas(productos, periodo, tbody, filtroTexto, mobileList, puedeRe
       const unidad = p.unidad ? ` ${escapeHtml(p.unidad)}` : "";
       const pocosDatos =
         p.periodos_con_consumo <= 1
-          ? `<div class="table-subline reportes-aviso">Solo ${p.periodos_con_consumo} periodo con consumo: referencial.</div>`
+          ? `<div class="table-subline reportes-aviso">Solo ${p.periodos_con_consumo} período con consumo: referencial.</div>`
           : "";
 
       return `
@@ -736,18 +736,18 @@ export async function initReportesView(context) {
     const unidad = agrupacion === "semana" ? "semana" : "mes";
     el("reportes-tendencia-titulo").textContent = `Consumo total por ${unidad}`;
     el("reportes-th-tipico").textContent = `Tipico por ${unidad}`;
-    el("reportes-th-proyeccion").textContent = `Proxima ${unidad}`.replace(
-      "Proxima mes",
-      "Proximo mes"
+    el("reportes-th-proyeccion").textContent = `Próxima ${unidad}`.replace(
+      "Próxima mes",
+      "Próximo mes"
     );
 
     // Proyeccion general del proximo periodo.
     const proy = datos.proyeccion_general;
     el("reportes-proyeccion-label").textContent =
-      unidad === "semana" ? "Proxima semana" : "Proximo mes";
+      unidad === "semana" ? "Próxima semana" : "Próximo mes";
     el("reportes-proyeccion-valor").textContent = proy ? `~${proy.valor}` : "-";
     el("reportes-proyeccion-confianza").textContent = proy
-      ? `${proy.confianza.etiqueta} · media movil de ${proy.ventana}`
+      ? `${proy.confianza.etiqueta} · media móvil de ${proy.ventana}`
       : "Sin historial suficiente";
 
     const avisoIncompleto = el("reportes-aviso-incompleto");
@@ -939,7 +939,7 @@ export async function initReportesView(context) {
         await apiRequest(`/api/reportes/nombres/${fila.id}`, { method: "DELETE" });
       }
       cerrarModalRenombrar();
-      showToast("Se volvio al nombre automatico");
+      showToast("Se volvió al nombre automático");
       await cargar();
     } catch (error) {
       showToast(error.message, true);

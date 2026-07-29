@@ -31,7 +31,7 @@ function errorHandler(error, req, res, next) {
   const statusCode = payloadTooLarge ? 413 : error.statusCode || 500;
   const isApiRoute = req.originalUrl.startsWith("/api");
   const message = payloadTooLarge
-    ? "La imagen es demasiado pesada. Prueba con una captura o foto mas liviana."
+    ? "La imagen es demasiado pesada. Prueba con una captura o foto más liviana."
     : error.message || "Error interno del servidor";
 
   // Registrar errores de API que no sean 401/404 normales

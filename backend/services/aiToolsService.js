@@ -40,10 +40,10 @@ function construirHerramientas(actor) {
   const consultarConsumo = betaTool({
     name: "consultar_consumo",
     description:
-      "Cuanto se pidio de cada producto en un periodo, con el stock minimo y maximo " +
-      "sugerido y una estimacion de cuanto se pedira el proximo periodo. Es la " +
+      "Cuanto se pidio de cada producto en un período, con el stock mínimo y máximo " +
+      "sugerido y una estimación de cuanto se pedirá el próximo período. Es la " +
       "herramienta para responder preguntas como 'cuanto papel higienico necesito', " +
-      "'que es lo que mas se consume' o 'cuanto guante pedimos el mes pasado'. " +
+      "'que es lo que más se consume' o 'cuanto guante pedimos el mes pasado'. " +
       "Usala siempre que la pregunta sea sobre cantidades, consumo o stock.",
     inputSchema: {
       type: "object",
@@ -54,8 +54,8 @@ function construirHerramientas(actor) {
             "Nombre o parte del nombre del producto a consultar. Omitir para " +
             "obtener los productos de mayor consumo.",
         },
-        fechaDesde: { type: "string", description: "Inicio del periodo, formato AAAA-MM-DD." },
-        fechaHasta: { type: "string", description: "Fin del periodo, formato AAAA-MM-DD." },
+        fechaDesde: { type: "string", description: "Inicio del período, formato AAAA-MM-DD." },
+        fechaHasta: { type: "string", description: "Fin del período, formato AAAA-MM-DD." },
         agrupacion: {
           type: "string",
           enum: ["mes", "semana"],
@@ -87,8 +87,8 @@ function construirHerramientas(actor) {
         return JSON.stringify({
           periodo: `${datos.periodo.desde} a ${datos.periodo.hasta}`,
           resultado: filtro
-            ? `No se encontro ningun producto que coincida con "${input.producto}" en ese periodo.`
-            : "No hubo pedidos en ese periodo.",
+            ? `No se encontro ningun producto que coincida con "${input.producto}" en ese período.`
+            : "No hubo pedidos en ese período.",
         });
       }
 
@@ -117,7 +117,7 @@ function construirHerramientas(actor) {
     name: "buscar_solicitudes",
     description:
       "Busca solicitudes del portal por estado, equipo, fecha o texto libre. " +
-      "Sirve para preguntas como 'que solicitudes estan pendientes', 'que pidio " +
+      "Sirve para preguntas como 'que solicitudes están pendientes', 'que pidio " +
       "Maule Norte 2 esta semana' o 'hay algo urgente sin gestionar'.",
     inputSchema: {
       type: "object",

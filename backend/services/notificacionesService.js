@@ -62,7 +62,7 @@ function normalizeLimit(value, fallback = 30) {
 const MANAGEMENT_NOTIFICATION_ROLES = [ROLES.ADMIN, ROLES.SUPERVISOR];
 
 const REQUESTER_STATUS_LABELS = {
-  EN_REVISION: "esta en gestion",
+  EN_REVISION: "está en gestión",
   APROBADO: "fue aprobada",
   EN_DESPACHO: "va en camino",
   ENTREGADO: "fue entregada",
@@ -76,14 +76,14 @@ function buildSolicitudNotificationMessage({ equipoNombre, repuesto, cantidad })
     Number.isFinite(Number(cantidad)) ? `Cantidad: ${cantidad}` : null,
   ].filter(Boolean);
 
-  return messageParts.length ? messageParts.join(" | ") : "Se registro una nueva solicitud";
+  return messageParts.length ? messageParts.join(" | ") : "Se registró una nueva solicitud";
 }
 
 function buildSolicitudItemMessage({ equipoNombre, itemNombre, accion, estadoItem }) {
   const parts = [
     equipoNombre ? `Equipo: ${equipoNombre}` : null,
     itemNombre ? `Item: ${itemNombre}` : null,
-    accion ? `Accion: ${accion}` : null,
+    accion ? `Acción: ${accion}` : null,
     estadoItem ? `Estado: ${estadoItem}` : null,
   ].filter(Boolean);
 
@@ -117,14 +117,14 @@ function buildSolicitudStatusMessage({ equipoNombre, repuesto, estado }) {
 function buildSolicitudStatusTitle({ estado, audience }) {
   if (audience === "management") {
     if (estado === "ENTREGADO") {
-      return "Recepcion confirmada en solicitud";
+      return "Recepción confirmada en solicitud";
     }
-    return "Actualizacion desde faena";
+    return "Actualización desde faena";
   }
 
   return REQUESTER_STATUS_LABELS[estado]
     ? `Tu solicitud ${REQUESTER_STATUS_LABELS[estado]}`
-    : "Actualizacion de solicitud";
+    : "Actualización de solicitud";
 }
 
 async function insertNotificationsForRoles(basePayload, roles = []) {
@@ -310,7 +310,7 @@ async function markAsRead(actor, notificationId) {
   );
 
   if (!notification) {
-    throw new HttpError(404, "Notificacion no encontrada");
+    throw new HttpError(404, "Notificación no encontrada");
   }
 
   if (Number(notification.leida) === 1) {
@@ -498,7 +498,7 @@ async function createEnvioNotification({
   const envioNotification = await insertNotification({
     tipo: "ENVIO_NUEVO",
     titulo: "Nuevo envio hacia tu equipo",
-    mensaje: parts.join(" | ") || "Se registro un nuevo envio",
+    mensaje: parts.join(" | ") || "Se registró un nuevo envio",
     rolDestino: ROLES.JEFE_FAENA,
     equipoId,
     referenciaId: envioId || null,

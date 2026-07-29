@@ -12,7 +12,7 @@ function authorize(...allowedRoles) {
     }
 
     if (!allowedRoles.includes(getRole(req.user))) {
-      next(new HttpError(403, "No tiene permisos para esta accion"));
+      next(new HttpError(403, "No tiene permisos para esta acción"));
       return;
     }
 

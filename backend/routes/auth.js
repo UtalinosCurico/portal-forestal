@@ -37,7 +37,7 @@ router.post(
     const data = await authService.refreshSession(req.user.id);
     res.json({
       status: "ok",
-      mensaje: "Sesion renovada",
+      mensaje: "Sesión renovada",
       ...data,
     });
   })
