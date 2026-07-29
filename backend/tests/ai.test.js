@@ -1,107 +1,100 @@
+// Los tests anteriores cubrian el reintento de peticiones hecho a mano. Esa
+// logica se reemplazo por la SDK oficial, que reintenta sola, asi que probarla
+// aqui seria probar codigo de Anthropic.
+//
+// Lo que si vale la pena asegurar es la propiedad de seguridad del asistente:
+// solo puede leer, y siempre a traves del usuario autenticado, para que un
+// JEFE_FAENA no pueda sacarle datos de otro equipo por mucho que pregunte.
+
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const aiRoute = require("../routes/ai");
+process.env.NODE_ENV = "test";
 
-function makeResponse({ ok, status, body, requestId = null }) {
-  return {
-    ok,
-    status,
-    headers: {
-      get(name) {
-        return name === "request-id" ? requestId : null;
-      },
-    },
-    text: async () => JSON.stringify(body),
-  };
-}
+const { construirHerramientas } = require("../services/aiToolsService");
 
-test("requestAnthropic reintenta un 500 transitorio y luego responde", async () => {
-  const originalFetch = global.fetch;
-  const originalSetTimeout = global.setTimeout;
-  let attempts = 0;
+const ACTOR = { id: 7, nombre: "Jefe de prueba", rol: "JEFE_FAENA", equipo_id: 2 };
 
-  global.setTimeout = (fn, ms, ...args) => {
-    fn(...args);
-    return 0;
-  };
+test("el asistente solo expone herramientas de consulta", () => {
+  const herramientas = construirHerramientas(ACTOR);
+  const nombres = herramientas.map((h) => h.name).sort();
 
-  global.fetch = async () => {
-    attempts += 1;
+  assert.deepEqual(nombres, ["buscar_solicitudes", "consultar_consumo", "listar_equipos"]);
 
-    if (attempts === 1) {
-      return makeResponse({
-        ok: false,
-        status: 500,
-        requestId: "req_retry_me",
-        body: {
-          type: "error",
-          error: {
-            type: "api_error",
-            message: "Internal server error",
-          },
-          request_id: "req_retry_me",
-        },
-      });
-    }
-
-    return makeResponse({
-      ok: true,
-      status: 200,
-      body: {
-        content: [{ text: "ok" }],
-      },
-    });
-  };
-
-  try {
-    const payload = await aiRoute.__private.requestAnthropic({
-      apiKey: "test-key",
-      systemPrompt: "hola",
-      messages: [{ role: "user", content: "ping" }],
-    });
-
-    assert.equal(attempts, 2);
-    assert.equal(payload.content[0].text, "ok");
-  } finally {
-    global.fetch = originalFetch;
-    global.setTimeout = originalSetTimeout;
+  // Ninguna herramienta debe poder crear, cambiar ni borrar nada.
+  const verbosProhibidos = /crear|create|actualizar|update|eliminar|delete|borrar|enviar|send/i;
+  for (const herramienta of herramientas) {
+    assert.ok(
+      !verbosProhibidos.test(herramienta.name),
+      `la herramienta "${herramienta.name}" sugiere una accion que modifica datos`
+    );
   }
 });
 
-test("requestAnthropic devuelve el mensaje del proveedor cuando el error no es transitorio", async () => {
-  const originalFetch = global.fetch;
+test("cada herramienta consulta con el usuario autenticado, no con uno libre", async () => {
+  const actoresRecibidos = [];
 
-  global.fetch = async () =>
-    makeResponse({
-      ok: false,
-      status: 400,
-      requestId: "req_bad_request",
-      body: {
-        type: "error",
-        error: {
-          type: "invalid_request_error",
-          message: "model: invalid model",
-        },
-        request_id: "req_bad_request",
-      },
-    });
+  // Se interceptan los servicios para ver con que actor los llama la herramienta.
+  const consumoService = require("../services/consumoService");
+  const solicitudesService = require("../services/solicitudesService");
+  const equiposService = require("../services/equiposService");
+
+  const originales = {
+    getConsumo: consumoService.getConsumo,
+    listSolicitudes: solicitudesService.listSolicitudes,
+    listEquipos: equiposService.listEquipos,
+  };
+
+  consumoService.getConsumo = async (actor) => {
+    actoresRecibidos.push(actor);
+    return { periodo: { desde: null, hasta: null, agrupacion: "mes" }, productos: [] };
+  };
+  solicitudesService.listSolicitudes = async (actor) => {
+    actoresRecibidos.push(actor);
+    return { data: [] };
+  };
+  equiposService.listEquipos = async (actor) => {
+    actoresRecibidos.push(actor);
+    return { data: [] };
+  };
 
   try {
-    await assert.rejects(
-      aiRoute.__private.requestAnthropic({
-        apiKey: "test-key",
-        systemPrompt: "hola",
-        messages: [{ role: "user", content: "ping" }],
-      }),
-      (error) => {
-        assert.equal(error.statusCode, 502);
-        assert.equal(error.message, "model: invalid model");
-        assert.equal(error.details.requestId, "req_bad_request");
-        return true;
-      }
-    );
+    const herramientas = construirHerramientas(ACTOR);
+    for (const herramienta of herramientas) {
+      await herramienta.run({});
+    }
+
+    assert.equal(actoresRecibidos.length, 3, "las tres herramientas deben consultar un servicio");
+    for (const actor of actoresRecibidos) {
+      assert.equal(actor, ACTOR, "la herramienta debe pasar el usuario autenticado tal cual");
+    }
   } finally {
-    global.fetch = originalFetch;
+    consumoService.getConsumo = originales.getConsumo;
+    solicitudesService.listSolicitudes = originales.listSolicitudes;
+    equiposService.listEquipos = originales.listEquipos;
+  }
+});
+
+test("una herramienta no puede elegir por que usuario consultar", async () => {
+  const consumoService = require("../services/consumoService");
+  const original = consumoService.getConsumo;
+
+  let actorUsado = null;
+  consumoService.getConsumo = async (actor) => {
+    actorUsado = actor;
+    return { periodo: { desde: null, hasta: null, agrupacion: "mes" }, productos: [] };
+  };
+
+  try {
+    const [consultarConsumo] = construirHerramientas(ACTOR);
+
+    // Aunque el modelo intente colar otro usuario en los argumentos, se ignora:
+    // el actor viene del token, no de lo que escriba el modelo.
+    await consultarConsumo.run({ usuarioId: 999, actor: { rol: "ADMIN" }, rol: "ADMIN" });
+
+    assert.equal(actorUsado, ACTOR);
+    assert.equal(actorUsado.rol, "JEFE_FAENA");
+  } finally {
+    consumoService.getConsumo = original;
   }
 });
