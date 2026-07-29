@@ -209,7 +209,33 @@ Valores recomendados:
 - Equipos y stock en faena (`equipo_stock`)
 - Usuarios (CRUD completo para ADMIN, solo lectura para SUPERVISOR)
 - Reportes de consumo por producto (ADMIN/SUPERVISOR/JEFE_FAENA)
+- Asistente PumAI con acceso a los datos del portal
 - Power BI embebido (solo ADMIN/SUPERVISOR)
+
+### Asistente PumAI
+
+Usa la SDK oficial de Anthropic (`@anthropic-ai/sdk`) con tool use: el modelo
+decide que consultar y responde con los datos reales del portal. Permite
+preguntas como "cuanto papel higienico necesito" o "que hay pendiente" sin que
+la persona tenga que ir a buscarlo.
+
+Requiere `ANTHROPIC_API_KEY`. El modelo se elige con `ANTHROPIC_MODEL`
+(por defecto `claude-opus-4-8`); apuntar a uno mas chico baja el costo a cambio
+de peores respuestas.
+
+Tres herramientas, todas de **solo lectura**: `consultar_consumo`,
+`buscar_solicitudes` y `listar_equipos` (`backend/services/aiToolsService.js`).
+
+Dos decisiones de seguridad deliberadas:
+
+- **El modelo no tiene acceso SQL.** Solo puede llamar a esas tres consultas
+  acotadas, que a su vez llaman a los mismos servicios que usa la interfaz.
+- **Los permisos se heredan.** Cada herramienta recibe el usuario del token, no
+  uno que el modelo pueda elegir: un JEFE_FAENA sigue viendo solo su equipo
+  aunque pida otro explicitamente. Hay tests que lo verifican en
+  `backend/tests/ai.test.js`.
+
+El asistente no puede crear ni modificar solicitudes.
 
 ### Reportes de consumo
 

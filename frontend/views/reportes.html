@@ -1,14 +1,49 @@
 <div class="view-grid">
-  <section class="card hero-card full">
-    <div class="section-head">
-      <div>
-        <h4>Consumo por producto</h4>
-        <p class="muted-text">
-          Cuanto se pidio de cada producto en el periodo, para definir stock minimo y maximo.
-        </p>
+  <section class="card full reportes-filtros-card">
+    <div class="reportes-filtros-fila">
+      <div class="reportes-periodo-chips" id="reportes-quick-periodos" aria-label="Periodos rapidos">
+        <button class="periodo-chip" data-periodo="mes-actual" type="button">Este mes</button>
+        <button class="periodo-chip" data-periodo="mes-anterior" type="button">Mes pasado</button>
+        <button class="periodo-chip active" data-periodo="ultimos-3" type="button">3 meses</button>
+        <button class="periodo-chip" data-periodo="ultimos-6" type="button">6 meses</button>
+        <button class="periodo-chip" data-periodo="ano" type="button">Este ano</button>
       </div>
-      <div class="actions-inline wrap-actions">
-        <span id="reportes-last-update" class="dashboard-last-update">Sin cargar</span>
+
+      <div class="reportes-agrupacion" role="group" aria-label="Agrupar por">
+        <span class="reportes-agrupacion-label">Ver por</span>
+        <button class="agrupacion-btn" data-agrupacion="semana" type="button">Semana</button>
+        <button class="agrupacion-btn active" data-agrupacion="mes" type="button">Mes</button>
+      </div>
+    </div>
+
+    <details class="reportes-filtros-avanzados">
+      <summary>Ajustar fechas y equipo</summary>
+      <form id="reportes-filter-form" class="form-grid cols-3">
+        <div>
+          <label for="reportes-fecha-desde">Desde</label>
+          <input id="reportes-fecha-desde" name="fechaDesde" type="date" />
+        </div>
+        <div>
+          <label for="reportes-fecha-hasta">Hasta</label>
+          <input id="reportes-fecha-hasta" name="fechaHasta" type="date" />
+        </div>
+        <div id="reportes-equipo-field">
+          <label for="reportes-equipo-id">Equipo</label>
+          <select id="reportes-equipo-id" name="equipoId"></select>
+        </div>
+        <div class="full actions-inline wrap-actions">
+          <button id="reportes-filter-btn" class="action-btn" type="button">Aplicar</button>
+          <button id="reportes-clear-btn" class="action-btn secondary" type="button">Limpiar</button>
+        </div>
+      </form>
+    </details>
+
+    <div class="reportes-barra-estado">
+      <span id="reportes-rango-texto" class="muted-text"></span>
+      <div class="actions-inline">
+        <button id="reportes-excel-btn" class="action-btn secondary" type="button">
+          Descargar Excel
+        </button>
         <button id="reportes-refresh-btn" class="action-btn secondary" type="button">
           Actualizar
         </button>
@@ -16,123 +51,175 @@
     </div>
   </section>
 
-  <section class="card full">
-    <div class="section-head">
-      <h4>Periodo</h4>
-      <div class="actions-inline wrap-actions">
-        <button id="reportes-filter-btn" class="action-btn" type="button">Aplicar</button>
-        <button id="reportes-clear-btn" class="action-btn secondary" type="button">Limpiar</button>
-        <button id="reportes-export-btn" class="action-btn secondary" type="button">
-          Descargar CSV
-        </button>
-      </div>
-    </div>
+  <nav class="reportes-tabs" id="reportes-tabs" role="tablist">
+    <button class="reportes-tab active" data-tab="resumen" role="tab" type="button">Resumen</button>
+    <button class="reportes-tab" data-tab="detalle" role="tab" type="button">Detalle</button>
+    <button class="reportes-tab" data-tab="nombres" role="tab" type="button">
+      Nombres
+      <span id="reportes-tab-nombres-badge" class="reportes-tab-badge hidden">0</span>
+    </button>
+  </nav>
 
-    <div class="quick-strip" id="reportes-quick-periodos" aria-label="Periodos rapidos">
-      <button class="quick-tile" data-periodo="mes-actual" type="button">
-        <span class="quick-label">Este mes</span>
-      </button>
-      <button class="quick-tile" data-periodo="mes-anterior" type="button">
-        <span class="quick-label">Mes pasado</span>
-      </button>
-      <button class="quick-tile active" data-periodo="ultimos-3" type="button">
-        <span class="quick-label">Ultimos 3 meses</span>
-      </button>
-      <button class="quick-tile" data-periodo="ultimos-6" type="button">
-        <span class="quick-label">Ultimos 6 meses</span>
-      </button>
-      <button class="quick-tile" data-periodo="ano" type="button">
-        <span class="quick-label">Este ano</span>
-      </button>
-    </div>
+  <!-- ── RESUMEN ─────────────────────────────────────────────────────── -->
+  <div class="reportes-panel" data-panel="resumen">
+    <section class="card full">
+      <div class="reportes-kpis">
+        <div class="reportes-kpi">
+          <span class="reportes-kpi-label">Unidades pedidas</span>
+          <strong class="reportes-kpi-valor" id="reportes-total-unidades">0</strong>
+          <span class="reportes-kpi-nota" id="reportes-tendencia-general"></span>
+        </div>
+        <div class="reportes-kpi">
+          <span class="reportes-kpi-label">Productos distintos</span>
+          <strong class="reportes-kpi-valor" id="reportes-total-productos">0</strong>
+        </div>
+        <div class="reportes-kpi">
+          <span class="reportes-kpi-label">Solicitudes</span>
+          <strong class="reportes-kpi-valor" id="reportes-total-solicitudes">0</strong>
+        </div>
+        <div class="reportes-kpi reportes-kpi-proyeccion">
+          <span class="reportes-kpi-label" id="reportes-proyeccion-label">Proximo mes</span>
+          <strong class="reportes-kpi-valor" id="reportes-proyeccion-valor">-</strong>
+          <span class="reportes-kpi-nota" id="reportes-proyeccion-confianza"></span>
+        </div>
+        <div class="reportes-kpi" id="reportes-kpi-atipicos">
+          <span class="reportes-kpi-label">Pedidos a revisar</span>
+          <strong class="reportes-kpi-valor" id="reportes-total-atipicos">0</strong>
+          <span class="reportes-kpi-nota">fuera de lo normal</span>
+        </div>
+      </div>
+    </section>
 
-    <form id="reportes-filter-form" class="form-grid cols-3">
-      <div>
-        <label for="reportes-fecha-desde">Fecha desde</label>
-        <input id="reportes-fecha-desde" name="fechaDesde" type="date" />
+    <section class="card full">
+      <div class="reportes-visual-grid">
+        <div class="reportes-visual-bloque">
+          <h5>Lo que mas se consume</h5>
+          <div id="reportes-top-productos" class="reportes-top"></div>
+        </div>
+        <div class="reportes-visual-bloque">
+          <h5 id="reportes-tendencia-titulo">Consumo total por mes</h5>
+          <div id="reportes-tendencia"></div>
+          <p id="reportes-aviso-incompleto" class="muted-text reportes-nota hidden"></p>
+        </div>
       </div>
-      <div>
-        <label for="reportes-fecha-hasta">Fecha hasta</label>
-        <input id="reportes-fecha-hasta" name="fechaHasta" type="date" />
-      </div>
-      <div id="reportes-equipo-field">
-        <label for="reportes-equipo-id">Equipo</label>
-        <select id="reportes-equipo-id" name="equipoId"></select>
-      </div>
-    </form>
-    <p class="muted-text reportes-nota">
-      Se cuentan todas las solicitudes del periodo salvo las rechazadas.
-    </p>
-  </section>
+    </section>
 
-  <section class="card full">
-    <div class="quick-strip" id="reportes-resumen" aria-label="Resumen del periodo">
-      <div class="quick-tile static">
-        <span class="quick-label">Productos distintos</span>
-        <strong class="quick-value" id="reportes-total-productos">0</strong>
+    <section class="card full hidden" id="reportes-atipicos-card">
+      <div class="section-head">
+        <div>
+          <h4>Pedidos fuera de lo normal</h4>
+          <p class="muted-text">
+            Cantidades muy por encima de lo habitual para ese producto. Pueden ser
+            un error al escribir o un consumo real puntual. No se usaron para
+            calcular el stock sugerido.
+          </p>
+        </div>
       </div>
-      <div class="quick-tile static">
-        <span class="quick-label">Unidades pedidas</span>
-        <strong class="quick-value" id="reportes-total-unidades">0</strong>
-      </div>
-      <div class="quick-tile static">
-        <span class="quick-label">Solicitudes</span>
-        <strong class="quick-value" id="reportes-total-solicitudes">0</strong>
-      </div>
-      <div class="quick-tile static">
-        <span class="quick-label">Meses en el periodo</span>
-        <strong class="quick-value" id="reportes-total-meses">0</strong>
-      </div>
-    </div>
-  </section>
+      <div id="reportes-atipicos-list" class="reportes-atipicos"></div>
+    </section>
+  </div>
 
-  <section class="card full" id="reportes-visual-card">
-    <div class="section-head">
-      <div>
-        <h4>Resumen visual</h4>
-        <p class="muted-text">
-          Que productos concentran el consumo y como viene evolucionando el total.
-        </p>
+  <!-- ── DETALLE ─────────────────────────────────────────────────────── -->
+  <div class="reportes-panel hidden" data-panel="detalle">
+    <section class="card full">
+      <div class="section-head">
+        <div>
+          <h4>Detalle por producto</h4>
+          <p class="muted-text">
+            De mayor a menor consumo. Haz clic en una fila para ver la evolucion,
+            el desglose por equipo y como se escribio.
+          </p>
+        </div>
+        <div class="actions-inline wrap-actions">
+          <div class="search-box search-box-wide">
+            <label class="sr-only" for="reportes-search">Buscar producto</label>
+            <input id="reportes-search" type="search" placeholder="Buscar producto" />
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="reportes-visual-grid">
-      <div class="reportes-visual-bloque">
-        <h5>Lo que mas se consume</h5>
-        <div id="reportes-top-productos" class="reportes-top"></div>
-      </div>
-      <div class="reportes-visual-bloque">
-        <h5>Consumo total por mes</h5>
-        <div id="reportes-tendencia"></div>
-      </div>
-    </div>
-  </section>
 
-  <section class="card full hidden" id="reportes-duplicados-card">
-    <div class="section-head">
-      <div>
-        <h4>Nombres que podrian ser el mismo producto</h4>
-        <p class="muted-text">
-          Como cada persona escribe el nombre a mano, estos pares se parecen mucho.
-          No se sumaron juntos. Si son lo mismo, unificalos: queda guardado y de
-          ahi en adelante siempre se cuentan juntos.
-        </p>
-      </div>
-    </div>
-    <div id="reportes-duplicados-list" class="reportes-duplicados"></div>
-  </section>
+      <details class="reportes-glosario">
+        <summary>Que significa cada numero</summary>
+        <dl class="reportes-glosario-lista">
+          <dt>Tipico</dt>
+          <dd>
+            Lo que se pide en un periodo normal. Se usa la mediana y no el
+            promedio, porque un solo pedido raro puede inflar el promedio y
+            dejarlo muy lejos de la realidad.
+          </dd>
+          <dt>Stock sugerido</dt>
+          <dd>
+            El minimo cubre un periodo normal; el maximo cubre 9 de cada 10
+            periodos. Los pedidos anomalos no entran en este calculo.
+          </dd>
+          <dt>Proximo mes</dt>
+          <dd>
+            Estimacion a partir del promedio de los ultimos periodos, corregida
+            si hay una tendencia clara. La etiqueta dice que tan confiable es:
+            un consumo parejo se puede planificar, uno irregular no.
+          </dd>
+          <dt>Comportamiento</dt>
+          <dd>
+            Si el consumo es parejo o salta mucho de un periodo a otro, y si
+            viene subiendo o bajando.
+          </dd>
+        </dl>
+      </details>
 
-  <section class="card full hidden" id="reportes-unificados-card">
-    <div class="section-head">
-      <div>
-        <h4>Productos unificados</h4>
-        <p class="muted-text">
-          Nombres que ya marcaste como el mismo producto. Se aplican a todos los
-          periodos y a lo que se escriba de aqui en adelante.
-        </p>
+      <div class="table-wrap mobile-hide-on-phone">
+        <table>
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Total</th>
+              <th id="reportes-th-tipico">Tipico por mes</th>
+              <th>Stock sugerido</th>
+              <th id="reportes-th-proyeccion">Proximo mes</th>
+              <th>Comportamiento</th>
+            </tr>
+          </thead>
+          <tbody id="reportes-table-body"></tbody>
+        </table>
       </div>
-    </div>
-    <div id="reportes-unificados-list" class="reportes-unificados"></div>
-  </section>
+
+      <div id="reportes-mobile-list" class="reportes-mobile-list"></div>
+    </section>
+  </div>
+
+  <!-- ── NOMBRES ─────────────────────────────────────────────────────── -->
+  <div class="reportes-panel hidden" data-panel="nombres">
+    <section class="card full">
+      <div class="section-head">
+        <div>
+          <h4>Nombres que podrian ser el mismo producto</h4>
+          <p class="muted-text">
+            Cada persona escribe el nombre a mano. Estos pares se parecen mucho y
+            no se sumaron juntos. Si son lo mismo, unificalos: queda guardado y de
+            ahi en adelante siempre se cuentan juntos.
+          </p>
+        </div>
+        <div class="actions-inline wrap-actions">
+          <button id="reportes-unificar-manual-btn" class="action-btn secondary hidden" type="button">
+            Unificar dos productos
+          </button>
+        </div>
+      </div>
+      <div id="reportes-duplicados-list" class="reportes-duplicados"></div>
+    </section>
+
+    <section class="card full hidden" id="reportes-unificados-card">
+      <div class="section-head">
+        <div>
+          <h4>Productos unificados</h4>
+          <p class="muted-text">
+            Nombres que ya marcaste como el mismo producto. Se aplican a todos los
+            periodos y a lo que se escriba de aqui en adelante.
+          </p>
+        </div>
+      </div>
+      <div id="reportes-unificados-list" class="reportes-unificados"></div>
+    </section>
+  </div>
 
   <div id="reportes-unificar-modal" class="modal hidden">
     <div class="modal-backdrop" data-close="true"></div>
@@ -172,42 +259,4 @@
       </div>
     </section>
   </div>
-
-  <section class="card full">
-    <div class="section-head">
-      <div>
-        <h4>Detalle por producto</h4>
-        <p class="muted-text">
-          Ordenado de mayor a menor consumo. Haz clic en una fila para ver el
-          desglose por mes, por equipo y las formas en que se escribio.
-        </p>
-      </div>
-      <div class="actions-inline wrap-actions">
-        <div class="search-box search-box-wide">
-          <label class="sr-only" for="reportes-search">Buscar producto</label>
-          <input id="reportes-search" type="search" placeholder="Buscar producto" />
-        </div>
-        <button id="reportes-unificar-manual-btn" class="action-btn secondary hidden" type="button">
-          Unificar productos
-        </button>
-      </div>
-    </div>
-
-    <div class="table-wrap mobile-hide-on-phone">
-      <table>
-        <thead>
-          <tr>
-            <th>Producto</th>
-            <th>Total pedido</th>
-            <th>Solicitudes</th>
-            <th>Promedio mensual</th>
-            <th>Stock sugerido</th>
-          </tr>
-        </thead>
-        <tbody id="reportes-table-body"></tbody>
-      </table>
-    </div>
-
-    <div id="reportes-mobile-list" class="reportes-mobile-list"></div>
-  </section>
 </div>
