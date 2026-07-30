@@ -284,8 +284,8 @@ function renderSinDatos(mensaje) {
  * numero sea verdadero.
  *
  * Pensado para leerse sin saber de tecnologia: una fila por producto, la
- * cantidad grande, y en palabras que tan seguro es. "Confiable" y "a ojo"
- * dicen mas que un coeficiente.
+ * cantidad grande, y en palabras que tan seguro es el numero. El registro es
+ * formal porque esto lo mira la jefatura, no es una nota interna.
  */
 function renderNecesidadProxima(productos, contenedor, unidadPeriodo) {
   const conEstimacion = (productos || [])
@@ -301,12 +301,27 @@ function renderNecesidadProxima(productos, contenedor, unidadPeriodo) {
     return;
   }
 
+  // Lenguaje formal: esto lo mira la jefatura, no es una nota interna. Y sigue
+  // sin exigir saber de estadistica, que era el punto: cada etiqueta dice que
+  // hacer con el numero, no como se calculo.
   const etiquetaConfianza = (nivel) =>
     nivel === "alta"
-      ? { texto: "confiable", clase: "confiable" }
+      ? {
+          texto: "Estimación confiable",
+          clase: "confiable",
+          detalle: "El consumo es parejo: se puede pedir sobre esta cifra.",
+        }
       : nivel === "media"
-        ? { texto: "aproximado", clase: "aproximado" }
-        : { texto: "a ojo", clase: "a-ojo" };
+        ? {
+            texto: "Estimación referencial",
+            clase: "aproximado",
+            detalle: "El consumo varía: conviene usarla como referencia.",
+          }
+        : {
+            texto: "Requiere confirmación",
+            clase: "por-confirmar",
+            detalle: "Hay poco historial: confirmar la cantidad con la faena.",
+          };
 
   contenedor.innerHTML = `
     <ul class="reportes-necesidad">
@@ -320,13 +335,16 @@ function renderNecesidadProxima(productos, contenedor, unidadPeriodo) {
             <strong>${p.proyeccion.valor}</strong>
             <span class="reportes-necesidad-unidad">${escapeHtml(p.unidad || "")}</span>
           </span>
-          <span class="reportes-necesidad-confianza ${c.clase}">${c.texto}</span>
+          <span class="reportes-necesidad-confianza ${c.clase}" title="${escapeHtml(
+            c.detalle
+          )}">${c.texto}</span>
         </li>`;
         })
         .join("")}
     </ul>
     <p class="muted-text reportes-necesidad-pie">
-      Son estimaciones, no un pedido automático: revísalas antes de encargar.
+      Estas cifras son estimaciones y no constituyen un pedido automático.
+      Se recomienda revisarlas antes de gestionar la compra.
     </p>
   `;
 }

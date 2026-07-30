@@ -7431,7 +7431,7 @@ tbody tr {
 
 .reportes-necesidad-fila {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto 96px;
+  grid-template-columns: minmax(0, 1fr) auto 168px;
   align-items: center;
   gap: 0.9rem;
   padding: 0.7rem 0.95rem;
@@ -7494,7 +7494,7 @@ tbody tr {
   color: #8a6d3b;
 }
 
-.reportes-necesidad-confianza.a-ojo {
+.reportes-necesidad-confianza.por-confirmar {
   background: #f2f0ee;
   color: #7a736c;
 }
