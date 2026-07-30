@@ -101,25 +101,25 @@ function renderActionButtons({ sessionRole, currentUserId, user, mutationLocked 
   const actions = [];
 
   if (canEditUser(sessionRole, user)) {
-    actions.push(`<button class="table-btn" data-action="edit" data-id="0">Editar</button>`);
+    actions.push(`<button class="table-btn" data-action="edit" data-id="${user.id}">Editar</button>`);
   }
 
   if (canResetPassword(sessionRole, user)) {
     actions.push(
-      `<button class="table-btn secondary" data-action="reset-password" data-id="0">Clave</button>`
+      `<button class="table-btn secondary" data-action="reset-password" data-id="${user.id}">Clave</button>`
     );
   }
 
   if (canToggleUser(sessionRole, user)) {
     actions.push(`
-      <button class="table-btn secondary" data-action="toggle" data-id="0">
+      <button class="table-btn secondary" data-action="toggle" data-id="${user.id}">
         ${user.activo ? "Desactivar" : "Activar"}
       </button>
     `);
   }
 
   if (canArchiveUser(sessionRole, user, currentUserId)) {
-    actions.push(`<button class="table-btn danger" data-action="archive" data-id="0">Archivar</button>`);
+    actions.push(`<button class="table-btn danger" data-action="archive" data-id="${user.id}">Archivar</button>`);
   }
 
   if (!actions.length) {

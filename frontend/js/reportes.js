@@ -152,7 +152,7 @@ function renderTopProductos(productos, contenedor, limite = 7) {
         <div class="reportes-top-fila" title="${escapeHtml(p.nombre)}: ${p.total_unidades} (${porcentaje}% del total)">
           <span class="reportes-top-nombre">${escapeHtml(p.nombre)}</span>
           <span class="reportes-top-riel">
-            <span class="reportes-top-relleno" style="width:4%"></span>
+            <span class="reportes-top-relleno" style="width:${Math.max(2, Math.round((p.total_unidades / maximo) * 100))}%"></span>
           </span>
           <span class="reportes-top-valor">${p.total_unidades}</span>
         </div>
@@ -198,7 +198,7 @@ function renderVariantes(variantes = []) {
 }
 
 function chipRegularidad(regularidad = {}) {
-  return `<span class="reportes-chip nivel-0">${escapeHtml(
+  return `<span class="reportes-chip nivel-${escapeHtml(regularidad.nivel || "")}">${escapeHtml(
     regularidad.etiqueta || ""
   )}</span>`;
 }
@@ -211,7 +211,7 @@ function celdaProyeccion(proyeccion) {
   return `
     <span class="reportes-proyeccion">
       <strong>~${proyeccion.valor}</strong>
-      <span class="reportes-chip confianza-1">${escapeHtml(
+      <span class="reportes-chip confianza-${escapeHtml(proyeccion.confianza.nivel)}">${escapeHtml(
         proyeccion.confianza.etiqueta
       )}</span>
     </span>
@@ -220,7 +220,7 @@ function celdaProyeccion(proyeccion) {
 
 function chipTendencia(tendencia = {}) {
   const flechas = { sube: "▲", baja: "▼", estable: "=", sin_datos: "" };
-  return `<span class="reportes-chip dir-0">${
+  return `<span class="reportes-chip dir-${escapeHtml(tendencia.direccion || "")}">${
     flechas[tendencia.direccion] || ""
   } ${escapeHtml(tendencia.etiqueta || "")}</span>`;
 }

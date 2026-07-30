@@ -7041,3 +7041,56 @@ tbody tr {
   content: "+ ";
   color: var(--muted);
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Reportes: quitar el marco dentro del marco
+   ────────────────────────────────────────────────────────────────────────────
+   La vista es un contenedor blanco con borde y sombra que a su vez contiene
+   varias tarjetas verdes con borde y sombra. Medido en pantalla: cuatro
+   niveles de caja anidados. Ese "marco dentro de marco" es lo que hace que
+   todo se vea recargado, porque cada seccion pelea por atencion con su propio
+   contorno.
+
+   Aca el contenedor se vuelve invisible y deja que las tarjetas respiren
+   directo sobre el fondo. Va acotado a Reportes para no tocar el resto de la
+   aplicacion. */
+.view-container[data-view-name="reportes"] {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  display: grid;
+  /* El aire entre secciones ahora reemplaza a los bordes como separador. */
+  gap: 1.15rem;
+}
+
+.view-container[data-view-name="reportes"] > .card.full {
+  margin: 0;
+}
+
+/* Los titulos de seccion quedaban pegados a su contenido. Un poco mas de aire
+   arriba y letra algo mas espaciada los hace leer como encabezado y no como
+   una linea mas. */
+.view-container[data-view-name="reportes"] .card.full > h4,
+.view-container[data-view-name="reportes"] .reportes-seccion-titulo {
+  letter-spacing: 0.04em;
+  margin-bottom: 0.85rem;
+}
+
+/* "Descargar Excel" y "Actualizar" tenian el mismo verde solido que una accion
+   principal, asi que competian con todo lo demas. Son acciones de apoyo: pasan
+   a contorno, y solo se rellenan al pasar el mouse. */
+.view-container[data-view-name="reportes"] .reportes-acciones .action-btn,
+.view-container[data-view-name="reportes"] .reportes-barra-estado .action-btn {
+  background: var(--surface);
+  color: var(--forest-700);
+  border: 1px solid var(--line);
+  box-shadow: none;
+  font-weight: 600;
+}
+
+.view-container[data-view-name="reportes"] .reportes-acciones .action-btn:hover,
+.view-container[data-view-name="reportes"] .reportes-barra-estado .action-btn:hover {
+  background: var(--forest-50, #f4f9f6);
+  border-color: var(--forest-700);
+}

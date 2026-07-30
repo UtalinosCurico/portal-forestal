@@ -32,7 +32,7 @@ function getStatusClass(status) {
 }
 
 function renderStatusBadge(status) {
-  return `<span class="0">${getStatusLabel(status)}</span>`;
+  return `<span class="${getStatusClass(status)}">${getStatusLabel(status)}</span>`;
 }
 
 function renderAlertsList(rows, formatDate, container) {

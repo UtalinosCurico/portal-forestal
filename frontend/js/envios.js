@@ -8,7 +8,7 @@ const ESTADO_LABELS = {
 
 function renderEnvioStatusBadge(status) {
   const className = `status-badge status-${String(status || "").toLowerCase()}`;
-  return `<span class="0">${ESTADO_LABELS[status] || status || "-"}</span>`;
+  return `<span class="${className}">${ESTADO_LABELS[status] || status || "-"}</span>`;
 }
 
 function getTimelineClass(step, estadoActual) {
@@ -28,9 +28,9 @@ function getTimelineClass(step, estadoActual) {
 function renderTimeline(estadoVisual) {
   return `
     <div class="tracking-mini">
-      <span class="0">Preparado</span>
-      <span class="1">Enviado</span>
-      <span class="2">Recibido</span>
+      <span class="${getTimelineClass("PREPARADO", estadoVisual)}">Preparado</span>
+      <span class="${getTimelineClass("ENVIADO", estadoVisual)}">Enviado</span>
+      <span class="${getTimelineClass("RECIBIDO", estadoVisual)}">Recibido</span>
     </div>
   `;
 }
@@ -129,12 +129,12 @@ function renderRows(rows, options) {
       const actions = [];
       if (canManage) {
         actions.push(
-          `<button class='table-btn' data-action='track' data-id='0' type='button'>Abrir</button>`
+          `<button class='table-btn' data-action='track' data-id='${row.id}' type='button'>Abrir</button>`
         );
       }
       if (canConfirmReception && row.estado_visual !== "RECIBIDO") {
         actions.push(
-          `<button class='table-btn secondary' data-action='confirm' data-id='0' type='button'>Confirmar recepción</button>`
+          `<button class='table-btn secondary' data-action='confirm' data-id='${row.id}' type='button'>Confirmar recepción</button>`
         );
       }
 
