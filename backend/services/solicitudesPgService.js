@@ -8,6 +8,7 @@ const {
   isItemStatusReversion,
 } = require("../config/solicitudItemFlow");
 const { HttpError } = require("../utils/httpError");
+const { verificarNoPisar } = require("../utils/concurrencia");
 const { getChileDayBounds } = require("../utils/dateTime");
 const { buildHistoryPdf } = require("../utils/simplePdf");
 const {
@@ -2003,6 +2004,23 @@ async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
   }
 
   const currentItem = await loadSolicitudItemRecord(solicitudId, itemId);
+
+  // Antes de tocar nada: si otra persona escribio en los comentarios mientras
+  // esta pantalla estaba abierta, no se pisa su texto. Ver utils/concurrencia.
+  verificarNoPisar({
+    campo: "comentario",
+    etiqueta: "el detalle del producto",
+    visto: payload.comentario_visto,
+    almacenado: currentItem.comentario,
+    nuevo: payload.detalle ?? payload.comentario,
+  });
+  verificarNoPisar({
+    campo: "comentario_gestion",
+    etiqueta: "el comentario de gestion",
+    visto: payload.comentario_gestion_visto,
+    almacenado: currentItem.comentario_gestion,
+    nuevo: payload.comentario_gestion,
+  });
   if (!currentItem) {
     throw new HttpError(404, "Item no encontrado en la solicitud");
   }

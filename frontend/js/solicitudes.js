@@ -789,7 +789,8 @@ function buildCreateItemRow(item = {}, options = {}) {
         <input type="hidden" class="solicitud-item-status" value="POR_GESTIONAR" />
         <div class="full">
           <label>Detalle</label>
-          <input class="solicitud-item-detail" value="${item.detalle || item.comentario || ""}" ${
+          <input class="solicitud-item-detail" value="${item.detalle || item.comentario || ""}"
+                 data-visto="${escapeHtml(item.detalle || item.comentario || "")}" ${
             editable ? "" : "disabled"
           } autocomplete="off" spellcheck="false" />
         </div>
@@ -940,6 +941,11 @@ function parseItemsFromContainer(container) {
       ...(comentario ? { comentario } : {}),
       ...(estadoItem ? { estado_item: estadoItem } : {}),
       ...(comentarioGestion ? { comentario_gestion: comentarioGestion } : {}),
+      // Lo que este formulario tenia a la vista al cargarse. El servidor lo usa
+      // para no pisar el comentario de alguien que escribio mientras tanto.
+      comentario_visto: row.querySelector(".solicitud-item-detail")?.dataset.visto ?? "",
+      comentario_gestion_visto:
+        row.querySelector(".solicitud-item-management-comment")?.dataset.visto ?? "",
       ...(encargadoIdRaw ? { encargado_id: Number(encargadoIdRaw) } : {}),
     };
   });
@@ -1604,6 +1610,10 @@ export async function initSolicitudesView(context) {
     itemFinalUserInput.value = item?.usuario_final || "";
     itemCommentInput.value = item?.detalle || item?.comentario || "";
     itemManagementCommentInput.value = item?.comentario_gestion || "";
+    // Se recuerda lo que se mostro, para que al guardar el servidor pueda
+    // detectar si alguien mas escribio ahi mientras el modal estaba abierto.
+    itemCommentInput.dataset.visto = itemCommentInput.value;
+    itemManagementCommentInput.dataset.visto = itemManagementCommentInput.value;
     populateItemModalOptions(item || {});
 
     itemNameInput.disabled = !editableBase;
@@ -2345,6 +2355,13 @@ export async function initSolicitudesView(context) {
       payload.encargado_id = itemOwnerInput.value ? Number(itemOwnerInput.value) : null;
       payload.enviado_por_id = itemSenderInput.value ? Number(itemSenderInput.value) : null;
       payload.recepcionado_por_id = itemReceiverInput.value ? Number(itemReceiverInput.value) : null;
+    }
+
+    // Lo que el modal mostro al abrirse. Solo se manda al editar: en un
+    // producto nuevo no hay nada de otra persona que se pueda pisar.
+    if (!currentItemEditor.isNew) {
+      payload.comentario_visto = itemCommentInput.dataset.visto ?? "";
+      payload.comentario_gestion_visto = itemManagementCommentInput.dataset.visto ?? "";
     }
 
     if (currentItemEditor.isNew) {
