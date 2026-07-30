@@ -3349,15 +3349,10 @@ th {
   background: var(--forest-50);
 }
 
-.table-wrap .col-accion .table-btn,
-.table-wrap .col-accion .table-btn-state {
+.table-wrap .col-accion .table-btn {
   display: block;
   width: 100%;
   margin: 0 0 0.3rem 0;
-}
-
-.table-wrap .col-accion .table-btn-state {
-  margin-bottom: 0;
 }
 
 .status-badge {
@@ -4634,26 +4629,6 @@ body.modal-active {
   box-shadow: none;
 }
 
-/* Botón "Ver estado" en tabla */
-.table-btn-state {
-  margin-left: 0.4rem;
-  min-height: 32px;
-  padding: 0.28rem 0.65rem;
-  font-size: 0.78rem;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--forest-700);
-  border: 1px solid var(--forest-200);
-  box-shadow: none;
-  font-weight: 600;
-}
-
-.table-btn-state:hover {
-  background: var(--forest-200);
-  transform: none;
-  box-shadow: none;
-}
-
 .inline-pending-search-input {
   font-size: 0.95rem;
   min-height: 42px;
@@ -5025,7 +5000,6 @@ body.modal-active {
 .btn,
 .action-btn,
 .table-btn,
-.table-btn-state,
 .ipt-open-btn,
 .detail-tab-btn,
 .pending-collapse-btn {

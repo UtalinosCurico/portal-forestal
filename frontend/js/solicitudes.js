@@ -704,9 +704,6 @@ function renderRows(rows, tableBody, mobileList, formatDate, role) {
             <button class="table-btn ${primaryAction.emphasis ? "table-btn-emphasis" : ""}" data-action="open" data-id="${item.id}" type="button">
               ${primaryAction.label}
             </button>
-            <button class="table-btn-state" data-action="open-state" data-id="${item.id}" type="button">
-              Ver estado
-            </button>
           </td>
         </tr>
       `;
@@ -2637,8 +2634,10 @@ export async function initSolicitudesView(context) {
     }
 
     const solicitudId = Number(button?.dataset.id || row?.dataset.id);
-    const tab = button?.dataset.action === "open-state" ? "estado" : "items";
-    await openSolicitudDetailById(solicitudId, { tab });
+    // Un solo boton por fila. Antes habia dos -"Gestionar" y "Ver estado"- que
+    // abrian el MISMO panel cambiando solo de pestaña, y se leian como dos
+    // destinos distintos. El estado sigue estando, en su pestaña, adentro.
+    await openSolicitudDetailById(solicitudId, { tab: "items" });
   });
 
   tableBody.addEventListener("keydown", async (event) => {

@@ -162,7 +162,7 @@ const ASSET_VERSION = window.__APP_VERSION__ || "dev";
 // ── Button ripple ────────────────────────────────────────────────────────────
 document.addEventListener("pointerdown", (e) => {
   const btn = e.target.closest(
-    ".btn, .action-btn, .table-btn, .table-btn-state, .ipt-open-btn, .detail-tab-btn, .pending-collapse-btn"
+    ".btn, .action-btn, .table-btn, .ipt-open-btn, .detail-tab-btn, .pending-collapse-btn"
   );
   if (!btn || btn.disabled || btn.classList.contains("no-ripple")) return;
   const rect = btn.getBoundingClientRect();
