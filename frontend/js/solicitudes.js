@@ -748,6 +748,23 @@ function renderRows(rows, tableBody, mobileList, formatDate, role) {
     .join("");
 }
 
+/**
+ * Escapa un texto para meterlo en un atributo HTML.
+ *
+ * Este archivo no tenia helper de escape -el resto del HTML se arma sin
+ * escapar- y al agregar data-visto se uso `escapeHtml` dando por hecho que
+ * existia, como en reportes.js. No existia: reventaba con ReferenceError al
+ * armar el formulario, abortaba initSolicitudesView y por eso la lista de
+ * solicitudes quedaba vacia hasta apretar "Actualizar".
+ */
+function escaparAtributo(valor) {
+  return String(valor ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
 function buildCreateItemRow(item = {}, options = {}) {
   const { editable = true } = options;
   return `
@@ -787,7 +804,7 @@ function buildCreateItemRow(item = {}, options = {}) {
         <div class="full">
           <label>Detalle</label>
           <input class="solicitud-item-detail" value="${item.detalle || item.comentario || ""}"
-                 data-visto="${escapeHtml(item.detalle || item.comentario || "")}" ${
+                 data-visto="${escaparAtributo(item.detalle || item.comentario || "")}" ${
             editable ? "" : "disabled"
           } autocomplete="off" spellcheck="false" />
         </div>

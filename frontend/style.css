@@ -4227,12 +4227,18 @@ body.modal-active {
   background: #e2ece6;
 }
 
+/* Fijo a la pantalla, no al contenedor.
+   Con `position: absolute` el panel se anclaba al TOPE del detalle de la
+   solicitud. Si estabas mirando la parte baja -que es lo normal, porque ahi
+   estan los productos- el chat se abria arriba, fuera de la vista, y habia que
+   subir a buscarlo. En movil ya era fixed y por eso ahi nunca fallo. */
 .chat-drawer {
-  position: absolute;
+  position: fixed;
   top: 0;
   right: 0;
   width: min(390px, 100%);
-  height: 100%;
+  height: 100vh;
+  height: 100dvh;
   background: #fbfdfc;
   border-left: 1px solid var(--line);
   box-shadow: -12px 0 32px rgba(11, 36, 25, 0.12);
