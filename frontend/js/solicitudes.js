@@ -1976,6 +1976,17 @@ export async function initSolicitudesView(context) {
     fillContactOptions(solicitud.contactos || []);
     resetMessageComposer();
 
+    // Bajar al ultimo mensaje. Sin esto la lista queda arriba del todo y hay
+    // que desplazarse a mano cada vez que se abre el chat o se manda algo,
+    // que es justo lo contrario de como funciona cualquier chat.
+    //
+    // Va en requestAnimationFrame porque el innerHTML de recien todavia no
+    // tiene alto calculado: si se lee scrollHeight en este momento, da el
+    // valor viejo y no se mueve nada.
+    requestAnimationFrame(() => {
+      messagesList.scrollTop = messagesList.scrollHeight;
+    });
+
     const isChatOpen = chatDrawer?.classList.contains("open");
     if (!isChatOpen && messages.length > lastSeenMessageCount) {
       updateChatBadge(messages.length - lastSeenMessageCount);
