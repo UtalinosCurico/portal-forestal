@@ -32,6 +32,19 @@ const ITERACIONES_POR_DEFECTO = 10000;
 // resultante seria un artefacto.
 const MINIMO_SEMANAS = 4;
 
+// Y ademas, un minimo de semanas CON consumo.
+//
+// La serie viene alineada al calendario completo, asi que un producto pedido
+// una sola vez en cuatro meses igual llega con quince semanas: catorce ceros y
+// un numero. Contando solo el largo del arreglo pasaba el filtro y la
+// simulacion devolvia "mantener 20" a partir de un unico pedido, con toda la
+// pinta de un resultado calculado.
+//
+// Con demanda intermitente hacen falta varios eventos de demanda para estimar
+// algo: tres es el minimo con el que el remuestreo puede siquiera representar
+// que la demanda a veces es alta y a veces baja.
+const MINIMO_SEMANAS_CON_CONSUMO = 3;
+
 /**
  * Generador con semilla (mulberry32). Se usa una semilla fija para que la
  * misma consulta devuelva siempre el mismo numero: un reporte que cambia solo
@@ -131,6 +144,19 @@ function simularNivelAMantener({
       mensaje:
         `Al dejar fuera ${semanasAtipicas.size} semana(s) atipica(s) quedan ` +
         `${serie.length} semanas, y hacen falta ${MINIMO_SEMANAS}.`,
+    };
+  }
+
+  const semanasConConsumo = serie.filter((v) => v > 0).length;
+  if (semanasConConsumo < MINIMO_SEMANAS_CON_CONSUMO) {
+    return {
+      disponible: false,
+      motivo: "pocos_eventos_de_consumo",
+      semanas_con_consumo: semanasConConsumo,
+      semanas_con_consumo_necesarias: MINIMO_SEMANAS_CON_CONSUMO,
+      mensaje:
+        `Este producto se pidio en ${semanasConConsumo} semana(s) distinta(s). ` +
+        `Hacen falta ${MINIMO_SEMANAS_CON_CONSUMO} para estimar cuanto conviene mantener.`,
     };
   }
 
@@ -277,5 +303,6 @@ module.exports = {
   percentil,
   generador,
   MINIMO_SEMANAS,
+  MINIMO_SEMANAS_CON_CONSUMO,
   ITERACIONES_POR_DEFECTO,
 };

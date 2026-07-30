@@ -13,6 +13,7 @@ const {
   percentil,
   generador,
   MINIMO_SEMANAS,
+  MINIMO_SEMANAS_CON_CONSUMO,
 } = require("../utils/simulacion");
 
 test("no simula con menos semanas que el minimo", () => {
@@ -175,7 +176,9 @@ test("las semanas sin consumo cuentan y bajan el nivel necesario", () => {
     iteraciones: 5000,
   });
   const intermitente = simularNivelAMantener({
-    demandaSemanal: [0, 0, 40, 0, 0, 40, 0, 0],
+    // Cuatro eventos de 20 en ocho semanas: mismo promedio de 10, pero a
+    // saltos. Necesita al menos tres eventos para que se pueda estimar.
+    demandaSemanal: [0, 20, 0, 20, 0, 20, 0, 20],
     iteraciones: 5000,
   });
 
@@ -185,4 +188,30 @@ test("las semanas sin consumo cuentan y bajan el nivel necesario", () => {
     intermitente.nivel_a_mantener > parejo.nivel_a_mantener,
     "a igual promedio, la demanda a saltos obliga a cubrir el salto completo"
   );
+});
+
+// La serie llega alineada al calendario completo, asi que un producto pedido
+// una sola vez igual trae quince semanas: catorce ceros y un numero. Contando
+// solo el largo del arreglo, la simulacion devolvia "mantener 20" a partir de
+// un unico pedido, con toda la pinta de un resultado calculado.
+test("un producto pedido una sola vez no recibe recomendacion", () => {
+  const unaSolaVez = [0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0];
+
+  const resultado = simularNivelAMantener({ demandaSemanal: unaSolaVez });
+
+  assert.equal(resultado.disponible, false);
+  assert.equal(resultado.motivo, "pocos_eventos_de_consumo");
+  assert.equal(resultado.semanas_con_consumo, 1);
+  assert.match(resultado.mensaje, /1 semana/);
+});
+
+test("con suficientes eventos de consumo si se estima, aunque haya muchos ceros", () => {
+  // Demanda intermitente real: se pide de vez en cuando, pero varias veces.
+  const intermitente = [0, 12, 0, 0, 15, 0, 10, 0, 0, 14, 0, 0];
+  assert.ok(intermitente.filter((v) => v > 0).length >= MINIMO_SEMANAS_CON_CONSUMO);
+
+  const resultado = simularNivelAMantener({ demandaSemanal: intermitente });
+
+  assert.equal(resultado.disponible, true, "cuatro eventos de demanda alcanzan para estimar");
+  assert.ok(resultado.nivel_a_mantener > 0);
 });

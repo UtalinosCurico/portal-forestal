@@ -20,6 +20,7 @@ const {
 const estadistica = require("../utils/estadistica");
 const periodos = require("../utils/periodos");
 const analisis = require("../utils/analisis");
+const simulacion = require("../utils/simulacion");
 
 // Una solicitud rechazada no representa consumo real, no debe inflar el stock.
 const ESTADOS_EXCLUIDOS = new Set(["RECHAZADO"]);
@@ -306,6 +307,25 @@ async function getConsumo(actor, filters = {}) {
         serie: clavesPeriodo.map((c) => porPeriodo[c] || 0),
         por_equipo: sumarPorEquipo(registro.pedidos),
 
+        // Cuanto conviene mantener de este producto, por simulacion Monte
+        // Carlo sobre las semanas realmente observadas. Solo en vista semanal:
+        // el modelo razona en semanas, y correrlo sobre meses daria un numero
+        // que no significa lo que dice.
+        //
+        // No se simula si el producto mezcla unidades: una demanda que suma
+        // litros con unidades no se puede proyectar, y dar un numero igual
+        // seria peor que no darlo.
+        simulacion:
+          agrupacion === "semana" && !unidadEnConflicto
+            ? simulacion.simularNivelAMantener({
+                demandaSemanal: clavesPeriodo.map((c) => porPeriodo[c] || 0),
+                // Iteraciones mas bajas que el maximo: con muchos productos en
+                // una sola respuesta, 4000 ya da un percentil estable y el
+                // reporte no se hace lento.
+                iteraciones: 4000,
+              })
+            : null,
+
         // Estadistica robusta: la mediana no se mueve por un pedido raro.
         tipico: stock.tipico,
         sugerido_min: stock.minimo,
@@ -387,6 +407,14 @@ async function getConsumo(actor, filters = {}) {
         clavesPorSolicitud,
         new Map(filas.map((f) => [f.clave, f.nombre]))
       ),
+
+      // Clasificacion ABC: responde "para donde se estan yendo las cosas", que
+      // es lo que le preguntan a la secretaria. Se entregan los dos criterios
+      // porque miden cosas distintas y ninguno es "el correcto": por cantidad
+      // es lo intuitivo pero mezcla unidades, y por frecuencia es comparable
+      // entre productos porque cuenta veces y no unidades.
+      abc: analisis.clasificarABC(filas, { criterio: "cantidad" }),
+      abc_por_frecuencia: analisis.clasificarABC(filas, { criterio: "frecuencia" }),
     },
     // Pedidos que se salen de lo normal. No se borran: se muestran para que
     // alguien confirme si fue un error de tipeo o un consumo real.
