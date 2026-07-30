@@ -7344,3 +7344,14 @@ tbody tr {
 .reportes-sim-caja:hover { opacity: 1; }
 
 .reportes-sim-pie { margin-top: 0.5rem; font-size: 0.78rem; }
+
+/* En pantallas intermedias -tablet o ventana a media pantalla- seis columnas
+   pueden no caber ni envolviendo. Ahi el desplazamiento vuelve, pero CONTENIDO
+   dentro de la tarjeta: lo que molestaba era que la fila se saliera del
+   recuadro, no que exista una barra. En el celular no aplica, porque la tabla
+   ya se reemplaza por tarjetas. */
+@media (min-width: 641px) and (max-width: 900px) {
+  .view-container[data-view-name="reportes"] .table-wrap {
+    overflow-x: auto;
+  }
+}

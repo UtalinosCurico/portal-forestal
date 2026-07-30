@@ -839,7 +839,10 @@ export async function initReportesView(context) {
     atipicos: [],
   };
   let aliasGuardados = [];
-  let agrupacion = "mes";
+  // Semana por defecto: los turnos rotan cada semana, asi que comparar semana
+  // contra semana es comparar turnos. Mirarlo por mes promedia justo la
+  // diferencia que interesa ver.
+  let agrupacion = "semana";
   // Criterio del ABC y el ultimo reporte cargado, para poder cambiar de
   // criterio sin volver a pedir todo al servidor: los dos ya vienen en la
   // misma respuesta.

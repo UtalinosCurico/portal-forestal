@@ -11,8 +11,8 @@
 
       <div class="reportes-agrupacion" role="group" aria-label="Agrupar por">
         <span class="reportes-agrupacion-label">Ver por</span>
-        <button class="agrupacion-btn" data-agrupacion="semana" type="button">Semana</button>
-        <button class="agrupacion-btn active" data-agrupacion="mes" type="button">Mes</button>
+        <button class="agrupacion-btn active" data-agrupacion="semana" type="button">Semana</button>
+        <button class="agrupacion-btn" data-agrupacion="mes" type="button">Mes</button>
       </div>
     </div>
 
@@ -79,7 +79,7 @@
           <strong class="reportes-kpi-valor" id="reportes-total-solicitudes">0</strong>
         </div>
         <div class="reportes-kpi reportes-kpi-proyeccion">
-          <span class="reportes-kpi-label" id="reportes-proyeccion-label">Próximo mes</span>
+          <span class="reportes-kpi-label" id="reportes-proyeccion-label">Próxima semana</span>
           <strong class="reportes-kpi-valor" id="reportes-proyeccion-valor">-</strong>
           <span class="reportes-kpi-nota" id="reportes-proyeccion-confianza"></span>
         </div>
@@ -98,7 +98,7 @@
           <div id="reportes-top-productos" class="reportes-top"></div>
         </div>
         <div class="reportes-visual-bloque">
-          <h5 id="reportes-tendencia-titulo">Consumo total por mes</h5>
+          <h5 id="reportes-tendencia-titulo">Consumo total por semana</h5>
           <div id="reportes-tendencia"></div>
           <p id="reportes-aviso-incompleto" class="muted-text reportes-nota hidden"></p>
         </div>
@@ -153,7 +153,7 @@
             El mínimo cubre un período normal; el máximo cubre 9 de cada 10
             períodos. Los pedidos anomalos no entran en este cálculo.
           </dd>
-          <dt>Próximo mes</dt>
+          <dt>Próximo período</dt>
           <dd>
             Estimación a partir del promedio de los últimos períodos, corregida
             si hay una tendencia clara. La etiqueta dice que tan confiable es:
@@ -173,9 +173,9 @@
             <tr>
               <th>Producto</th>
               <th>Total</th>
-              <th id="reportes-th-tipico">Típico por mes</th>
+              <th id="reportes-th-tipico">Típico por semana</th>
               <th>Stock sugerido</th>
-              <th id="reportes-th-proyeccion">Próximo mes</th>
+              <th id="reportes-th-proyeccion">Próxima semana</th>
               <th>Comportamiento</th>
             </tr>
           </thead>
