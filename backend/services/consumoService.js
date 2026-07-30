@@ -387,6 +387,29 @@ async function getConsumo(actor, filters = {}) {
     },
     // Serie general alineada a periodo.claves, mas su media movil para dibujar
     // la tendencia de fondo sin el ruido de los altibajos.
+    // De que estan hechas las unidades del total y de la proyeccion. Sin esto,
+    // "proxima semana ~193" es un numero sin significado: suma pares con
+    // rollos con litros, que no se pueden sumar entre si. Se entrega el
+    // desglose para poder decirlo en pantalla en vez de esconderlo.
+    unidades_globales: (() => {
+      const porUnidad = new Map();
+      for (const fila of filas) {
+        for (const parte of fila.desglose_unidades || []) {
+          const clave = parte.unidad || "";
+          porUnidad.set(clave, (porUnidad.get(clave) || 0) + parte.total);
+        }
+      }
+      const partes = [...porUnidad.entries()]
+        .map(([unidad, total]) => ({ unidad, total }))
+        .sort((a, b) => b.total - a.total);
+      const conNombre = partes.filter((x) => x.unidad);
+      return {
+        partes,
+        mezcladas: conNombre.length > 1,
+        unidad_dominante: conNombre[0]?.unidad || "",
+      };
+    })(),
+
     serie_general: serieGeneral,
     media_movil: estadistica.mediaMovil(serieGeneral, agrupacion === "semana" ? 4 : 3),
     tendencia_general: estadistica.calcularTendencia(

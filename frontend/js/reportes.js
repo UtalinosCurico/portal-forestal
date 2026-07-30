@@ -870,6 +870,17 @@ export async function initReportesView(context) {
     pintarABC();
   });
 
+  // "Pedidos a revisar: 1" no servia de nada sin decir CUAL. La lista ya
+  // existia mas abajo; ahora el numero lleva hasta ella.
+  el("reportes-kpi-atipicos")?.addEventListener("click", () => {
+    const tarjeta = el("reportes-atipicos-card");
+    if (!tarjeta || tarjeta.classList.contains("hidden")) return;
+    document.querySelector('[data-tab="resumen"]')?.click();
+    tarjeta.scrollIntoView({ behavior: "smooth", block: "center" });
+    tarjeta.classList.add("resaltado");
+    window.setTimeout(() => tarjeta.classList.remove("resaltado"), 1600);
+  });
+
   // ── Pestanas ──────────────────────────────────────────────────────────
   tabs.addEventListener("click", (event) => {
     const boton = event.target.closest("[data-tab]");
@@ -932,10 +943,22 @@ export async function initReportesView(context) {
     const proy = datos.proyeccion_general;
     el("reportes-proyeccion-label").textContent =
       unidad === "semana" ? "Próxima semana" : "Próximo mes";
-    el("reportes-proyeccion-valor").textContent = proy ? `~${proy.valor}` : "-";
+    const unidades = datos.unidades_globales;
+    // "~193" a secas no significa nada si el portal mueve pares, rollos y
+    // litros: no son sumables. Se dice la unidad cuando hay una sola, y se
+    // avisa cuando hay varias en vez de fingir un total.
+    el("reportes-proyeccion-valor").textContent = proy
+      ? `~${proy.valor}${unidades?.mezcladas ? "" : ` ${unidades?.unidad_dominante || ""}`}`.trim()
+      : "-";
     el("reportes-proyeccion-confianza").textContent = proy
-      ? `${proy.confianza.etiqueta} · media móvil de ${proy.ventana}`
+      ? unidades?.mezcladas
+        ? `Suma ${unidades.partes
+            .filter((x) => x.unidad)
+            .map((x) => x.unidad)
+            .join(", ")}: mira producto por producto`
+        : `${proy.confianza.etiqueta} · media móvil de ${proy.ventana}`
       : "Sin historial suficiente";
+    el("reportes-kpi-proyeccion")?.classList.toggle("kpi-poco-fiable", Boolean(unidades?.mezcladas));
 
     const avisoIncompleto = el("reportes-aviso-incompleto");
     if (datos.periodo.incompleto) {

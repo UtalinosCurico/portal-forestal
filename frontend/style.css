@@ -7335,3 +7335,37 @@ tbody tr {
     overflow-x: auto;
   }
 }
+
+/* "Pedidos a revisar" ahora es un boton: el numero solo no servia de nada si
+   no decia CUALES. Lleva a la lista de mas abajo. */
+.reportes-kpi-accion {
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  border: 1px solid var(--line);
+}
+
+.reportes-kpi-accion:hover {
+  border-color: var(--warning, #c9962a);
+  transform: translateY(-1px);
+}
+
+/* Resalta un momento la tarjeta a la que se salto, para no perderse. */
+.card.resaltado {
+  animation: resaltar-tarjeta 1.6s ease;
+}
+
+@keyframes resaltar-tarjeta {
+  0%, 100% { box-shadow: var(--shadow); }
+  25%, 60% { box-shadow: 0 0 0 3px var(--warning, #c9962a); }
+}
+
+/* La proyeccion, cuando suma unidades que no son comparables, no debe leerse
+   con la misma confianza que un numero limpio. */
+.kpi-poco-fiable .reportes-kpi-valor {
+  color: var(--muted);
+}
+
+.kpi-poco-fiable .reportes-kpi-nota {
+  color: var(--warning-text, #8a6d3b);
+}
