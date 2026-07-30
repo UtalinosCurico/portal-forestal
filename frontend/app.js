@@ -605,6 +605,72 @@ function showToast(message, isError = false) {
   }, 2600);
 }
 
+// ── Fallos que hoy se perdian ───────────────────────────────────────────────
+//
+// Una excepcion dentro de un `await` sin catch no llega a la consola ni a
+// ningun aviso: la promesa queda rechazada y nadie se entera. Asi vivio dias
+// el ReferenceError que impedia que cargaran las solicitudes; el sintoma que
+// veia la gente era "hay que apretar Actualizar", sin ninguna pista de por que.
+//
+// En faena la conexion se corta a cada rato, asi que un fallo de red NO es un
+// error del programa y no debe molestar a nadie: esos se ignoran. Lo que si se
+// muestra es lo que delata un problema real del codigo.
+
+const FALLOS_MAX_GUARDADOS = 20;
+const FALLO_AVISO_MIN_GAP_MS = 30000;
+
+// Mensajes tipicos de "se corto internet". No son bugs.
+const PARECE_FALLA_DE_RED =
+  /Failed to fetch|NetworkError|Load failed|network|conexion|conexión|offline|ERR_INTERNET|ERR_NETWORK|AbortError/i;
+
+const fallosRegistrados = [];
+let ultimoAvisoDeFalloAt = 0;
+
+function registrarFallo(origen, error) {
+  const mensaje = String(error?.message || error || "").slice(0, 300);
+
+  // Sin conexion, o error tipico de red: es el entorno, no la aplicacion.
+  if (!navigator.onLine || PARECE_FALLA_DE_RED.test(mensaje)) {
+    return;
+  }
+
+  const registro = {
+    cuando: new Date().toISOString(),
+    origen,
+    mensaje,
+    donde: String(error?.stack || "").split("\n")[1]?.trim().slice(0, 200) || "",
+    vista: viewContainer?.dataset.viewName || "",
+  };
+
+  fallosRegistrados.push(registro);
+  if (fallosRegistrados.length > FALLOS_MAX_GUARDADOS) {
+    fallosRegistrados.shift();
+  }
+
+  // Queda en la consola siempre, para poder diagnosticar despues.
+  console.error("[FMN] fallo no controlado:", registro);
+
+  // Y se avisa, pero espaciado: si algo falla en bucle, no se llena la
+  // pantalla de mensajes encima de quien esta trabajando.
+  const ahora = Date.now();
+  if (ahora - ultimoAvisoDeFalloAt > FALLO_AVISO_MIN_GAP_MS) {
+    ultimoAvisoDeFalloAt = ahora;
+    showToast("Algo no funciono como debia. Si se repite, avisa con el boton Feedback.", true);
+  }
+}
+
+window.addEventListener("unhandledrejection", (evento) => {
+  registrarFallo("promesa sin capturar", evento.reason);
+});
+
+window.addEventListener("error", (evento) => {
+  registrarFallo("error", evento.error || evento.message);
+});
+
+// Para diagnosticar desde la consola del navegador sin herramientas extra.
+window.__fmnFallos = () => [...fallosRegistrados];
+
+
 // --- Avisos agrupados ------------------------------------------------------
 // La secretaria es ADMIN y recibe una notificacion por cada solicitud de todos
 // los equipos. Sin agrupar, ocho solicitudes seguidas eran ocho avisos y ocho
