@@ -264,6 +264,67 @@ function renderSinDatos(mensaje) {
     </div>`;
 }
 
+/**
+ * Clasificacion ABC: responde "para donde se estan yendo las cosas".
+ *
+ * Se muestran los dos criterios porque miden cosas distintas. Por cantidad es
+ * lo intuitivo, pero mezcla unidades (pares con rollos con litros) y eso se
+ * advierte en pantalla en vez de esconderlo. Por frecuencia cuenta en cuantas
+ * solicitudes aparece cada producto, que SI es comparable entre productos.
+ */
+function renderABC(abc, contenedor, criterioActivo = "cantidad") {
+  if (!abc?.disponible) {
+    contenedor.innerHTML = renderSinDatos(abc?.mensaje || "Sin información.");
+    return;
+  }
+
+  const clases = { A: "Se llevan casi todo", B: "Intermedios", C: "Poco peso" };
+  const maximo = abc.productos[0]?.participacion || 1;
+
+  contenedor.innerHTML = `
+    <p class="reportes-abc-frase"><strong>${escapeHtml(abc.resumen.frase)}</strong></p>
+
+    <div class="reportes-abc-criterios" role="group" aria-label="Criterio de clasificación">
+      <button class="reportes-abc-criterio ${criterioActivo === "cantidad" ? "active" : ""}"
+              data-abc-criterio="cantidad" type="button">Por cantidad</button>
+      <button class="reportes-abc-criterio ${criterioActivo === "frecuencia" ? "active" : ""}"
+              data-abc-criterio="frecuencia" type="button">Por veces que se pide</button>
+    </div>
+
+    ${
+      abc.advertencia_unidades
+        ? `<p class="reportes-abc-aviso">${escapeHtml(abc.advertencia_unidades)}</p>`
+        : ""
+    }
+
+    <div class="reportes-abc-lista">
+      ${abc.productos
+        .slice(0, 12)
+        .map(
+          (p) => `
+        <div class="reportes-abc-fila clase-${p.clase}">
+          <span class="reportes-abc-clase" title="${escapeHtml(clases[p.clase] || "")}">${p.clase}</span>
+          <span class="reportes-abc-nombre">${escapeHtml(p.nombre)}</span>
+          <span class="reportes-abc-riel">
+            <span class="reportes-abc-relleno" style="width:${Math.max(
+              2,
+              Math.round((p.participacion / maximo) * 100)
+            )}%"></span>
+          </span>
+          <span class="reportes-abc-valor">${p.participacion}%</span>
+          <span class="reportes-abc-acumulado" title="Acumulado hasta este producto">${p.acumulado}%</span>
+        </div>`
+        )
+        .join("")}
+    </div>
+
+    <p class="muted-text reportes-abc-pie">
+      A: hasta el 80% acumulado · B: hasta el 95% · C: el resto.
+      Sin precios cargados, esto ordena por volumen, no por costo.
+    </p>
+  `;
+}
+
 function renderAsociados(asociados, contenedor) {
   if (!asociados?.disponible) {
     contenedor.innerHTML = renderSinDatos(asociados?.mensaje || "Sin información.");
@@ -518,6 +579,7 @@ function renderFilas(productos, periodo, tbody, filtroTexto, mobileList, puedeRe
               </div>
             </div>
             ${renderVariantes(p.variantes)}
+            ${renderSimulacion(p.simulacion)}
             <div class="reportes-pedidos" data-pedidos-de="${escapeHtml(p.clave)}">
               <button class="action-btn secondary table-btn" data-cargar-pedidos="${escapeHtml(p.clave)}" type="button">
                 Ver cada pedido
@@ -566,6 +628,77 @@ function renderPedidosIndividuales(datos, contenedor) {
         .join("")}
     </div>
   `;
+}
+
+/**
+ * Cuanto conviene mantener de un producto, por simulacion.
+ *
+ * Dos niveles a proposito: la frase de arriba es para la secretaria y el jefe
+ * -un numero y que tan seguido alcanza-, y el detalle tecnico va plegado para
+ * quien quiera revisar el metodo sin que estorbe a quien no.
+ */
+function renderSimulacion(sim) {
+  if (!sim) return "";
+
+  if (!sim.disponible) {
+    return `
+      <div class="reportes-sim sin-datos">
+        <h5>Cuánto conviene mantener</h5>
+        <p class="muted-text">${escapeHtml(sim.mensaje || "Sin datos suficientes.")}</p>
+      </div>`;
+  }
+
+  const d = sim.detalle;
+  const maxCaja = Math.max(...d.histograma.map((c) => c.cuenta), 1);
+
+  return `
+    <div class="reportes-sim">
+      <h5>Cuánto conviene mantener</h5>
+      <p class="reportes-sim-frase"><strong>${escapeHtml(sim.frase)}</strong></p>
+
+      ${
+        sim.semanas_atipicas?.length
+          ? `<p class="reportes-sim-aviso">
+               Se dejó fuera ${sim.semanas_atipicas.length} semana(s) con pedidos
+               fuera de lo normal (${sim.semanas_atipicas
+                 .map((a) => a.cantidad)
+                 .join(", ")}). Revísalas por si fueron error de tipeo.
+             </p>`
+          : ""
+      }
+
+      <details class="reportes-sim-detalle">
+        <summary>Ver el método y la distribución</summary>
+
+        <dl class="reportes-sim-datos">
+          <dt>Consumo medio</dt><dd>${d.demanda_media_semanal} por semana</dd>
+          <dt>Semanas usadas</dt><dd>${d.semanas_observadas}</dd>
+          <dt>Demora en llegar</dt>
+          <dd>${d.lead_time_dias.minimo} a ${d.lead_time_dias.maximo} días (normalmente ${d.lead_time_dias.probable})</dd>
+          <dt>Variabilidad</dt>
+          <dd>${escapeHtml(d.sobredispersion?.interpretacion || "-")}</dd>
+          <dt>Método</dt><dd>${escapeHtml(d.metodo)}, ${d.iteraciones.toLocaleString("es-CL")} iteraciones</dd>
+        </dl>
+
+        <p class="reportes-sim-percentiles">
+          Con <strong>${d.percentiles.p50}</strong> alcanza la mitad de las semanas ·
+          con <strong>${d.percentiles.p90}</strong>, el 90% ·
+          con <strong>${d.percentiles.p99}</strong>, el 99%
+        </p>
+
+        <div class="reportes-sim-histograma" role="img"
+             aria-label="Distribución de la demanda simulada">
+          ${d.histograma
+            .map(
+              (c) => `<span class="reportes-sim-caja"
+                            style="height:${Math.max(3, Math.round((c.cuenta / maxCaja) * 100))}%"
+                            title="${c.desde} a ${c.hasta}: ${c.cuenta} de ${d.iteraciones}"></span>`
+            )
+            .join("")}
+        </div>
+        <p class="muted-text reportes-sim-pie">${escapeHtml(sim.advertencia_censura)}</p>
+      </details>
+    </div>`;
 }
 
 function renderDuplicados(sugerencias, lista, puedeUnificar) {
@@ -707,9 +840,32 @@ export async function initReportesView(context) {
   };
   let aliasGuardados = [];
   let agrupacion = "mes";
+  // Criterio del ABC y el ultimo reporte cargado, para poder cambiar de
+  // criterio sin volver a pedir todo al servidor: los dos ya vienen en la
+  // misma respuesta.
+  let abcCriterio = "cantidad";
+  let ultimoReporte = null;
 
   if (!esRolGlobal && equipoField) equipoField.classList.add("hidden");
   if (puedeUnificar) unificarManualBtn?.classList.remove("hidden");
+
+  function pintarABC() {
+    if (!ultimoReporte) return;
+    const datos =
+      abcCriterio === "frecuencia"
+        ? ultimoReporte.analisis?.abc_por_frecuencia
+        : ultimoReporte.analisis?.abc;
+    renderABC(datos, el("reportes-abc"), abcCriterio);
+  }
+
+  // Cambiar de criterio no vuelve a consultar: los dos vienen en la misma
+  // respuesta, asi que se repinta con lo que ya esta en memoria.
+  el("reportes-abc").addEventListener("click", (event) => {
+    const boton = event.target.closest("[data-abc-criterio]");
+    if (!boton) return;
+    abcCriterio = boton.dataset.abcCriterio;
+    pintarABC();
+  });
 
   // ── Pestanas ──────────────────────────────────────────────────────────
   tabs.addEventListener("click", (event) => {
@@ -820,6 +976,8 @@ export async function initReportesView(context) {
       renderFilas(datos.productos, datos.periodo, tbody, searchInput.value, mobileList, puedeUnificar);
       renderDuplicados(datos.posibles_duplicados, duplicadosList, puedeUnificar);
 
+      ultimoReporte = datos;
+      pintarABC();
       renderAsociados(datos.analisis?.asociados, el("reportes-asociados"));
       renderEquipos(
         datos.analisis?.equipos,

@@ -7166,3 +7166,181 @@ tbody tr {
 
 .view-container[data-view-name="reportes"] .table-wrap th:nth-child(1) { width: 24%; }
 .view-container[data-view-name="reportes"] .table-wrap th:nth-child(6) { width: 18%; }
+
+/* ── Clasificacion ABC ─────────────────────────────────────────────────────
+   La fila se lee de izquierda a derecha como una frase: que clase es, que
+   producto, cuanto pesa, y cuanto va acumulado. La barra esta al medio para
+   que la comparacion entre productos sea visual y no haya que leer numeros. */
+.reportes-abc-frase {
+  font-size: 1.05rem;
+  margin-bottom: 0.9rem;
+}
+
+.reportes-abc-criterios {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.reportes-abc-criterio {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reportes-abc-criterio.active {
+  background: var(--forest-700);
+  border-color: var(--forest-700);
+  color: #fff;
+}
+
+.reportes-abc-aviso {
+  font-size: 0.82rem;
+  color: var(--warning-text, #8a6d3b);
+  background: var(--warning-bg, #fdf6e3);
+  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
+  margin-bottom: 0.8rem;
+}
+
+.reportes-abc-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.reportes-abc-fila {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1.4fr) minmax(0, 2fr) 52px 52px;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.86rem;
+}
+
+/* La letra de clase se lee como una etiqueta, no como texto corrido. */
+.reportes-abc-clase {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: #fff;
+}
+
+.reportes-abc-fila.clase-A .reportes-abc-clase { background: var(--forest-700); }
+.reportes-abc-fila.clase-B .reportes-abc-clase { background: #7d9b86; }
+.reportes-abc-fila.clase-C .reportes-abc-clase { background: #b9c4bd; }
+
+.reportes-abc-nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reportes-abc-riel {
+  background: var(--line);
+  border-radius: 999px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.reportes-abc-relleno {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--forest-700);
+}
+
+.reportes-abc-fila.clase-B .reportes-abc-relleno { background: #7d9b86; }
+.reportes-abc-fila.clase-C .reportes-abc-relleno { background: #b9c4bd; }
+
+.reportes-abc-valor { font-weight: 700; text-align: right; }
+.reportes-abc-acumulado { color: var(--muted); text-align: right; font-size: 0.8rem; }
+.reportes-abc-pie { margin-top: 0.8rem; font-size: 0.8rem; }
+
+/* En el celular la barra estorba mas de lo que aporta: se deja el nombre con
+   su porcentaje, que es lo que se necesita para decidir. */
+@media (max-width: 640px) {
+  .reportes-abc-fila {
+    grid-template-columns: 26px minmax(0, 1fr) 48px 48px;
+  }
+  .reportes-abc-riel { display: none; }
+}
+
+/* ── Simulacion: cuanto conviene mantener ──────────────────────────────────
+   Dos niveles. La frase de arriba la lee cualquiera; el metodo va plegado
+   para quien quiera revisarlo, sin estorbar a quien solo necesita el numero. */
+.reportes-sim {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line);
+}
+
+.reportes-sim h5 { margin-bottom: 0.4rem; }
+
+.reportes-sim-frase {
+  font-size: 1rem;
+  color: var(--forest-700);
+}
+
+.reportes-sim.sin-datos .muted-text { font-size: 0.86rem; }
+
+.reportes-sim-aviso {
+  margin-top: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--warning-text, #8a6d3b);
+}
+
+.reportes-sim-detalle { margin-top: 0.7rem; }
+
+.reportes-sim-detalle summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.reportes-sim-datos {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.25rem 0.8rem;
+  margin: 0.7rem 0;
+  font-size: 0.84rem;
+}
+
+.reportes-sim-datos dt { color: var(--muted); }
+.reportes-sim-datos dd { margin: 0; }
+
+.reportes-sim-percentiles { font-size: 0.85rem; margin-bottom: 0.6rem; }
+
+/* Histograma de la demanda simulada: no lleva ejes porque la forma es lo que
+   importa, no los valores exactos. Cada caja tiene su detalle al pasar encima. */
+.reportes-sim-histograma {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 64px;
+  padding: 0.3rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.reportes-sim-caja {
+  flex: 1;
+  background: var(--forest-700);
+  border-radius: 2px 2px 0 0;
+  opacity: 0.75;
+}
+
+.reportes-sim-caja:hover { opacity: 1; }
+
+.reportes-sim-pie { margin-top: 0.5rem; font-size: 0.78rem; }

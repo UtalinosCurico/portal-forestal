@@ -215,7 +215,7 @@ function detectarProductosAsociados(solicitudesConClaves, nombrePorClave) {
 
     if (confianza < CONFIANZA_MINIMA) continue;
 
-    // La confianza sola enganа: un producto que se pide en casi todas las
+    // La confianza sola engaña: un producto que se pide en casi todas las
     // solicitudes aparece junto a todo con confianza alta sin que exista
     // relacion. El lift corrige eso comparando contra la frecuencia base: 1
     // significa "lo mismo que el azar", y solo por encima hay algo real.
