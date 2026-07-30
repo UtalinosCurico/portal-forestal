@@ -2553,6 +2553,7 @@ function registerOfflineDetection() {
           ? `Conexión restaurada — ${sent} acción${sent !== 1 ? "es" : ""} enviada${sent !== 1 ? "s" : ""}`
           : "Conexión restaurada."
       );
+      if (sent > 0) await refrescarTrasEnviarCola();
     } catch {
       showToast("Conexión restaurada.");
     }
@@ -2564,12 +2565,28 @@ function registerOfflineDetection() {
   if (!navigator.onLine) updateBanner();
 }
 
+/**
+ * Refresca la vista actual despues de enviar lo que estaba encolado.
+ *
+ * Sin esto, quien pidio sin señal recupera conexion, el pedido SI entra al
+ * servidor, pero su pantalla sigue mostrando la lista de antes. Es el momento
+ * exacto en que alguien piensa que fallo y vuelve a pedir lo mismo.
+ */
+async function refrescarTrasEnviarCola() {
+  try {
+    await loadView(state.currentView, { force: true });
+  } catch {
+    // Si no se puede refrescar, lo enviado ya esta guardado igual.
+  }
+}
+
 async function flushOfflineQueue() {
   try {
     const { flushQueue } = await import("/js/offline-queue.js");
     const sent = await flushQueue(apiRequest);
     if (sent > 0) {
       showToast(`${sent} acción${sent !== 1 ? "es" : ""} offline enviada${sent !== 1 ? "s" : ""}`);
+      await refrescarTrasEnviarCola();
     }
   } catch { /* no crítico */ }
 }
