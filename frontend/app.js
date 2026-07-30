@@ -212,6 +212,7 @@ const state = {
   // Al abrir la app hay que fijar el conteo base sin avisar nada: lo pendiente
   // de antes no es "novedad". Recien despues de eso avisamos lo que llegue.
   alertsPrimed: false,
+  lastAlertsCheckAt: 0,
   lastNotifSoundAt: 0,
   alertsReconnectAttempts: 0,
 };
@@ -608,6 +609,13 @@ function showToast(message, isError = false) {
 // La secretaria es ADMIN y recibe una notificacion por cada solicitud de todos
 // los equipos. Sin agrupar, ocho solicitudes seguidas eran ocho avisos y ocho
 // sonidos. Aca se juntan en una sola tanda.
+
+// Si entre dos consultas de avisos pasa mas que esto, se asume que la pagina
+// estuvo dormida (pestana oculta, celular bloqueado, app en segundo plano) y
+// que la continuidad se perdio. El sondeo normal es cada 45 s, asi que tres
+// minutos es holgado para una demora de red pero corto frente a un rato real
+// sin mirar el portal.
+const ALERTS_CONTINUIDAD_MAX_MS = 3 * 60 * 1000;
 
 const NOTIF_BATCH_WINDOW_MS = 1500;
 const NOTIF_SOUND_MIN_GAP_MS = 15000;
@@ -1094,6 +1102,20 @@ async function checkAlerts(showToastOnNew = false) {
     return;
   }
 
+  // Segunda red, para lo que visibilitychange no alcanza a cubrir: en el
+  // celular el navegador congela la pagina al cambiar de aplicacion y ese
+  // evento no siempre llega. Si entre dos consultas pasó mucho mas que el
+  // intervalo normal, la continuidad se perdio igual, y comparar contra un
+  // conteo de hace horas volveria a producir la tanda.
+  const ahora = Date.now();
+  if (
+    state.lastAlertsCheckAt &&
+    ahora - state.lastAlertsCheckAt > ALERTS_CONTINUIDAD_MAX_MS
+  ) {
+    state.alertsPrimed = false;
+  }
+  state.lastAlertsCheckAt = ahora;
+
   const payload = await apiRequest("/api/notificaciones?soloNoLeidas=1&limit=50");
   const rows = payload.data || [];
   const unreadCount = rows.length;
@@ -1398,6 +1420,19 @@ function handleVisibilityChange() {
 
   if (document.hidden) {
     stopRealtimeAlerts();
+
+    // Mientras la pestana esta oculta el sondeo se salta, asi que
+    // state.lastAlertsCount queda congelado en el valor de hace rato. Si al
+    // volver se comparara contra ese valor, TODO lo que llego mientras tanto
+    // contaria como "nuevo" y saldria de golpe: es la tanda que se veia al
+    // cerrar otra app y volver al portal.
+    //
+    // Al despriman los avisos, la primera consulta tras volver solo vuelve a
+    // fijar la base, en silencio. Importa hacerlo aca y no al volver, porque
+    // los navegadores guardan el tic pendiente del temporizador y lo ejecutan
+    // apenas la pestana se muestra: ese tic corre ANTES de que termine
+    // cualquier cosa que pongamos en el camino de vuelta.
+    state.alertsPrimed = false;
     return;
   }
 
