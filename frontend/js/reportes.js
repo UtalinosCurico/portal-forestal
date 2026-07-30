@@ -275,6 +275,62 @@ function renderSinDatos(mensaje) {
  * advierte en pantalla en vez de esconderlo. Por frecuencia cuenta en cuantas
  * solicitudes aparece cada producto, que SI es comparable entre productos.
  */
+
+/**
+ * Lo que hara falta el proximo periodo, producto por producto.
+ *
+ * Reemplaza al numero global, que sumaba pares con litros y no significaba
+ * nada. Aca cada cifra va con SU unidad, que es la unica forma de que el
+ * numero sea verdadero.
+ *
+ * Pensado para leerse sin saber de tecnologia: una fila por producto, la
+ * cantidad grande, y en palabras que tan seguro es. "Confiable" y "a ojo"
+ * dicen mas que un coeficiente.
+ */
+function renderNecesidadProxima(productos, contenedor, unidadPeriodo) {
+  const conEstimacion = (productos || [])
+    .filter((p) => p.proyeccion && Number(p.proyeccion.valor) > 0)
+    .sort((a, b) => b.proyeccion.valor - a.proyeccion.valor);
+
+  if (!conEstimacion.length) {
+    contenedor.innerHTML = renderSinDatos(
+      "Todavía no hay suficiente historial para estimar lo de la próxima " +
+        (unidadPeriodo || "semana") +
+        "."
+    );
+    return;
+  }
+
+  const etiquetaConfianza = (nivel) =>
+    nivel === "alta"
+      ? { texto: "confiable", clase: "confiable" }
+      : nivel === "media"
+        ? { texto: "aproximado", clase: "aproximado" }
+        : { texto: "a ojo", clase: "a-ojo" };
+
+  contenedor.innerHTML = `
+    <ul class="reportes-necesidad">
+      ${conEstimacion
+        .map((p) => {
+          const c = etiquetaConfianza(p.proyeccion.confianza?.nivel);
+          return `
+        <li class="reportes-necesidad-fila">
+          <span class="reportes-necesidad-nombre">${escapeHtml(p.nombre)}</span>
+          <span class="reportes-necesidad-cantidad">
+            <strong>${p.proyeccion.valor}</strong>
+            <span class="reportes-necesidad-unidad">${escapeHtml(p.unidad || "")}</span>
+          </span>
+          <span class="reportes-necesidad-confianza ${c.clase}">${c.texto}</span>
+        </li>`;
+        })
+        .join("")}
+    </ul>
+    <p class="muted-text reportes-necesidad-pie">
+      Son estimaciones, no un pedido automático: revísalas antes de encargar.
+    </p>
+  `;
+}
+
 function renderABC(abc, contenedor, criterioActivo = "cantidad") {
   if (!abc?.disponible) {
     contenedor.innerHTML = renderSinDatos(abc?.mensaje || "Sin información.");
@@ -956,42 +1012,21 @@ export async function initReportesView(context) {
     // Proyeccion general del proximo periodo.
     const proy = datos.proyeccion_general;
     el("reportes-proyeccion-label").textContent =
-      unidad === "semana" ? "Próxima semana" : "Próximo mes";
+      unidad === "semana" ? "Para la próxima semana" : "Para el próximo mes";
     const unidades = datos.unidades_globales;
     // "~193" a secas no significa nada si el portal mueve pares, rollos y
     // litros: no son sumables. Se dice la unidad cuando hay una sola, y se
     // avisa cuando hay varias en vez de fingir un total.
-    // Si las unidades no son comparables, un total global es un numero sin
-    // significado. Se muestra el desglose abajo y aca no se inventa una cifra.
-    el("reportes-proyeccion-valor").textContent = !proy
-      ? "-"
-      : unidades?.mezcladas
-        ? "—"
-        : `~${proy.valor} ${unidades?.unidad_dominante || ""}`.trim();
-    // Con varias unidades, amontonarlas en una frase se veia mal y no se leia.
-    // Mejor un listado corto: cada medida con su total, una por linea.
-    const notaProyeccion = el("reportes-proyeccion-confianza");
-    if (!proy) {
-      notaProyeccion.textContent = "Sin historial suficiente";
-    } else if (unidades?.mezcladas) {
-      notaProyeccion.innerHTML = `
-        <span class="reportes-unidades-titulo">No se pueden sumar entre si:</span>
-        <span class="reportes-unidades-lista">
-          ${unidades.partes
-            .filter((x) => x.unidad)
-            .slice(0, 4)
-            .map(
-              (x) =>
-                `<span class="reportes-unidad-item"><strong>${x.total}</strong> ${escapeHtml(
-                  x.unidad
-                )}</span>`
-            )
-            .join("")}
-        </span>`;
-    } else {
-      notaProyeccion.textContent = `${proy.confianza.etiqueta} · media móvil de ${proy.ventana}`;
-    }
-    el("reportes-kpi-proyeccion")?.classList.toggle("kpi-poco-fiable", Boolean(unidades?.mezcladas));
+    // Este recuadro ya no intenta dar un total: sumar pares con litros no
+    // significa nada. Dice CUANTOS productos hay que pedir, y el listado de
+    // abajo dice cuanto de cada uno, que es la respuesta de verdad.
+    const porPedir = (datos.productos || []).filter(
+      (p) => p.proyeccion && Number(p.proyeccion.valor) > 0
+    ).length;
+    el("reportes-proyeccion-valor").textContent = porPedir || "-";
+    el("reportes-proyeccion-confianza").textContent = porPedir
+      ? "productos por pedir · mira el listado"
+      : "Sin historial suficiente";
 
     const avisoIncompleto = el("reportes-aviso-incompleto");
     if (datos.periodo.incompleto) {
@@ -1034,6 +1069,16 @@ export async function initReportesView(context) {
       renderAtipicos(datos.atipicos, atipicosCard, atipicosList);
       renderFilas(datos.productos, datos.periodo, tbody, searchInput.value, mobileList, puedeUnificar);
       renderDuplicados(datos.posibles_duplicados, duplicadosList, puedeUnificar);
+
+      renderNecesidadProxima(
+        datos.productos,
+        el("reportes-necesidad-lista"),
+        agrupacion === "semana" ? "semana" : "mes"
+      );
+      el("reportes-necesidad-titulo").textContent =
+        agrupacion === "semana"
+          ? "Lo que vas a necesitar la próxima semana"
+          : "Lo que vas a necesitar el próximo mes";
 
       ultimoReporte = datos;
       pintarABC();

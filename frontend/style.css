@@ -7413,3 +7413,105 @@ tbody tr {
   color: var(--forest-700);
   white-space: nowrap;
 }
+
+/* ── "Lo que vas a necesitar la próxima semana" ─────────────────────────────
+   Es lo primero que mira la secretaria al llegar el lunes, y no tiene por que
+   saber de tecnología. Por eso: una fila por producto, la cantidad grande y
+   separada del nombre, y la confianza en palabras y no en un número. */
+.reportes-necesidad {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.reportes-necesidad-fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 96px;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.7rem 0.95rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.reportes-necesidad-fila:last-child {
+  border-bottom: none;
+}
+
+.reportes-necesidad-fila:nth-child(odd) {
+  background: var(--forest-50, #f4f9f6);
+}
+
+.reportes-necesidad-nombre {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La cantidad es el dato que se va a copiar al pedido: se lee de lejos. */
+.reportes-necesidad-cantidad {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+.reportes-necesidad-cantidad strong {
+  font-size: 1.35rem;
+  color: var(--forest-700);
+  line-height: 1;
+}
+
+.reportes-necesidad-unidad {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* En palabras, no en porcentajes: "confiable" se entiende sin explicación. */
+.reportes-necesidad-confianza {
+  justify-self: end;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.reportes-necesidad-confianza.confiable {
+  background: #e3f1e8;
+  color: #2f6b46;
+}
+
+.reportes-necesidad-confianza.aproximado {
+  background: #fdf6e3;
+  color: #8a6d3b;
+}
+
+.reportes-necesidad-confianza.a-ojo {
+  background: #f2f0ee;
+  color: #7a736c;
+}
+
+.reportes-necesidad-pie {
+  margin-top: 0.7rem;
+  font-size: 0.82rem;
+}
+
+/* En el celular la etiqueta de confianza baja debajo del nombre. */
+@media (max-width: 640px) {
+  .reportes-necesidad-fila {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.2rem 0.7rem;
+  }
+  .reportes-necesidad-confianza {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
