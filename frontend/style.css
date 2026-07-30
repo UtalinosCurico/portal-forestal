@@ -7094,3 +7094,75 @@ tbody tr {
   background: var(--forest-50, #f4f9f6);
   border-color: var(--forest-700);
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Reportes: que la tabla entre en el recuadro, sin desplazar de lado
+   ────────────────────────────────────────────────────────────────────────────
+   Medido: la tabla ocupaba 1265px dentro de un contenedor de 912px, o sea
+   364px que se salian. La causa era `white-space: nowrap` en cada celda: al no
+   poder envolver ninguna linea, cada columna crecia hasta donde le pedia su
+   contenido mas largo. "Comportamiento" sola se llevaba 357px con tres chips
+   en fila.
+
+   La secretaria trabaja de izquierda a derecha; tener que arrastrar la tabla
+   para ver la ultima columna le complica el uso. Preferimos filas mas altas
+   antes que filas mas anchas. */
+.view-container[data-view-name="reportes"] .table-wrap {
+  overflow-x: visible;
+}
+
+.view-container[data-view-name="reportes"] .table-wrap table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+/* Anchos proporcionales: siempre suman 100%, asi la tabla no puede pasarse del
+   recuadro por mucho texto que traiga una celda. El producto se lleva la mayor
+   parte porque es lo que se lee primero para ubicarse. */
+.view-container[data-view-name="reportes"] .table-wrap th:nth-child(1) { width: 26%; }
+.view-container[data-view-name="reportes"] .table-wrap th:nth-child(2) { width: 16%; }
+.view-container[data-view-name="reportes"] .table-wrap th:nth-child(3) { width: 11%; }
+.view-container[data-view-name="reportes"] .table-wrap th:nth-child(4) { width: 17%; }
+.view-container[data-view-name="reportes"] .table-wrap th:nth-child(5) { width: 14%; }
+.view-container[data-view-name="reportes"] .table-wrap th:nth-child(6) { width: 16%; }
+
+/* Lo que antes estiraba la fila ahora baja de linea. */
+.view-container[data-view-name="reportes"] .table-wrap th,
+.view-container[data-view-name="reportes"] .table-wrap td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}
+
+/* Los chips de comportamiento se apilan en vez de empujar la columna. */
+.view-container[data-view-name="reportes"] .table-wrap td .reportes-chip {
+  display: inline-block;
+  margin: 0 0.2rem 0.25rem 0;
+}
+
+/* Un nombre de producto muy largo no debe romper la columna. */
+.view-container[data-view-name="reportes"] .table-wrap td:first-child {
+  word-break: break-word;
+}
+
+/* Los chips traen su propio nowrap, asi que un texto largo ("Subio 68% vs el
+   periodo anterior") seguia empujando la columna aunque la celda ya permitiera
+   envolver. Dentro de una tabla se les deja bajar de linea. */
+.view-container[data-view-name="reportes"] .table-wrap td .reportes-chip,
+.view-container[data-view-name="reportes"] .table-wrap td .mini-chip {
+  white-space: normal;
+  max-width: 100%;
+  line-height: 1.3;
+}
+
+/* Los encabezados no deben partirse a mitad de palabra: "COMPORTAMIENTO"
+   quedaba como "COMPORTAMIENT O". Se parten solo entre palabras; para eso la
+   columna necesita algo mas de ancho, que se le quita al producto. */
+.view-container[data-view-name="reportes"] .table-wrap th {
+  overflow-wrap: normal;
+  word-break: keep-all;
+  hyphens: none;
+}
+
+.view-container[data-view-name="reportes"] .table-wrap th:nth-child(1) { width: 24%; }
+.view-container[data-view-name="reportes"] .table-wrap th:nth-child(6) { width: 18%; }

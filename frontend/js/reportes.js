@@ -396,7 +396,7 @@ function renderTarjetasMovil(visibles, periodo, lista) {
           </span>
         </div>
         <div class="reportes-card-datos">
-          <span><em>Tipico</em> ${p.tipico}</span>
+          <span><em>Típico</em> ${p.tipico}</span>
           <span><em>Stock</em> ${p.sugerido_min} a ${p.sugerido_max}</span>
           <span><em>Solicitudes</em> ${p.total_solicitudes}</span>
         </div>
@@ -763,7 +763,7 @@ export async function initReportesView(context) {
 
     const unidad = agrupacion === "semana" ? "semana" : "mes";
     el("reportes-tendencia-titulo").textContent = `Consumo total por ${unidad}`;
-    el("reportes-th-tipico").textContent = `Tipico por ${unidad}`;
+    el("reportes-th-tipico").textContent = `Típico por ${unidad}`;
     el("reportes-th-proyeccion").textContent = `Próxima ${unidad}`.replace(
       "Próxima mes",
       "Próximo mes"
