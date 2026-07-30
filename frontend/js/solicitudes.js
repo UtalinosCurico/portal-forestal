@@ -2626,6 +2626,31 @@ export async function initSolicitudesView(context) {
         payload.equipo_id = equipoId;
       }
 
+      // En faena la señal se corta a cada rato, y crear la solicitud es lo
+      // UNICO que hace la gente alla. Sin esto el pedido se perdia y habia que
+      // acordarse de rehacerlo; la cola ya cubria cambiar de estado y comentar,
+      // pero no lo principal.
+      //
+      // El client_request_id viaja en el payload, asi que si el reenvio se
+      // duplicara el servidor lo reconoce y no crea dos solicitudes.
+      if (!navigator.onLine) {
+        await enqueueAction({
+          url: "/api/solicitudes",
+          method: "POST",
+          body: payload,
+          description: `Nueva solicitud con ${items.length} producto${
+            items.length === 1 ? "" : "s"
+          }`,
+        });
+
+        resetCreateSolicitudForm();
+        closeModal(createModal);
+        context.showToast(
+          "Sin conexión — la solicitud quedó guardada y se enviará sola al recuperar señal"
+        );
+        return;
+      }
+
       const response = await context.apiRequest("/api/solicitudes", {
         method: "POST",
         body: payload,
