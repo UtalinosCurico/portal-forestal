@@ -388,6 +388,12 @@ async function runGlobalSearch() {
   }
 }
 
+// Abrir una solicitud desde cualquier vista. Lo usa Reportes para saltar
+// desde un pedido fuera de lo normal hasta la solicitud donde ocurrio.
+window.__fmnAbrirSolicitud = async (id) => {
+  await openGlobalSearchResult("solicitud", Number(id));
+};
+
 async function openGlobalSearchResult(type, id) {
   closeGlobalSearch();
   globalSearchInput.value = "";

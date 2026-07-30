@@ -236,7 +236,9 @@ function renderAtipicos(atipicos, card, lista) {
   lista.innerHTML = atipicos
     .map(
       (a) => `
-      <div class="reportes-atipico">
+      <button class="reportes-atipico" type="button"
+              data-abrir-solicitud="${a.solicitud_id}"
+              title="Abrir la solicitud #${a.solicitud_id} para revisarla">
         <div class="reportes-atipico-principal">
           <strong>${escapeHtml(a.producto)}</strong>
           <span class="reportes-atipico-meta">
@@ -249,7 +251,8 @@ function renderAtipicos(atipicos, card, lista) {
             lo normal es ${a.valor_tipico}${a.veces_lo_tipico ? ` · ${a.veces_lo_tipico}x` : ""}
           </span>
         </div>
-      </div>
+        <span class="reportes-atipico-ir">Revisar →</span>
+      </button>
     `
     )
     .join("");
@@ -870,6 +873,17 @@ export async function initReportesView(context) {
     pintarABC();
   });
 
+  // Tocar un pedido raro abre la solicitud donde ocurrio, que es lo unico que
+  // permite revisarlo de verdad: ver quien lo pidio, el resto del pedido, y
+  // corregir o comentar ahi mismo.
+  el("reportes-atipicos-list")?.addEventListener("click", async (evento) => {
+    const boton = evento.target.closest("[data-abrir-solicitud]");
+    if (!boton) return;
+    const id = Number(boton.dataset.abrirSolicitud);
+    if (!id || typeof window.__fmnAbrirSolicitud !== "function") return;
+    await window.__fmnAbrirSolicitud(id);
+  });
+
   // "Pedidos a revisar: 1" no servia de nada sin decir CUAL. La lista ya
   // existia mas abajo; ahora el numero lleva hasta ella.
   el("reportes-kpi-atipicos")?.addEventListener("click", () => {
@@ -947,17 +961,36 @@ export async function initReportesView(context) {
     // "~193" a secas no significa nada si el portal mueve pares, rollos y
     // litros: no son sumables. Se dice la unidad cuando hay una sola, y se
     // avisa cuando hay varias en vez de fingir un total.
-    el("reportes-proyeccion-valor").textContent = proy
-      ? `~${proy.valor}${unidades?.mezcladas ? "" : ` ${unidades?.unidad_dominante || ""}`}`.trim()
-      : "-";
-    el("reportes-proyeccion-confianza").textContent = proy
-      ? unidades?.mezcladas
-        ? `Suma ${unidades.partes
+    // Si las unidades no son comparables, un total global es un numero sin
+    // significado. Se muestra el desglose abajo y aca no se inventa una cifra.
+    el("reportes-proyeccion-valor").textContent = !proy
+      ? "-"
+      : unidades?.mezcladas
+        ? "—"
+        : `~${proy.valor} ${unidades?.unidad_dominante || ""}`.trim();
+    // Con varias unidades, amontonarlas en una frase se veia mal y no se leia.
+    // Mejor un listado corto: cada medida con su total, una por linea.
+    const notaProyeccion = el("reportes-proyeccion-confianza");
+    if (!proy) {
+      notaProyeccion.textContent = "Sin historial suficiente";
+    } else if (unidades?.mezcladas) {
+      notaProyeccion.innerHTML = `
+        <span class="reportes-unidades-titulo">No se pueden sumar entre si:</span>
+        <span class="reportes-unidades-lista">
+          ${unidades.partes
             .filter((x) => x.unidad)
-            .map((x) => x.unidad)
-            .join(", ")}: mira producto por producto`
-        : `${proy.confianza.etiqueta} · media móvil de ${proy.ventana}`
-      : "Sin historial suficiente";
+            .slice(0, 4)
+            .map(
+              (x) =>
+                `<span class="reportes-unidad-item"><strong>${x.total}</strong> ${escapeHtml(
+                  x.unidad
+                )}</span>`
+            )
+            .join("")}
+        </span>`;
+    } else {
+      notaProyeccion.textContent = `${proy.confianza.etiqueta} · media móvil de ${proy.ventana}`;
+    }
     el("reportes-kpi-proyeccion")?.classList.toggle("kpi-poco-fiable", Boolean(unidades?.mezcladas));
 
     const avisoIncompleto = el("reportes-aviso-incompleto");

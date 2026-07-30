@@ -7369,3 +7369,47 @@ tbody tr {
 .kpi-poco-fiable .reportes-kpi-nota {
   color: var(--warning-text, #8a6d3b);
 }
+
+/* Desglose de unidades bajo la proyeccion. Amontonadas en una frase se leian
+   mal; una por linea con su total se entiende de un vistazo. */
+.reportes-unidades-titulo {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 0.2rem;
+}
+
+.reportes-unidades-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.5rem;
+}
+
+.reportes-unidad-item {
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.reportes-unidad-item strong {
+  color: var(--forest-700);
+}
+
+/* Cada pedido fuera de lo normal abre su solicitud. */
+.reportes-atipico {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid var(--line);
+}
+
+.reportes-atipico:hover {
+  border-color: var(--warning, #c9962a);
+}
+
+.reportes-atipico-ir {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--forest-700);
+  white-space: nowrap;
+}
