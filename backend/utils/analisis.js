@@ -240,10 +240,113 @@ function detectarProductosAsociados(solicitudesConClaves, nombrePorClave) {
   };
 }
 
+// Cortes ABC clasicos: la clase A es el poco que se lleva la mayor parte.
+const CORTE_A = 0.8;
+const CORTE_B = 0.95;
+
+/**
+ * Clasificacion ABC (Pareto) de los productos.
+ *
+ * Responde "para donde se estan yendo las cosas": normalmente unos pocos
+ * productos concentran la mayor parte del movimiento, y son esos los que vale
+ * la pena controlar de cerca.
+ *
+ * Dos criterios, porque miden cosas distintas y ninguno es "el correcto":
+ *
+ *   - "cantidad": cuanto sale de cada producto. Es lo intuitivo, PERO suma
+ *     unidades que no siempre son comparables: 443 pares de guantes contra 232
+ *     rollos de papel no se pueden rankear entre si de forma limpia. Sin
+ *     precios no hay manera de convertir eso a plata, asi que el resultado se
+ *     entrega marcado con esa advertencia.
+ *
+ *   - "frecuencia": en cuantas solicitudes distintas aparece. Este SI es
+ *     comparable entre productos, porque cuenta veces y no unidades. Mide que
+ *     tanta atencion operativa consume cada producto.
+ *
+ * No se inventa un ranking por costo: para eso harian falta precios que el
+ * portal no tiene.
+ */
+function clasificarABC(productos = [], { criterio = "cantidad" } = {}) {
+  const valorDe = (p) =>
+    criterio === "frecuencia" ? Number(p.total_solicitudes) || 0 : Number(p.total_unidades) || 0;
+
+  const conValor = productos.filter((p) => valorDe(p) > 0);
+  const total = conValor.reduce((acumulado, p) => acumulado + valorDe(p), 0);
+
+  if (!conValor.length || total <= 0) {
+    return {
+      disponible: false,
+      mensaje: "Todavia no hay consumo registrado para ordenar los productos.",
+    };
+  }
+
+  const ordenados = [...conValor].sort((a, b) => valorDe(b) - valorDe(a));
+  const unidadesDistintas = new Set(
+    ordenados.map((p) => p.unidad).filter(Boolean)
+  );
+
+  let acumulado = 0;
+  const items = ordenados.map((p) => {
+    const valor = valorDe(p);
+    const participacion = valor / total;
+
+    // La clase se decide con el acumulado ANTES de sumar este producto: se van
+    // tomando productos hasta ALCANZAR el 80%, asi que el que cruza el corte
+    // todavia es clase A. Con el acumulado ya sumado, un producto que por si
+    // solo se lleva el 90% quedaba fuera de A, que es justo al reves de lo que
+    // significa el analisis.
+    const clase = acumulado < CORTE_A ? "A" : acumulado < CORTE_B ? "B" : "C";
+
+    acumulado += participacion;
+
+    return {
+      clave: p.clave,
+      nombre: p.nombre,
+      unidad: p.unidad || "",
+      unidad_en_conflicto: Boolean(p.unidad_en_conflicto),
+      valor,
+      participacion: Math.round(participacion * 1000) / 10,
+      acumulado: Math.round(acumulado * 1000) / 10,
+      clase,
+    };
+  });
+
+  const deClaseA = items.filter((i) => i.clase === "A");
+  const participacionA = deClaseA.reduce((s, i) => s + i.participacion, 0);
+
+  return {
+    disponible: true,
+    criterio,
+    total,
+    productos: items,
+    resumen: {
+      productos_totales: items.length,
+      clase_a: deClaseA.length,
+      clase_b: items.filter((i) => i.clase === "B").length,
+      clase_c: items.filter((i) => i.clase === "C").length,
+      participacion_a: Math.round(participacionA * 10) / 10,
+      frase:
+        `${deClaseA.length} de ${items.length} productos concentran el ` +
+        `${Math.round(participacionA)}% del movimiento`,
+    },
+    // Sin precios, un ranking por cantidad mezcla unidades distintas. Se dice,
+    // no se esconde.
+    advertencia_unidades:
+      criterio === "cantidad" && unidadesDistintas.size > 1
+        ? `Este orden compara cantidades en unidades distintas (${[...unidadesDistintas].join(
+            ", "
+          )}). Sirve como referencia, no como ranking de costo.`
+        : null,
+  };
+}
+
 module.exports = {
   compararEquipos,
   calcularEstacionalidad,
   detectarProductosAsociados,
+  clasificarABC,
   MIN_MESES_ESTACIONALIDAD,
   MIN_SOLICITUDES_ASOCIACION,
+  CORTE_A,
+  CORTE_B,
 };

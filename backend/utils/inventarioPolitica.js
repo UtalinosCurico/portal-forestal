@@ -39,6 +39,39 @@ const MINIMO_SEMANAS_DEMANDA = 6;
 // es mejor un promedio general real que una media de dos datos.
 const MINIMO_ENTREGAS_LEAD_TIME = 3;
 
+// Lead time declarado por la operacion, para cuando todavia no hay entregas
+// medidas. NO es un numero inventado: es lo que reporta quien hace los
+// pedidos. Van a buscar las cosas y demoran entre 1 y 3 dias normalmente, con
+// 7 como el peor caso que se ha visto.
+//
+// De esos tres numeros se saca media y desviacion con la formula PERT (beta),
+// la misma que se usa en planificacion de proyectos cuando solo se tiene una
+// estimacion optimista, una probable y una pesimista:
+//
+//   media = (min + 4*probable + max) / 6
+//   sigma = (max - min) / 6
+//
+// Queda marcado con origen "estimado" para que la pantalla pueda decir que
+// esto es lo que declara la operacion y no algo medido. En cuanto haya
+// entregas reales registradas, el medido manda.
+const LEAD_TIME_DECLARADO = { minimo: 1, probable: 3, maximo: 7 };
+
+function leadTimeDeclarado() {
+  const { minimo, probable, maximo } = LEAD_TIME_DECLARADO;
+  const mediaDias = (minimo + 4 * probable + maximo) / 6;
+  const sigmaDias = (maximo - minimo) / 6;
+
+  return {
+    origen: "estimado",
+    entregas: 0,
+    dias_promedio: Math.round(mediaDias * 10) / 10,
+    dias_desviacion: Math.round(sigmaDias * 10) / 10,
+    semanas_promedio: mediaDias / DIAS_POR_SEMANA,
+    semanas_desviacion: sigmaDias / DIAS_POR_SEMANA,
+    detalle: `Segun la operacion: entre ${minimo} y ${maximo} dias, normalmente ${probable}`,
+  };
+}
+
 function media(valores) {
   if (!valores.length) return 0;
   return valores.reduce((a, b) => a + b, 0) / valores.length;
