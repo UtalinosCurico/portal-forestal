@@ -228,7 +228,7 @@ async function listNotificaciones(actor, filters = {}) {
 
   if (soloNoLeidas) {
     params.push(false);
-    conditions.push(`n.leída = $${params.length}`);
+    conditions.push(`n.leida = $${params.length}`);
   }
 
   params.push(limit);
@@ -502,6 +502,12 @@ async function createSolicitudItemNotification({
   return notifications;
 }
 
+
+/** Gemela de la de notificacionesService: el comportamiento debe ser el mismo. */
+async function createFeedbackNotification(payload) {
+  return insertNotificationsForRoles(payload, MANAGEMENT_NOTIFICATION_ROLES);
+}
+
 module.exports = {
   listNotificaciones,
   markAsRead,
@@ -511,5 +517,6 @@ module.exports = {
   createEnvioNotification,
   createSolicitudMessageNotification,
   createSolicitudItemNotification,
+  createFeedbackNotification,
   createPedidoInusualNotification,
 };

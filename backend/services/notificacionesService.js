@@ -617,6 +617,39 @@ async function createSolicitudItemNotification({
   return notifications.at(-1) || null;
 }
 
+
+/**
+ * Aviso de que alguien mando una idea o reporto un error desde el portal.
+ *
+ * Sin esto el feedback quedaba guardado en su tabla y nadie se enteraba: no
+ * genera notificacion ni existe pantalla que lo lea, asi que quien escribia
+ * tenia la impresion de que su mensaje no llegaba a ninguna parte.
+ */
+async function createFeedbackNotification({ tipo, titulo, autorNombre }) {
+  const esError = String(tipo) === "error";
+  const payload = {
+    tipo: "FEEDBACK_NUEVO",
+    titulo: esError ? "Reportaron un problema" : "Nueva idea para el portal",
+    mensaje: `${autorNombre || "Alguien"}: ${titulo}`,
+    equipoId: null,
+    referenciaId: null,
+  };
+
+  if (isOperationalPgEnabled()) {
+    const notifications = await pgService.createFeedbackNotification(payload);
+    const latest = emitNotifications(notifications);
+    dispatchPushNotifications(notifications);
+    return latest;
+  }
+
+  const notifications = await insertNotificationsForRoles(
+    payload,
+    MANAGEMENT_NOTIFICATION_ROLES
+  );
+  dispatchPushNotifications(notifications);
+  return notifications.at(-1) || null;
+}
+
 module.exports = {
   listNotificaciones,
   markAsRead,
@@ -628,4 +661,5 @@ module.exports = {
   createSolicitudMessageNotification,
   createSolicitudItemNotification,
   createPedidoInusualNotification,
+  createFeedbackNotification,
 };

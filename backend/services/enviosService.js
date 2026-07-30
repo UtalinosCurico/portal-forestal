@@ -94,7 +94,7 @@ function buildScope(actor, filters = {}, alias = "es") {
   const search = normalizeSearch(filters.q || filters.buscar || filters.search);
   if (search) {
     conditions.push(
-      "(LOWER(i.nombre) LIKE ? OR LOWER(i.código) LIKE ? OR LOWER(e.nombre_equipo) LIKE ?)"
+      "(LOWER(i.nombre) LIKE ? OR LOWER(i.codigo) LIKE ? OR LOWER(e.nombre_equipo) LIKE ?)"
     );
     params.push(`%${search}%`, `%${search}%`, `%${search}%`);
   }

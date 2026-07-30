@@ -5,6 +5,7 @@ const { authorize } = require("../middleware/authorize");
 const { run, all, get } = require("../database/db");
 const { ROLES } = require("../config/appRoles");
 const { HttpError } = require("../utils/errors");
+const notificacionesService = require("../services/notificacionesService");
 
 const router = express.Router();
 router.use(authenticate);
@@ -39,6 +40,16 @@ router.post(
     );
 
     res.json({ status: "ok", data: { message: "Feedback recibido. ¡Gracias!" } });
+
+    // Se avisa despues de responder, y sin esperar: que falle un aviso no
+    // debe hacer perder el feedback, que ya quedo guardado.
+    notificacionesService
+      .createFeedbackNotification({
+        tipo: tipoValido,
+        titulo: titulo.trim().slice(0, 120),
+        autorNombre: req.user.nombre || req.user.name || "Usuario",
+      })
+      .catch(() => {});
   })
 );
 
