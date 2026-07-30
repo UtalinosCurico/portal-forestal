@@ -23,6 +23,7 @@ const pushRoutes = require("./routes/push");
 const adminRoutes = require("./routes/admin");
 const aiRoutes = require("./routes/ai");
 const feedbackRoutes = require("./routes/feedback");
+const fallosClienteRoutes = require("./routes/fallosCliente");
 const novedadesRoutes = require("./routes/novedades");
 const searchRoutes = require("./routes/search");
 const { notFoundHandler, errorHandler } = require("./middleware/errorHandlers");
@@ -61,6 +62,7 @@ function createApp() {
   app.use("/api/admin", adminRoutes);
   app.use("/api/ai", aiRoutes);
   app.use("/api/feedback", feedbackRoutes);
+  app.use("/api/fallos-cliente", fallosClienteRoutes);
   app.use("/api/novedades", novedadesRoutes);
   app.use("/api/search", searchRoutes);
 

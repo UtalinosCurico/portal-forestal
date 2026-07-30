@@ -57,4 +57,7 @@ module.exports = {
   notFoundHandler,
   errorHandler,
   getErrorLog,
+  // Lo usa /api/fallos-cliente para dejar los fallos del navegador en el mismo
+  // registro que los del servidor, y poder revisarlo todo en un solo lugar.
+  recordApiError,
 };

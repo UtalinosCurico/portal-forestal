@@ -650,6 +650,22 @@ function registrarFallo(origen, error) {
   // Queda en la consola siempre, para poder diagnosticar despues.
   console.error("[FMN] fallo no controlado:", registro);
 
+  // Se manda al servidor para que quede registrado y para que llegue el aviso
+  // al telefono de quien administra. Va con fetch directo y no con apiRequest
+  // para no arriesgar un bucle: si apiRequest fallara, volveria a caer aca.
+  if (state.token) {
+    fetch("/api/fallos-cliente", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${state.token}` },
+      body: JSON.stringify(registro),
+      keepalive: true,
+    }).catch(() => {
+      // Si no hay señal, el fallo igual quedo en la consola y en memoria. Se
+      // reintentaria al recuperar conexion, pero no vale la pena encolarlo:
+      // lo importante ya esta guardado del lado de quien lo vio.
+    });
+  }
+
   // Y se avisa, pero espaciado: si algo falla en bucle, no se llena la
   // pantalla de mensajes encima de quien esta trabajando.
   const ahora = Date.now();

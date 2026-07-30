@@ -650,6 +650,34 @@ async function createFeedbackNotification({ tipo, titulo, autorNombre }) {
   return notifications.at(-1) || null;
 }
 
+
+/**
+ * Aviso de que a alguien se le rompio algo en el navegador.
+ *
+ * Va a los roles de gestion, que es como llega al telefono: el portal ya manda
+ * push a quien tenga el aviso activado.
+ */
+async function createFalloClienteNotification({ texto, vista, quien }) {
+  const payload = {
+    tipo: "FALLO_CLIENTE",
+    titulo: "Algo fallo en el portal",
+    mensaje: `${quien || "Un usuario"}${vista ? ` en ${vista}` : ""}: ${texto}`,
+    equipoId: null,
+    referenciaId: null,
+  };
+
+  if (isOperationalPgEnabled()) {
+    const notifications = await pgService.createFalloClienteNotification(payload);
+    const latest = emitNotifications(notifications);
+    dispatchPushNotifications(notifications);
+    return latest;
+  }
+
+  const notifications = await insertNotificationsForRoles(payload, MANAGEMENT_NOTIFICATION_ROLES);
+  dispatchPushNotifications(notifications);
+  return notifications.at(-1) || null;
+}
+
 module.exports = {
   listNotificaciones,
   markAsRead,
@@ -662,4 +690,5 @@ module.exports = {
   createSolicitudItemNotification,
   createPedidoInusualNotification,
   createFeedbackNotification,
+  createFalloClienteNotification,
 };

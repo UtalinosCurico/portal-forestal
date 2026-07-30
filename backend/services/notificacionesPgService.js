@@ -508,6 +508,12 @@ async function createFeedbackNotification(payload) {
   return insertNotificationsForRoles(payload, MANAGEMENT_NOTIFICATION_ROLES);
 }
 
+
+/** Gemela de la de notificacionesService. */
+async function createFalloClienteNotification(payload) {
+  return insertNotificationsForRoles(payload, MANAGEMENT_NOTIFICATION_ROLES);
+}
+
 module.exports = {
   listNotificaciones,
   markAsRead,
@@ -518,5 +524,6 @@ module.exports = {
   createSolicitudMessageNotification,
   createSolicitudItemNotification,
   createFeedbackNotification,
+  createFalloClienteNotification,
   createPedidoInusualNotification,
 };
