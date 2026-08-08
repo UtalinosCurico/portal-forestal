@@ -36,7 +36,12 @@ function rangoPorDefecto() {
   };
 }
 
-function construirHerramientas(actor) {
+// `empresa` acota todas las herramientas a Maule Norte o Forest Saint, igual
+// que el apartado que el usuario tenga abierto: el asistente no debe responder
+// con datos de la otra empresa.
+function construirHerramientas(actor, opciones = {}) {
+  const empresa = opciones.empresa || undefined;
+
   const consultarConsumo = betaTool({
     name: "consultar_consumo",
     description:
@@ -75,6 +80,7 @@ function construirHerramientas(actor) {
         fechaHasta: input.fechaHasta || rango.fechaHasta,
         agrupacion: input.agrupacion || "mes",
         equipoId: input.equipoId,
+        empresa,
       });
 
       const filtro = buildProductoKey(input.producto || "");
@@ -147,6 +153,7 @@ function construirHerramientas(actor) {
         fechaHasta: input.fechaHasta,
         soloUrgentes: input.soloUrgentes ? "1" : undefined,
         limit: MAX_SOLICITUDES,
+        empresa,
       });
 
       const filas = respuesta?.data || respuesta || [];
@@ -178,7 +185,7 @@ function construirHerramientas(actor) {
       "equipo para filtrar en otra herramienta, o para saber que equipos existen.",
     inputSchema: { type: "object", properties: {}, required: [] },
     run: async () => {
-      const respuesta = await equiposService.listEquipos(actor, {});
+      const respuesta = await equiposService.listEquipos(actor, { empresa });
       const equipos = respuesta?.data || respuesta || [];
       return JSON.stringify({
         equipos: equipos.map((e) => ({

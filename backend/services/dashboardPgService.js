@@ -4,6 +4,7 @@ const { SOLICITUD_STATUS } = require("../config/solicitudFlow");
 const { HttpError } = require("../utils/httpError");
 const { addDaysToDateKey, formatChileDateKey, getChileDayBounds } = require("../utils/dateTime");
 const { getOperationalPool, loadEquiposMap } = require("./operationalPgStore");
+const empresasService = require("./empresasService");
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -63,6 +64,15 @@ function buildScope(actor, filters = {}, alias = "s", options = {}) {
     requireTeamAssigned(actor);
     conditions.push(`${alias}.${teamField} = ${push(Number(actor.equipo_id))}`);
   }
+
+  // El resumen del dia tampoco mezcla empresas.
+  empresasService.pushEmpresaCondition(conditions, {
+    actor,
+    filters,
+    alias,
+    campo: teamField,
+    push,
+  });
 
   if (normalized.equipoId) {
     conditions.push(`${alias}.${teamField} = ${push(normalized.equipoId)}`);

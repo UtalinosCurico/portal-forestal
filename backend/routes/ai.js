@@ -6,6 +6,7 @@ const { HttpError } = require("../utils/httpError");
 const logger = require("../utils/logger");
 const dashboardService = require("../services/dashboardService");
 const { construirHerramientas } = require("../services/aiToolsService");
+const empresasService = require("../services/empresasService");
 
 const router = express.Router();
 router.use(authenticate);
@@ -101,9 +102,9 @@ function formatearFechaChile(fecha = new Date()) {
 }
 
 // ── Contexto del portal ────────────────────────────────────────────────────
-async function fetchPortalContext(actor) {
+async function fetchPortalContext(actor, empresa) {
   try {
-    const data = await dashboardService.getDashboardData(actor, {});
+    const data = await dashboardService.getDashboardData(actor, empresa ? { empresa } : {});
 
     const porEstado = (data.solicitudes_por_estado || [])
       .filter((e) => e.total > 0)
@@ -204,8 +205,13 @@ router.post(
 
     const lastUserMsg = history.filter((m) => m.role === "user").at(-1)?.content || "";
 
+    // El asistente responde dentro de la empresa que el usuario tenga abierta:
+    // Maule Norte y Forest Saint no se mezclan tampoco aquí.
+    const empresa = empresasService.resolveEmpresaFilter(req.user, req.query || {});
+    const empresaMeta = empresa ? empresasService.getEmpresa(empresa) : null;
+
     const [portalCtx, weatherCtx] = await Promise.all([
-      fetchPortalContext(req.user),
+      fetchPortalContext(req.user, empresa),
       fetchWeatherContext(lastUserMsg),
     ]);
 
@@ -214,6 +220,10 @@ router.post(
       `\n\nHoy es ${formatearFechaChile()} (hora de Chile). Usa esta fecha para ` +
       `interpretar "este mes", "la semana pasada" y similares.` +
       `\nEstas conversando con ${req.user.nombre || req.user.name} (rol ${req.user.rol}).` +
+      (empresaMeta
+        ? `\nEsta trabajando en la empresa ${empresaMeta.nombre}. Todos los datos que ` +
+          `consultes son solo de esa empresa: no menciones ni compares con la otra.`
+        : "") +
       portalCtx +
       weatherCtx;
 
@@ -221,7 +231,7 @@ router.post(
 
     // Las herramientas se construyen con el usuario autenticado: cada consulta
     // que haga el modelo pasa por el mismo filtro de permisos que la interfaz.
-    const tools = construirHerramientas(req.user);
+    const tools = construirHerramientas(req.user, { empresa });
 
     try {
       // El tool runner se encarga del ciclo consultar -> ejecutar -> responder.

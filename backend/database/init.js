@@ -3,6 +3,8 @@ const { run, get, all } = require("./db");
 const { ROLES } = require("../config/appRoles");
 const { SOLICITUD_STATUS } = require("../config/solicitudFlow");
 const { SOLICITUD_ITEM_STATUS } = require("../config/solicitudItemFlow");
+const { empresaParaNombreEquipo } = require("../config/empresas");
+const empresasService = require("../services/empresasService");
 
 async function tableExists(tableName) {
   const row = await get(
@@ -55,6 +57,7 @@ async function createTables() {
     CREATE TABLE IF NOT EXISTS equipos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       nombre_equipo TEXT NOT NULL UNIQUE,
+      empresa TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -467,8 +470,32 @@ async function seedEquipos() {
   for (const nombreEquipo of ["Maule Norte 2", "Maule Norte 3", "Forest Saint", "Base"]) {
     const exists = await get("SELECT id FROM equipos WHERE nombre_equipo = ?", [nombreEquipo]);
     if (!exists) {
-      await run("INSERT INTO equipos (nombre_equipo) VALUES (?)", [nombreEquipo]);
+      await run("INSERT INTO equipos (nombre_equipo, empresa) VALUES (?, ?)", [
+        nombreEquipo,
+        empresaParaNombreEquipo(nombreEquipo),
+      ]);
     }
+  }
+}
+
+// Maule Norte y Forest Saint son dos empresas distintas aunque operen juntas.
+// Los equipos que ya existian nacieron sin empresa: se reparten una sola vez
+// por nombre, y de ahi en adelante manda lo que quede guardado en la columna.
+async function migrateEquiposEmpresa() {
+  if (!(await tableExists("equipos"))) {
+    return;
+  }
+
+  await ensureColumn("equipos", "empresa", "empresa TEXT");
+
+  const sinEmpresa = await all(
+    "SELECT id, nombre_equipo FROM equipos WHERE empresa IS NULL OR TRIM(empresa) = ''"
+  );
+  for (const equipo of sinEmpresa) {
+    await run("UPDATE equipos SET empresa = ? WHERE id = ?", [
+      empresaParaNombreEquipo(equipo.nombre_equipo),
+      equipo.id,
+    ]);
   }
 }
 
@@ -713,12 +740,16 @@ async function initDatabase() {
   await migrateSolicitudItemsSchema();
   await migrateSolicitudMensajesSchema();
   await migrateLegacyRoles();
+  await migrateEquiposEmpresa();
   await seedEquipos();
   await seedUsers();
   await backfillSolicitudesEquipoFromUsers();
   await backfillSolicitudItems();
   await seedInventarioBase();
   await seedEquipoStock();
+  // El filtro por empresa se arma dentro de funciones sincronicas, asi que el
+  // mapa equipo -> empresa tiene que quedar cargado antes de atender requests.
+  await empresasService.reload();
 }
 
 module.exports = {

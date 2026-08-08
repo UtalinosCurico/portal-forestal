@@ -24,22 +24,84 @@
   --radius-btn: 12px;
   --ease-bounce: cubic-bezier(0.34, 1.3, 0.64, 1);
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Color de marca de la empresa activa. Todo lo que sea "acento del portal"
+     (bordes, focos, botones, degradados) sale de aquí, no de un hex suelto,
+     para que cambiar de empresa cambie el portal entero. */
+  --brand-rgb: 45, 122, 87;
+  --brand-mid-rgb: 36, 96, 80;
+  --brand-soft-rgb: 60, 148, 104;
+  --brand-strong: #2f7d5a;
+  --brand-deep: #245f45;
+  --chip-bg: #eef5f1;
+  --chip-line: #d5e3db;
+  --chip-text: #345447;
+  --chip-active-bg: #e2f0e8;
+  --chip-active-line: #b8d5c4;
+  --chip-active-text: #16563a;
+  --tile-active-bg: linear-gradient(135deg, #eef8f2, #dfeee5);
+  --btn-secondary-bg: #5d7167;
+  --btn-secondary-bg-hover: #4e6059;
+  --fab-bg: linear-gradient(135deg, #1e6b44 0%, #0f3d27 100%);
+  --fab-shadow: 0 8px 28px rgba(11, 36, 25, 0.45), 0 0 0 0 rgba(30, 107, 68, 0.5);
+}
+
+/* ── Forest Saint: misma app, otra empresa, color morado ──────────────────────
+   Maule Norte y Forest Saint operan juntas pero son dos empresas separadas.
+   El morado es la señal de que lo que está en pantalla es de Forest Saint.
+   Los colores de estado (verde=entregado, rojo=error) no cambian: significan
+   otra cosa y cambiarlos confundiría más de lo que ayudaría. */
+:root[data-empresa="FOREST_SAINT"] {
+  --forest-950: #150a20;
+  --forest-900: #1f0f33;
+  --forest-800: #2e1a4d;
+  --forest-700: #452a70;
+  --forest-600: #5b3690;
+  --forest-500: #7c4dbe;
+  --forest-200: #ded1f2;
+  --forest-100: #ece5f8;
+  --forest-50:  #f7f3fd;
+  --bg: #f0ecf8;
+  --surface-soft: #f9f6fd;
+  --line: #ded2ee;
+  --text: #1d1229;
+  --muted: #665478;
+  --shadow: 0 8px 28px rgba(30, 12, 48, 0.14), 0 2px 6px rgba(30, 12, 48, 0.07);
+  --shadow-card: 0 4px 14px rgba(30, 12, 48, 0.09);
+  --shadow-lift: 0 12px 32px rgba(30, 12, 48, 0.18), 0 3px 8px rgba(30, 12, 48, 0.09);
+
+  --brand-rgb: 124, 77, 190;
+  --brand-mid-rgb: 91, 54, 144;
+  --brand-soft-rgb: 152, 108, 214;
+  --brand-strong: #7c4dbe;
+  --brand-deep: #4d2b7d;
+  --chip-bg: #f2edf9;
+  --chip-line: #dcd0ed;
+  --chip-text: #4b3a63;
+  --chip-active-bg: #ebe0f8;
+  --chip-active-line: #c9b2e6;
+  --chip-active-text: #4d2b7d;
+  --tile-active-bg: linear-gradient(135deg, #f5f0fc, #e9e0f6);
+  --btn-secondary-bg: #6b6178;
+  --btn-secondary-bg-hover: #5a5166;
+  --fab-bg: linear-gradient(135deg, #6a3fa4 0%, #38205c 100%);
+  --fab-shadow: 0 8px 28px rgba(30, 12, 48, 0.45), 0 0 0 0 rgba(124, 77, 190, 0.5);
 }
 
 /* ── Scrollbars personalizados ────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(45, 122, 87, 0.2);
+  background: rgba(var(--brand-rgb), 0.2);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(45, 122, 87, 0.42);
+  background: rgba(var(--brand-rgb), 0.42);
 }
 
 /* ── Selección de texto ───────────────────────────────────────────────────── */
 ::selection {
-  background: rgba(45, 122, 87, 0.18);
+  background: rgba(var(--brand-rgb), 0.18);
   color: var(--text);
 }
 
@@ -132,7 +194,7 @@ input[type="checkbox"] {
   background:
     radial-gradient(ellipse 80% 55% at 12% 88%, rgba(10, 40, 26, 0.7) 0%, transparent 55%),
     radial-gradient(ellipse 65% 48% at 88% 14%, rgba(36, 90, 66, 0.55) 0%, transparent 52%),
-    radial-gradient(ellipse 55% 45% at 52% 52%, rgba(45, 122, 87, 0.12) 0%, transparent 58%),
+    radial-gradient(ellipse 55% 45% at 52% 52%, rgba(var(--brand-rgb), 0.12) 0%, transparent 58%),
     linear-gradient(158deg, #091a11 0%, #132d1f 28%, #1a4232 60%, #0c2218 100%);
 }
 
@@ -278,13 +340,13 @@ input[type="checkbox"] {
   width: 108px;
   height: 108px;
   margin: 0 auto 1.1rem;
-  filter: drop-shadow(0 6px 22px rgba(45, 122, 87, 0.55));
+  filter: drop-shadow(0 6px 22px rgba(var(--brand-rgb), 0.55));
   transition: transform 0.3s var(--ease-bounce), filter 0.3s ease;
 }
 
 .login-logo:hover {
   transform: scale(1.06) rotate(-2deg);
-  filter: drop-shadow(0 8px 28px rgba(45, 122, 87, 0.7));
+  filter: drop-shadow(0 8px 28px rgba(var(--brand-rgb), 0.7));
 }
 
 .login-card h1 {
@@ -357,7 +419,7 @@ select:focus,
 textarea:focus {
   border-color: var(--forest-600);
   outline: none;
-  box-shadow: 0 0 0 3.5px rgba(45, 122, 87, 0.18);
+  box-shadow: 0 0 0 3.5px rgba(var(--brand-rgb), 0.18);
 }
 
 button {
@@ -658,7 +720,7 @@ button:disabled:hover {
   display: flex;
   flex-direction: column;
   background:
-    radial-gradient(ellipse 110% 50% at 50% 0%, rgba(36,96,80,0.45) 0%, transparent 55%),
+    radial-gradient(ellipse 110% 50% at 50% 0%, rgba(var(--brand-mid-rgb), 0.45) 0%, transparent 55%),
     linear-gradient(175deg, var(--forest-800) 0%, var(--forest-900) 45%, var(--forest-950) 100%);
   color: #e5f4ec;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
@@ -727,7 +789,7 @@ button:disabled:hover {
 }
 
 .nav-item.active {
-  background: rgba(60, 148, 104, 0.35);
+  background: rgba(var(--brand-soft-rgb), 0.35);
   border-color: rgba(198, 226, 210, 0.5);
   color: #e8f6ef;
   font-weight: 700;
@@ -851,6 +913,98 @@ button:disabled:hover {
   animation-duration: 0.7s;
 }
 
+/* ── Selector de empresa (sidebar) ──────────────────────────────────────────── */
+.empresa-switch {
+  margin-top: 1.15rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.empresa-switch.hidden {
+  display: none;
+}
+
+.empresa-switch-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(214, 236, 226, 0.55);
+}
+
+.empresa-switch-list {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.empresa-option {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border-radius: 11px;
+  border: 1px solid rgba(198, 226, 210, 0.13);
+  background: rgba(255, 255, 255, 0.04);
+  color: #cbe2d8;
+  text-align: left;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease,
+              transform 0.2s var(--ease-bounce);
+}
+
+.empresa-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(198, 226, 210, 0.28);
+  transform: translateX(3px);
+}
+
+.empresa-option.active {
+  background: rgba(var(--brand-soft-rgb), 0.32);
+  border-color: rgba(214, 236, 226, 0.42);
+  color: #f0f7f3;
+}
+
+/* El punto lleva el color propio de cada empresa, no el del tema activo: así
+   se ve a cuál se va a saltar antes de hacer clic. */
+.empresa-option-dot {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #38956a;
+  box-shadow: 0 0 0 3px rgba(56, 149, 106, 0.22);
+}
+
+.empresa-option[data-tema="morado"] .empresa-option-dot {
+  background: #a071e0;
+  box-shadow: 0 0 0 3px rgba(160, 113, 224, 0.24);
+}
+
+.empresa-option-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.empresa-option-text strong {
+  font-size: 0.9rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empresa-option.active .empresa-option-text strong {
+  font-weight: 700;
+}
+
+.empresa-option-text small {
+  font-size: 0.72rem;
+  color: rgba(203, 226, 216, 0.6);
+}
+
 .datascope-btn {
   display: flex;
   align-items: center;
@@ -890,7 +1044,7 @@ button:disabled:hover {
 }
 
 .help-btn.active {
-  background: rgba(60, 148, 104, 0.38);
+  background: rgba(var(--brand-soft-rgb), 0.38);
   border-color: rgba(198, 226, 210, 0.55);
 }
 
@@ -1021,7 +1175,7 @@ button:disabled:hover {
 }
 
 .topbar-action.has-alerts {
-  border-color: rgba(47, 125, 90, 0.35);
+  border-color: rgba(var(--brand-rgb), 0.35);
 }
 
 .alert-badge {
@@ -1591,17 +1745,17 @@ button:disabled:hover {
   align-items: center;
   border-radius: 999px;
   padding: 0.42rem 0.72rem;
-  background: #eef5f1;
-  border: 1px solid #d5e3db;
-  color: #345447;
+  background: var(--chip-bg);
+  border: 1px solid var(--chip-line);
+  color: var(--chip-text);
   font-size: 0.82rem;
   font-weight: 600;
 }
 
 .mini-chip.active {
-  background: #e2f0e8;
-  border-color: #b8d5c4;
-  color: #16563a;
+  background: var(--chip-active-bg);
+  border-color: var(--chip-active-line);
+  color: var(--chip-active-text);
 }
 
 .quick-strip {
@@ -1772,15 +1926,15 @@ button:disabled:hover {
 }
 
 .quick-tile:focus-visible {
-  outline: 3px solid rgba(45, 122, 87, 0.22);
+  outline: 3px solid rgba(var(--brand-rgb), 0.22);
   outline-offset: 2px;
   border-color: var(--forest-500);
 }
 
 .quick-tile.active {
   border-color: var(--forest-600);
-  background: linear-gradient(135deg, #eef8f2, #dfeee5);
-  box-shadow: 0 8px 20px rgba(45, 122, 87, 0.18);
+  background: var(--tile-active-bg);
+  box-shadow: 0 8px 20px rgba(var(--brand-rgb), 0.18);
 }
 
 .quick-tile.active .quick-value { color: var(--forest-600); }
@@ -1868,12 +2022,12 @@ button:disabled:hover {
 }
 
 .action-btn.secondary {
-  background: #5d7167;
+  background: var(--btn-secondary-bg);
   border: 1px solid rgba(255,255,255,0.1);
 }
 
 .action-btn.secondary:hover {
-  background: #4e6059;
+  background: var(--btn-secondary-bg-hover);
 }
 
 .form-grid {
@@ -2219,11 +2373,11 @@ th {
 }
 
 .table-btn-emphasis {
-  background: linear-gradient(135deg, #2f7d5a, #245f45);
+  background: linear-gradient(135deg, var(--brand-strong), var(--brand-deep));
 }
 
 .cta-emphasis {
-  background: linear-gradient(135deg, #2f7d5a, #245f45);
+  background: linear-gradient(135deg, var(--brand-strong), var(--brand-deep));
 }
 
 .table-btn.secondary {
@@ -3623,15 +3777,15 @@ body.modal-active {
 }
 
 .status-flow-step.current {
-  border-color: #2f7d5a;
+  border-color: var(--brand-strong);
   background: #dff1e7;
-  box-shadow: inset 0 0 0 1px rgba(47, 125, 90, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(var(--brand-rgb), 0.12);
   animation: step-current-pulse 2.5s ease-in-out infinite;
 }
 
 @keyframes step-current-pulse {
-  0%, 100% { box-shadow: inset 0 0 0 1px rgba(47, 125, 90, 0.12), 0 0 0 0 rgba(47, 125, 90, 0); }
-  50%       { box-shadow: inset 0 0 0 1px rgba(47, 125, 90, 0.22), 0 0 0 4px rgba(47, 125, 90, 0.06); }
+  0%, 100% { box-shadow: inset 0 0 0 1px rgba(var(--brand-rgb), 0.12), 0 0 0 0 rgba(var(--brand-rgb), 0); }
+  50%       { box-shadow: inset 0 0 0 1px rgba(var(--brand-rgb), 0.22), 0 0 0 4px rgba(var(--brand-rgb), 0.06); }
 }
 
 .status-flow-step.rejected {
@@ -3663,8 +3817,8 @@ body.modal-active {
 }
 
 @keyframes dot-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(36, 96, 80, 0.45); }
-  50%       { box-shadow: 0 0 0 6px rgba(36, 96, 80, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--brand-mid-rgb), 0.45); }
+  50%       { box-shadow: 0 0 0 6px rgba(var(--brand-mid-rgb), 0); }
 }
 
 .status-flow-step.rejected .status-flow-dot {
@@ -3707,10 +3861,10 @@ body.modal-active {
 
 .status-node.current {
   border-style: solid;
-  border-color: #2f7d5a;
+  border-color: var(--brand-strong);
   background: #d7ecdf;
   color: #123e2c;
-  box-shadow: inset 0 0 0 1px rgba(47, 125, 90, 0.15);
+  box-shadow: inset 0 0 0 1px rgba(var(--brand-rgb), 0.15);
 }
 
 .status-node strong {
@@ -3747,8 +3901,8 @@ body.modal-active {
 }
 
 .status-action-btn.active {
-  background: linear-gradient(135deg, #2f7d5a, #245f45);
-  border-color: #245f45;
+  background: linear-gradient(135deg, var(--brand-strong), var(--brand-deep));
+  border-color: var(--brand-deep);
   color: #ffffff;
 }
 
@@ -3829,7 +3983,7 @@ body.modal-active {
   margin-top: 0.32rem;
   border-radius: 50%;
   background: var(--forest-600);
-  box-shadow: 0 0 0 4px rgba(47, 125, 90, 0.14);
+  box-shadow: 0 0 0 4px rgba(var(--brand-rgb), 0.14);
 }
 
 .history-content {
@@ -3921,10 +4075,10 @@ body.modal-active {
   align-items: center;
   margin-bottom: 0.8rem;
   padding: 0.95rem 1rem;
-  border: 1px solid rgba(47, 125, 90, 0.2);
+  border: 1px solid rgba(var(--brand-rgb), 0.2);
   border-radius: 16px;
   background:
-    radial-gradient(circle at top right, rgba(47, 125, 90, 0.12), transparent 42%),
+    radial-gradient(circle at top right, rgba(var(--brand-rgb), 0.12), transparent 42%),
     linear-gradient(135deg, #ffffff, #f2f8f4);
   box-shadow: 0 10px 24px rgba(11, 36, 25, 0.06);
 }
@@ -4017,12 +4171,12 @@ body.modal-active {
 }
 
 .alert-card-unread {
-  border-color: rgba(47, 125, 90, 0.35);
+  border-color: rgba(var(--brand-rgb), 0.35);
   background: linear-gradient(135deg, #ffffff, #f4fbf7);
 }
 
 .alert-card-urgent {
-  border-color: rgba(47, 125, 90, 0.35);
+  border-color: rgba(var(--brand-rgb), 0.35);
   box-shadow: 0 8px 20px rgba(20, 88, 57, 0.08);
 }
 
@@ -4479,7 +4633,7 @@ body.modal-active {
 .guide-role-card.current {
   border-color: #9dc3ad;
   background: #f3f9f6;
-  box-shadow: 0 0 0 1px rgba(47, 125, 90, 0.08);
+  box-shadow: 0 0 0 1px rgba(var(--brand-rgb), 0.08);
 }
 
 .guide-role-header {
@@ -6389,10 +6543,10 @@ tbody tr {
   gap: 0.55rem;
   padding: 0.85rem 1.35rem 0.85rem 1rem;
   border-radius: 999px;
-  background: linear-gradient(135deg, #1e6b44 0%, #0f3d27 100%);
+  background: var(--fab-bg);
   color: #ffffff;
   border: none;
-  box-shadow: 0 8px 28px rgba(11, 36, 25, 0.45), 0 0 0 0 rgba(30, 107, 68, 0.5);
+  box-shadow: var(--fab-shadow);
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
@@ -7515,3 +7669,4 @@ tbody tr {
     justify-self: start;
   }
 }
+

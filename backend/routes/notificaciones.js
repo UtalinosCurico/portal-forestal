@@ -55,9 +55,15 @@ router.get(
       timestamp: new Date().toISOString(),
     });
 
-    const unsubscribe = notificacionesService.subscribeToNotifications(req.user, (notification) => {
-      sendEvent("notification", notification);
-    });
+    // El aviso en vivo respeta la empresa que el usuario tenga abierta: si esta
+    // en Maule Norte no le debe saltar un aviso de Forest Saint.
+    const unsubscribe = notificacionesService.subscribeToNotifications(
+      req.user,
+      (notification) => {
+        sendEvent("notification", notification);
+      },
+      req.query || {}
+    );
 
     const heartbeat = setInterval(() => {
       sendEvent("ping", {

@@ -178,8 +178,22 @@ const CHILE_LOCALE = "es-CL";
 const SESSION_KEY = "fmn_auth_session";
 const SESSION_REMEMBER_KEY = "fmn_auth_session_persistent";
 const LAST_VIEW_KEY = "fmn_last_view";
+const EMPRESA_KEY = "fmn_empresa_activa";
 const TITLE_BASE = "Portal FMN";
 const NOTIFICATIONS_STALE_MS = 20000;
+
+// Maule Norte y Forest Saint son dos empresas distintas. La empresa activa
+// acompaña a estas consultas para que cada apartado muestre solo lo suyo; el
+// resto de los endpoints (login, push, novedades) no la necesita.
+const EMPRESA_SCOPED_PATHS = [
+  "/api/solicitudes",
+  "/api/dashboard",
+  "/api/reportes",
+  "/api/notificaciones",
+  "/api/equipos",
+  "/api/search",
+  "/api/ai",
+];
 
 const state = {
   token: null,
@@ -215,6 +229,9 @@ const state = {
   lastAlertsCheckAt: 0,
   lastNotifSoundAt: 0,
   alertsReconnectAttempts: 0,
+  empresa: null,
+  empresas: [],
+  empresaPuedeCambiar: false,
 };
 
 const loginScreen = document.getElementById("login-screen");
@@ -255,6 +272,9 @@ const pushDeviceChip = document.getElementById("push-device-chip");
 const offlineQueueModal    = document.getElementById("offline-queue-modal");
 const offlineQueueCloseBtn = document.getElementById("offline-queue-close-btn");
 const offlineQueueList     = document.getElementById("offline-queue-list");
+
+const empresaSwitch     = document.getElementById("empresa-switch");
+const empresaSwitchList = document.getElementById("empresa-switch-list");
 
 const VIEWS = {
   dashboard: {
@@ -310,7 +330,166 @@ function getViewContext() {
     showToast,
     formatDate,
     formatDateOnly,
+    empresa: state.empresa,
+    empresaMeta: getEmpresaMeta(state.empresa),
+    withEmpresa,
   };
+}
+
+// ── Empresa activa (Maule Norte / Forest Saint) ───────────────────────────────
+// Son dos empresas separadas aunque operen juntas. Lo que se elige aquí acota
+// todo el portal: solicitudes, dashboard, reportes, alertas y búsqueda.
+
+function getEmpresaMeta(empresaId) {
+  if (!empresaId) {
+    return null;
+  }
+  return state.empresas.find((empresa) => empresa.id === empresaId) || null;
+}
+
+function saveEmpresa(empresaId) {
+  if (empresaId) {
+    localStorage.setItem(EMPRESA_KEY, empresaId);
+  } else {
+    localStorage.removeItem(EMPRESA_KEY);
+  }
+}
+
+function loadStoredEmpresa() {
+  return localStorage.getItem(EMPRESA_KEY) || "";
+}
+
+function isEmpresaScopedPath(path) {
+  const cleanPath = String(path || "").split("?")[0];
+  return EMPRESA_SCOPED_PATHS.some(
+    (prefix) => cleanPath === prefix || cleanPath.startsWith(`${prefix}/`)
+  );
+}
+
+/**
+ * Agrega la empresa activa a una URL de la API. Lo usan tanto apiRequest como
+ * las descargas (Excel/PDF), que van por fetch directo.
+ */
+function withEmpresa(path) {
+  if (!state.empresa || !isEmpresaScopedPath(path)) {
+    return path;
+  }
+
+  if (/[?&]empresa=/.test(path)) {
+    return path;
+  }
+
+  return `${path}${path.includes("?") ? "&" : "?"}empresa=${encodeURIComponent(state.empresa)}`;
+}
+
+function applyEmpresaTheme() {
+  document.documentElement.dataset.empresa = state.empresa || "";
+
+  const themeColorTag = document.querySelector('meta[name="theme-color"]');
+  if (themeColorTag) {
+    themeColorTag.setAttribute("content", state.empresa === "FOREST_SAINT" ? "#2a1240" : "#123126");
+  }
+
+  updateDocumentTitle();
+}
+
+function renderEmpresaSwitch() {
+  if (!empresaSwitch || !empresaSwitchList) {
+    return;
+  }
+
+  // Con una sola empresa a la vista el selector solo estorba.
+  const visible = state.empresas.length > 1 && state.empresaPuedeCambiar;
+  empresaSwitch.classList.toggle("hidden", !visible);
+  if (!visible) {
+    empresaSwitchList.innerHTML = "";
+    return;
+  }
+
+  empresaSwitchList.innerHTML = state.empresas
+    .map(
+      (empresa) => `
+        <button
+          class="empresa-option${empresa.id === state.empresa ? " active" : ""}"
+          type="button"
+          data-empresa="${escapeHtml(empresa.id)}"
+          data-tema="${escapeHtml(empresa.tema || "")}"
+          aria-pressed="${empresa.id === state.empresa ? "true" : "false"}"
+        >
+          <span class="empresa-option-dot" aria-hidden="true"></span>
+          <span class="empresa-option-text">
+            <strong>${escapeHtml(empresa.nombre)}</strong>
+            <small>${empresa.equipos.length} ${empresa.equipos.length === 1 ? "equipo" : "equipos"}</small>
+          </span>
+        </button>
+      `
+    )
+    .join("");
+}
+
+async function loadEmpresas() {
+  try {
+    const payload = await apiRequest("/api/empresas");
+    const data = payload.data || {};
+    state.empresas = Array.isArray(data.empresas) ? data.empresas : [];
+    state.empresaPuedeCambiar = Boolean(data.puedeCambiar);
+
+    if (!state.empresaPuedeCambiar) {
+      // Quien pertenece a un equipo no elige: manda la empresa de su equipo.
+      state.empresa = data.empresaActual || null;
+    } else {
+      const stored = loadStoredEmpresa();
+      const isKnown = state.empresas.some((empresa) => empresa.id === stored);
+      state.empresa = isKnown ? stored : state.empresas[0]?.id || null;
+    }
+  } catch {
+    // Si el catálogo no carga, el portal sigue funcionando sin separar empresas.
+    state.empresas = [];
+    state.empresaPuedeCambiar = false;
+    state.empresa = null;
+  }
+
+  saveEmpresa(state.empresaPuedeCambiar ? state.empresa : "");
+  renderEmpresaSwitch();
+  applyEmpresaTheme();
+}
+
+async function setEmpresaActiva(empresaId) {
+  if (!empresaId || empresaId === state.empresa || !state.empresaPuedeCambiar) {
+    return;
+  }
+
+  const meta = getEmpresaMeta(empresaId);
+  if (!meta) {
+    return;
+  }
+
+  state.empresa = empresaId;
+  saveEmpresa(empresaId);
+  renderEmpresaSwitch();
+  applyEmpresaTheme();
+
+  // Los datos en pantalla son de la otra empresa: hay que rearmar la vista y
+  // volver a contar las alertas antes de que el usuario lea algo que no es suyo.
+  state.notifications = [];
+  state.notificationsLoadedAt = 0;
+  state.alertsPrimed = false;
+  updateAlertsBadge(0);
+
+  // El canal en vivo quedó suscrito a la otra empresa: hay que reconectarlo.
+  state.alertsReconnectAttempts = 0;
+  connectRealtimeAlerts();
+
+  try {
+    await loadView(state.currentView, { force: true });
+    showToast(`Trabajando en ${meta.nombre}`);
+  } catch (error) {
+    showToast(error.message, true);
+  }
+
+  loadNotifications().catch(() => {
+    // El badge se recupera en el siguiente ciclo de alertas.
+  });
 }
 
 function escapeHtml(value) {
@@ -482,7 +661,9 @@ function updateDocumentTitle() {
   const currentMeta = VIEWS[state.currentView];
   const currentTitle = currentMeta?.title || "Solicitudes";
   const unreadPrefix = state.lastAlertsCount > 0 ? `(${state.lastAlertsCount}) ` : "";
-  document.title = `${unreadPrefix}${TITLE_BASE} | ${currentTitle}`;
+  const empresaMeta = getEmpresaMeta(state.empresa);
+  const marca = empresaMeta ? `${TITLE_BASE} · ${empresaMeta.nombre}` : TITLE_BASE;
+  document.title = `${unreadPrefix}${marca} | ${currentTitle}`;
 }
 
 function isPhoneLayout() {
@@ -927,6 +1108,9 @@ async function apiRequest(path, options = {}, requiresAuth = true) {
     retryOnUnauthorized = requiresAuth && path !== "/api/auth/me",
     ...fetchOptions
   } = options;
+  // La empresa activa viaja sola: cada vista pide sus datos sin tener que
+  // acordarse de agregar el filtro.
+  const requestPath = withEmpresa(path);
   const headers = {
     ...(fetchOptions.headers || {}),
   };
@@ -949,7 +1133,7 @@ async function apiRequest(path, options = {}, requiresAuth = true) {
       : fetchOptions.body;
 
   for (let attempt = 0; attempt <= (retryOnUnauthorized ? 2 : 0); attempt += 1) {
-    const response = await fetch(path, {
+    const response = await fetch(requestPath, {
       ...fetchOptions,
       headers,
       body: requestBody,
@@ -1261,7 +1445,9 @@ function connectRealtimeAlerts() {
   }
 
   stopRealtimeAlerts();
-  const streamUrl = `/api/notificaciones/stream?token=${encodeURIComponent(state.token)}`;
+  const streamUrl = withEmpresa(
+    `/api/notificaciones/stream?token=${encodeURIComponent(state.token)}`
+  );
   const eventSource = new EventSource(streamUrl);
   state.alertsEventSource = eventSource;
 
@@ -2227,6 +2413,10 @@ async function handleLoginSubmit(event) {
       .then(({ initAiAssistant }) => initAiAssistant(getViewContext()))
       .catch(() => {});
 
+    // La empresa activa tiene que estar resuelta antes de la primera vista:
+    // si no, la primera consulta trae datos de las dos empresas juntas.
+    await loadEmpresas();
+
     try {
       await loadView(getDefaultView());
       prefetchAllowedViews();
@@ -2271,6 +2461,11 @@ function logout() {
   closeAlertsModal();
   closeGlobalSearch();
   resetRenderedView();
+  state.empresa = null;
+  state.empresas = [];
+  state.empresaPuedeCambiar = false;
+  renderEmpresaSwitch();
+  applyEmpresaTheme();
   setAuthenticatedUI(false);
   updateDocumentTitle();
   updatePushControls();
@@ -2337,6 +2532,15 @@ function registerEvents() {
   });
   helpBtn.addEventListener("click", async () => {
     await loadView("como-usar");
+    closeSidebar();
+  });
+
+  empresaSwitchList?.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-empresa]");
+    if (!button) {
+      return;
+    }
+    await setEmpresaActiva(button.dataset.empresa);
     closeSidebar();
   });
 
@@ -2625,6 +2829,8 @@ async function bootstrap() {
   flushOfflineQueue();
   // Mostrar banner de instalación si aplica (iOS siempre, Android cuando hay prompt)
   if (isIOSDevice() || state.deferredInstallPrompt) showInstallBanner();
+  // Igual que al iniciar sesión: primero la empresa, después la vista.
+  await loadEmpresas();
   await loadView(getDefaultView());
   prefetchAllowedViews();
   runWhenIdle(() => {

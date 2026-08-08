@@ -13,7 +13,7 @@ router.get(
   "/",
   authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.SECRETARIA),
   asyncHandler(async (req, res) => {
-    const data = await equiposService.listEquipos(req.user);
+    const data = await equiposService.listEquipos(req.user, req.query || {});
     res.json({
       status: "ok",
       data,

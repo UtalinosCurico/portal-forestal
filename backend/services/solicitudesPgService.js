@@ -18,6 +18,7 @@ const {
 } = require("./operationalPgStore");
 const { listUsers } = require("./userStore");
 const notificacionesService = require("./notificacionesService");
+const empresasService = require("./empresasService");
 
 const VALID_STATUS = new Set(Object.values(SOLICITUD_STATUS));
 const VALID_ITEM_STATUS = new Set(SOLICITUD_ITEM_STATUS_LIST);
@@ -226,6 +227,10 @@ function buildWhereClause(actor, filters = {}, alias = "s", { archivadoEnabled =
     requireTeamAssigned(actor);
     conditions.push(`${alias}.equipo_id = ${push(Number(actor.equipo_id))}`);
   }
+
+  // Maule Norte y Forest Saint se leen por separado: quien mira una empresa no
+  // ve las solicitudes de la otra.
+  empresasService.pushEmpresaCondition(conditions, { actor, filters, alias, push });
 
   if (normalized.equipoId) {
     conditions.push(`${alias}.equipo_id = ${push(normalized.equipoId)}`);
@@ -2792,7 +2797,7 @@ async function deleteSolicitud(actor, solicitudId) {
   };
 }
 
-async function listPendingItems(actor) {
+async function listPendingItems(actor, filters = {}) {
   const role = getActorRole(actor);
   const params = [];
   const push = (v) => { params.push(v); return `$${params.length}`; };
@@ -2825,16 +2830,32 @@ async function listPendingItems(actor) {
     requireTeamAssigned(actor);
     query += ` AND s.equipo_id = ${push(Number(actor.equipo_id))}`;
   }
+
+  // Los productos por gestionar tambien son de una empresa o de la otra.
+  const empresaConditions = [];
+  empresasService.pushEmpresaCondition(empresaConditions, { actor, filters, alias: "s", push });
+  if (empresaConditions.length) {
+    query += ` AND ${empresaConditions.join(" AND ")}`;
+  }
+
   query += ` ORDER BY s.id ASC, si.id ASC`;
 
   const pg = getOperationalPool();
-  const [{ rows }, usersMap] = await Promise.all([pg.query(query, params), loadUsersMap()]);
+  const [{ rows }, usersMap, equiposMap] = await Promise.all([
+    pg.query(query, params),
+    loadUsersMap(),
+    loadEquiposMap(),
+  ]);
   return rows.map((row) => ({
     ...row,
     item_id: Number(row.item_id),
     solicitud_id: Number(row.solicitud_id),
     cantidad: Number(row.cantidad),
     equipo_id: row.equipo_id != null ? Number(row.equipo_id) : null,
+    solicitud_equipo:
+      (row.equipo_id != null ? equiposMap.get(Number(row.equipo_id)) : null) ||
+      row.solicitud_equipo ||
+      null,
     solicitante_nombre: usersMap.get(Number(row.solicitante_id))?.nombre || "Usuario",
   }));
 }

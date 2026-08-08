@@ -158,6 +158,13 @@
           <button class="nav-item" data-view="powerbi"><span class="nav-icon" aria-hidden="true">📈</span> Power BI</button>
         </nav>
 
+        <!-- Empresa activa. Maule Norte y Forest Saint son dos empresas: lo que
+             se elige aquí manda en solicitudes, dashboard, reportes y alertas. -->
+        <section id="empresa-switch" class="empresa-switch hidden" aria-label="Empresa">
+          <p class="empresa-switch-title">Empresa</p>
+          <div id="empresa-switch-list" class="empresa-switch-list" role="group"></div>
+        </section>
+
         <a href="https://app.mydatascope.com/" target="_blank" rel="noopener noreferrer" class="datascope-btn" id="datascope-btn">
           <svg width="18" height="18" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <!-- arco exterior izquierdo -->

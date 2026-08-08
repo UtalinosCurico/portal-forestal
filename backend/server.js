@@ -14,6 +14,7 @@ const dashboardRoutes = require("./routes/dashboard");
 const solicitudesRoutes = require("./routes/solicitudes");
 const inventarioRoutes = require("./routes/inventario");
 const equiposRoutes = require("./routes/equipos");
+const empresasRoutes = require("./routes/empresas");
 const usuariosRoutes = require("./routes/usuarios");
 const reportesRoutes = require("./routes/reportes");
 const powerbiRoutes = require("./routes/powerbi");
@@ -53,6 +54,7 @@ function createApp() {
   app.use("/api/solicitudes", solicitudesRoutes);
   app.use("/api/inventario", inventarioRoutes);
   app.use("/api/equipos", equiposRoutes);
+  app.use("/api/empresas", empresasRoutes);
   app.use("/api/usuarios", usuariosRoutes);
   app.use("/api/reportes", reportesRoutes);
   app.use("/api/powerbi", powerbiRoutes);

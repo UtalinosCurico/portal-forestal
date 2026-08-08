@@ -6,6 +6,7 @@ const { ROLES } = require("../config/appRoles");
 const { isOperationalPgEnabled } = require("./operationalPgStore");
 const pgService = require("./notificacionesPgService");
 const pushService = require("./pushService");
+const empresasService = require("./empresasService");
 
 const notificationBus = new EventEmitter();
 notificationBus.setMaxListeners(100);
@@ -196,7 +197,7 @@ async function insertNotification({
   return notification;
 }
 
-function buildVisibilityScope(actor, alias = "n") {
+function buildVisibilityScope(actor, alias = "n", filters = {}) {
   const role = getActorRole(actor);
   const conditions = [];
   const params = [];
@@ -212,13 +213,26 @@ function buildVisibilityScope(actor, alias = "n") {
     params.push(actor.equipo_id);
   }
 
+  // Los avisos sin equipo (novedades del portal, por ejemplo) valen para las
+  // dos empresas; los que si tienen equipo se quedan en la suya.
+  empresasService.pushEmpresaCondition(conditions, {
+    actor,
+    filters,
+    alias,
+    incluirSinEquipo: true,
+    push: (value) => {
+      params.push(value);
+      return "?";
+    },
+  });
+
   return {
     where: conditions.length ? `WHERE ${conditions.join(" AND ")}` : "",
     params,
   };
 }
 
-function canActorReceiveNotification(actor, notification) {
+function canActorReceiveNotification(actor, notification, filters = {}) {
   const role = getActorRole(actor);
   const roleMatches = notification.rol_destino === role;
   const directUserMatches = Number(notification.usuario_destino_id) === Number(actor.id);
@@ -236,13 +250,19 @@ function canActorReceiveNotification(actor, notification) {
     }
   }
 
+  // Los avisos sin equipo valen para las dos empresas; el resto se queda en la suya.
+  const equipoIds = empresasService.resolveEmpresaEquipoIds(actor, filters);
+  if (equipoIds && notification.equipo_id) {
+    return equipoIds.includes(Number(notification.equipo_id));
+  }
+
   return true;
 }
 
-function subscribeToNotifications(actor, listener) {
+function subscribeToNotifications(actor, listener, filters = {}) {
   const handler = (notification) => {
     try {
-      if (canActorReceiveNotification(actor, notification)) {
+      if (canActorReceiveNotification(actor, notification, filters)) {
         listener(notification);
       }
     } catch {
@@ -261,7 +281,7 @@ async function listNotificaciones(actor, filters = {}) {
     return pgService.listNotificaciones(actor, filters);
   }
 
-  const scope = buildVisibilityScope(actor, "n");
+  const scope = buildVisibilityScope(actor, "n", filters);
   const soloNoLeidas = toBooleanFlag(filters.soloNoLeidas || filters.unreadOnly);
   const limit = normalizeLimit(filters.limit, 30);
 

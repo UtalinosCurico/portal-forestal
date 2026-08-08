@@ -2,6 +2,7 @@ const { all } = require("../db/database");
 const { isGlobalRole, requireTeamAssigned } = require("../middleware/roles");
 const { HttpError } = require("../utils/httpError");
 const { isOperationalPgEnabled, getOperationalPool, loadEquiposMap } = require("./operationalPgStore");
+const empresasService = require("./empresasService");
 
 function getActorRole(actor) {
   return actor.rol || actor.role;
@@ -37,11 +38,26 @@ async function searchSqlite(actor, filters = {}) {
   const solicitudParams = [like, like, like, idLike, like, like, like, like];
   let solicitudScope = "";
 
+  const solicitudConditions = [];
+
   if (!isGlobalRole(role)) {
     requireTeamAssigned(actor);
-    solicitudScope = "AND s.equipo_id = ?";
+    solicitudConditions.push("s.equipo_id = ?");
     solicitudParams.push(actor.equipo_id);
   }
+
+  // La busqueda global tampoco cruza empresas.
+  empresasService.pushEmpresaCondition(solicitudConditions, {
+    actor,
+    filters,
+    alias: "s",
+    push: (value) => {
+      solicitudParams.push(value);
+      return "?";
+    },
+  });
+
+  solicitudScope = solicitudConditions.length ? `AND ${solicitudConditions.join(" AND ")}` : "";
   solicitudParams.push(limit);
 
   const solicitudes = await all(
@@ -149,11 +165,26 @@ async function searchPg(actor, filters = {}) {
   const solicitudParams = [like, like, like, idLike, like, like, like, like];
   let solicitudScope = "";
 
+  const solicitudConditions = [];
+
   if (!isGlobalRole(role)) {
     requireTeamAssigned(actor);
     solicitudParams.push(Number(actor.equipo_id));
-    solicitudScope = `AND s.equipo_id = $${solicitudParams.length}`;
+    solicitudConditions.push(`s.equipo_id = $${solicitudParams.length}`);
   }
+
+  // La busqueda global tampoco cruza empresas.
+  empresasService.pushEmpresaCondition(solicitudConditions, {
+    actor,
+    filters,
+    alias: "s",
+    push: (value) => {
+      solicitudParams.push(value);
+      return `$${solicitudParams.length}`;
+    },
+  });
+
+  solicitudScope = solicitudConditions.length ? `AND ${solicitudConditions.join(" AND ")}` : "";
   solicitudParams.push(limit);
 
   const { rows: solicitudesRows } = await pg.query(

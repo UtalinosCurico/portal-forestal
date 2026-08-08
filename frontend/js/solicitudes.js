@@ -1037,7 +1037,8 @@ async function optimizeImageFile(file) {
 
 async function downloadSolicitudesExcel(context, filters) {
   const query = buildQueryString(filters);
-  const response = await fetch(`/api/reportes/excel/solicitudes${query}`, {
+  // La descarga va por fetch directo, así que la empresa activa se agrega a mano.
+  const response = await fetch(context.withEmpresa(`/api/reportes/excel/solicitudes${query}`), {
     headers: {
       Authorization: `Bearer ${context.state.token}`,
     },

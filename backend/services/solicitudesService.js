@@ -14,6 +14,7 @@ const { buildHistoryPdf } = require("../utils/simplePdf");
 const notificacionesService = require("./notificacionesService");
 const { isOperationalPgEnabled } = require("./operationalPgStore");
 const pgService = require("./solicitudesPgService");
+const empresasService = require("./empresasService");
 
 const VALID_STATUS = new Set(Object.values(SOLICITUD_STATUS));
 const VALID_ITEM_STATUS = new Set(SOLICITUD_ITEM_STATUS_LIST);
@@ -204,6 +205,18 @@ function buildWhereClause(actor, filters = {}, alias = "s") {
     conditions.push(`${alias}.equipo_id = ?`);
     params.push(actor.equipo_id);
   }
+
+  // Maule Norte y Forest Saint se leen por separado: quien mira una empresa no
+  // ve las solicitudes de la otra.
+  empresasService.pushEmpresaCondition(conditions, {
+    actor,
+    filters,
+    alias,
+    push: (value) => {
+      params.push(value);
+      return "?";
+    },
+  });
 
   if (normalized.equipoId) {
     conditions.push(`${alias}.equipo_id = ?`);
@@ -2688,7 +2701,7 @@ async function deleteSolicitud(actor, solicitudId) {
   };
 }
 
-async function listPendingItems(actor) {
+async function listPendingItems(actor, filters = {}) {
   const role = actor.rol || actor.role;
   const params = [SOLICITUD_ITEM_STATUS.POR_GESTIONAR];
   let query = `
@@ -2702,7 +2715,7 @@ async function listPendingItems(actor) {
       si.comentario,
       si.usuario_final,
       s.repuesto AS solicitud_resumen,
-      s.equipo AS solicitud_equipo,
+      COALESCE(eq.nombre_equipo, s.equipo) AS solicitud_equipo,
       s.equipo_id,
       s.estado AS solicitud_estado,
       s.created_at AS solicitud_created_at,
@@ -2710,6 +2723,7 @@ async function listPendingItems(actor) {
     FROM solicitud_items si
     INNER JOIN solicitudes s ON s.id = si.solicitud_id
     INNER JOIN usuarios su ON su.id = s.solicitante_id
+    LEFT JOIN equipos eq ON eq.id = s.equipo_id
     WHERE si.estado_item = ?
       AND s.estado NOT IN ('ENTREGADO', 'RECHAZADO')
   `;
@@ -2718,6 +2732,22 @@ async function listPendingItems(actor) {
     query += ` AND s.equipo_id = ?`;
     params.push(Number(actor.equipo_id));
   }
+
+  // Los productos por gestionar tambien son de una empresa o de la otra.
+  const empresaConditions = [];
+  empresasService.pushEmpresaCondition(empresaConditions, {
+    actor,
+    filters,
+    alias: "s",
+    push: (value) => {
+      params.push(value);
+      return "?";
+    },
+  });
+  if (empresaConditions.length) {
+    query += ` AND ${empresaConditions.join(" AND ")}`;
+  }
+
   query += ` ORDER BY s.id ASC, si.id ASC`;
   return all(query, params);
 }

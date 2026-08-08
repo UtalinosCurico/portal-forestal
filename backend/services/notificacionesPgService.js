@@ -5,6 +5,7 @@ const {
   getOperationalPool,
   loadEquiposMap,
 } = require("./operationalPgStore");
+const empresasService = require("./empresasService");
 
 function getActorRole(actor) {
   return actor.rol || actor.role;
@@ -103,7 +104,7 @@ async function insertNotificationsForRoles(basePayload, roles = []) {
   return notifications.filter(Boolean);
 }
 
-function buildVisibilityScope(actor, alias = "n") {
+function buildVisibilityScope(actor, alias = "n", filters = {}) {
   const role = getActorRole(actor);
   const conditions = [];
   const params = [];
@@ -121,6 +122,16 @@ function buildVisibilityScope(actor, alias = "n") {
     requireTeamAssigned(actor);
     conditions.push(`(${alias}.equipo_id IS NULL OR ${alias}.equipo_id = ${push(Number(actor.equipo_id))})`);
   }
+
+  // Los avisos sin equipo (novedades del portal, por ejemplo) valen para las
+  // dos empresas; los que si tienen equipo se quedan en la suya.
+  empresasService.pushEmpresaCondition(conditions, {
+    actor,
+    filters,
+    alias,
+    incluirSinEquipo: true,
+    push,
+  });
 
   return {
     where: conditions.length ? `WHERE ${conditions.join(" AND ")}` : "",
@@ -216,7 +227,7 @@ async function insertNotification({
 
 async function listNotificaciones(actor, filters = {}) {
   const pg = getOperationalPool();
-  const scope = buildVisibilityScope(actor, "n");
+  const scope = buildVisibilityScope(actor, "n", filters);
   const soloNoLeidas = toBooleanFlag(filters.soloNoLeidas || filters.unreadOnly);
   const limit = normalizeLimit(filters.limit, 30);
   const params = [...scope.params];

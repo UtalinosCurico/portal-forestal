@@ -5,6 +5,7 @@ const { HttpError } = require("../utils/httpError");
 const { addDaysToDateKey, formatChileDateKey, getChileDayBounds } = require("../utils/dateTime");
 const { isOperationalPgEnabled } = require("./operationalPgStore");
 const pgService = require("./dashboardPgService");
+const empresasService = require("./empresasService");
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -62,6 +63,18 @@ function buildScope(actor, filters = {}, alias = "s", options = {}) {
     conditions.push(`${alias}.${teamField} = ?`);
     params.push(actor.equipo_id);
   }
+
+  // El resumen del dia tampoco mezcla empresas.
+  empresasService.pushEmpresaCondition(conditions, {
+    actor,
+    filters,
+    alias,
+    campo: teamField,
+    push: (value) => {
+      params.push(value);
+      return "?";
+    },
+  });
 
   if (normalized.equipoId) {
     conditions.push(`${alias}.${teamField} = ?`);

@@ -845,7 +845,8 @@ function renderUnificados(alias, card, lista, puedeUnificar) {
 }
 
 async function descargarExcel(context, query) {
-  const response = await fetch(`/api/reportes/excel/consumo${query}`, {
+  // La descarga va por fetch directo, así que la empresa activa se agrega a mano.
+  const response = await fetch(context.withEmpresa(`/api/reportes/excel/consumo${query}`), {
     headers: { Authorization: `Bearer ${context.state.token}` },
   });
 

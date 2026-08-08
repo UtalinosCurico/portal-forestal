@@ -1,6 +1,8 @@
 ﻿const { all, get, run } = require("../db/database");
 const { isGlobalRole, requireTeamAssigned } = require("../middleware/roles");
 const { HttpError } = require("../utils/httpError");
+const { normalizeEmpresa, DEFAULT_EMPRESA } = require("../config/empresas");
+const empresasService = require("./empresasService");
 
 function getActorRole(actor) {
   return actor.rol || actor.role;
@@ -17,11 +19,26 @@ function mapStockState(stock) {
   return "VERDE";
 }
 
-async function listEquipos(actor) {
+async function listEquipos(actor, filters = {}) {
   if (isGlobalRole(getActorRole(actor))) {
+    // Al trabajar dentro de una empresa el selector no debe ofrecer equipos de
+    // la otra: si no, se crearia una solicitud en la empresa equivocada.
+    const empresa = empresasService.resolveEmpresaFilter(actor, filters);
+    if (empresa) {
+      return all(
+        `
+          SELECT id, nombre_equipo, empresa
+          FROM equipos
+          WHERE COALESCE(empresa, ?) = ?
+          ORDER BY nombre_equipo ASC
+        `,
+        [empresasService.DEFAULT_EMPRESA, empresa]
+      );
+    }
+
     return all(
       `
-        SELECT id, nombre_equipo
+        SELECT id, nombre_equipo, empresa
         FROM equipos
         ORDER BY nombre_equipo ASC
       `
@@ -31,7 +48,7 @@ async function listEquipos(actor) {
   requireTeamAssigned(actor);
   return all(
     `
-      SELECT id, nombre_equipo
+      SELECT id, nombre_equipo, empresa
       FROM equipos
       WHERE id = ?
       ORDER BY nombre_equipo ASC
@@ -147,7 +164,12 @@ async function createEquipo(payload) {
     throw new HttpError(409, "Ya existe un equipo con ese nombre");
   }
 
-  const result = await run("INSERT INTO equipos (nombre_equipo) VALUES (?)", [nombre]);
+  const empresa = normalizeEmpresa(payload.empresa) || DEFAULT_EMPRESA;
+  const result = await run("INSERT INTO equipos (nombre_equipo, empresa) VALUES (?, ?)", [
+    nombre,
+    empresa,
+  ]);
+  await empresasService.reload();
 
   const inventario = await all("SELECT id FROM inventario ORDER BY id ASC");
   for (const item of inventario) {
@@ -160,11 +182,11 @@ async function createEquipo(payload) {
     );
   }
 
-  return get("SELECT id, nombre_equipo FROM equipos WHERE id = ?", [result.lastID]);
+  return get("SELECT id, nombre_equipo, empresa FROM equipos WHERE id = ?", [result.lastID]);
 }
 
 async function updateEquipo(equipoId, payload) {
-  const current = await get("SELECT id, nombre_equipo FROM equipos WHERE id = ?", [equipoId]);
+  const current = await get("SELECT id, nombre_equipo, empresa FROM equipos WHERE id = ?", [equipoId]);
   if (!current) {
     throw new HttpError(404, "Equipo no encontrado");
   }
@@ -182,8 +204,21 @@ async function updateEquipo(equipoId, payload) {
     throw new HttpError(409, "Ya existe otro equipo con ese nombre");
   }
 
-  await run("UPDATE equipos SET nombre_equipo = ? WHERE id = ?", [nombre, equipoId]);
-  return get("SELECT id, nombre_equipo FROM equipos WHERE id = ?", [equipoId]);
+  const empresa =
+    payload.empresa === undefined
+      ? normalizeEmpresa(current.empresa) || DEFAULT_EMPRESA
+      : normalizeEmpresa(payload.empresa);
+  if (!empresa) {
+    throw new HttpError(400, "empresa invalida");
+  }
+
+  await run("UPDATE equipos SET nombre_equipo = ?, empresa = ? WHERE id = ?", [
+    nombre,
+    empresa,
+    equipoId,
+  ]);
+  await empresasService.reload();
+  return get("SELECT id, nombre_equipo, empresa FROM equipos WHERE id = ?", [equipoId]);
 }
 
 async function updateEquipoStock(actor, equipoStockId, payload) {
