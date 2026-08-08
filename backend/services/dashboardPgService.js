@@ -399,20 +399,39 @@ async function getMyActions(actor, filters = {}) {
     .slice(0, limit);
 }
 
+/**
+ * Consulta de conteo acotada por el scope, con los marcadores bien numerados.
+ *
+ * En Postgres los marcadores son posicionales ($1, $2...) y los del scope ya
+ * vienen numerados desde 1, asi que los parametros del estado tienen que ir
+ * DESPUES y numerarse desde donde termina el scope. Al reves -que es como
+ * estaba- la condicion del scope terminaba leyendo el parametro del estado, y
+ * la consulta reventaba apenas el scope dejaba de estar vacio.
+ *
+ * `hacerCondicionEstado(i)` recibe el numero del primer marcador libre.
+ */
+function buildScopedCountQuery(scope, hacerCondicionEstado, paramsEstado) {
+  const condicionScope = scope.where.replace(/^WHERE\s+/i, "").trim();
+  const condiciones = [hacerCondicionEstado(scope.params.length + 1), condicionScope].filter(
+    Boolean
+  );
+
+  return {
+    sql: `SELECT COUNT(*)::int AS total FROM solicitudes s WHERE ${condiciones.join(" AND ")}`,
+    params: [...scope.params, ...paramsEstado],
+  };
+}
+
 async function getDashboardData(actor, filters = {}) {
   const role = getActorRole(actor);
   const includeStock = isGlobalRole(role);
   const scope = buildScope(actor, filters, "s");
-  const baseConditions = scope.where.replace(/^WHERE\s+/i, "").split(" AND ").filter(Boolean);
-  const buildScopedCount = (statusSql, statusParams) => {
-    const conditions = [statusSql, ...baseConditions];
-    return {
-      sql: `SELECT COUNT(*)::int AS total FROM solicitudes s WHERE ${conditions.join(" AND ")}`,
-      params: [...statusParams, ...scope.params],
-    };
-  };
-  const pendingCount = buildScopedCount("s.estado = ANY($1::text[])", [[SOLICITUD_STATUS.PENDIENTE, SOLICITUD_STATUS.EN_REVISION]]);
-  const dispatchCount = buildScopedCount("s.estado = $1", [SOLICITUD_STATUS.EN_DESPACHO]);
+  const pendingCount = buildScopedCountQuery(scope, (i) => `s.estado = ANY($${i}::text[])`, [
+    [SOLICITUD_STATUS.PENDIENTE, SOLICITUD_STATUS.EN_REVISION],
+  ]);
+  const dispatchCount = buildScopedCountQuery(scope, (i) => `s.estado = $${i}`, [
+    SOLICITUD_STATUS.EN_DESPACHO,
+  ]);
 
   const [
     solicitudesPendientes,
@@ -457,4 +476,8 @@ module.exports = {
   getDashboardData,
   getDashboardMetrics,
   getMyActions,
+  // Se exportan para poder verificar la numeracion de los marcadores sin
+  // levantar un Postgres: es justo donde se rompio el dashboard.
+  buildScope,
+  buildScopedCountQuery,
 };
