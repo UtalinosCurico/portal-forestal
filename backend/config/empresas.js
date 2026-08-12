@@ -5,6 +5,9 @@
 // La empresa vive en la columna `equipos.empresa`. Este archivo es el catalogo:
 // que empresas existen, como se llaman y de que color se pintan.
 
+// `logo` es el que se muestra en la barra lateral cuando esa empresa esta
+// activa. Para cambiarlo basta con dejar el archivo nuevo en frontend/assets/
+// y apuntar la ruta aqui. Va sobre fondo oscuro.
 const EMPRESAS = {
   MAULE_NORTE: {
     id: "MAULE_NORTE",
@@ -12,6 +15,7 @@ const EMPRESAS = {
     descripcion: "Faenas Maule Norte",
     color: "#2d7a57",
     tema: "verde",
+    logo: "/assets/fmn-icon-512.png",
   },
   FOREST_SAINT: {
     id: "FOREST_SAINT",
@@ -19,6 +23,7 @@ const EMPRESAS = {
     descripcion: "Faenas Forest Saint",
     color: "#7c4dbe",
     tema: "morado",
+    logo: "/assets/forest-saint-logo.svg",
   },
 };
 

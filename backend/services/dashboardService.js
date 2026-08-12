@@ -390,6 +390,22 @@ async function getMyActions(actor, filters = {}) {
     });
   }
 
+  // "Lo que necesita tu accion hoy" arma sus propias consultas, sin buildScope,
+  // asi que el recorte por empresa hay que agregarlo aqui a mano. Si no, la
+  // secretaria ve en el panel de una empresa las solicitudes de la otra.
+  const empresaConds = [];
+  const empresaParams = [];
+  empresasService.pushEmpresaCondition(empresaConds, {
+    actor,
+    filters,
+    alias: "s",
+    push: (value) => {
+      empresaParams.push(value);
+      return "?";
+    },
+  });
+  const empresaSql = empresaConds.length ? ` AND ${empresaConds.join(" AND ")}` : "";
+
   const pendingRows = await all(
     `
       SELECT
@@ -405,11 +421,11 @@ async function getMyActions(actor, filters = {}) {
       FROM solicitudes s
       INNER JOIN usuarios su ON su.id = s.solicitante_id
       LEFT JOIN equipos e ON e.id = s.equipo_id
-      WHERE s.estado = ?
+      WHERE s.estado = ?${empresaSql}
       ORDER BY dias_sin_movimiento DESC, s.id ASC
       LIMIT ?
     `,
-    [SOLICITUD_STATUS.PENDIENTE, limit]
+    [SOLICITUD_STATUS.PENDIENTE, ...empresaParams, limit]
   );
 
   const staleRows = await all(
@@ -433,11 +449,11 @@ async function getMyActions(actor, filters = {}) {
       LEFT JOIN equipos e ON e.id = s.equipo_id
       WHERE si.estado_item = 'POR_GESTIONAR'
         AND s.estado NOT IN ('ENTREGADO', 'RECHAZADO')
-        AND CAST((julianday('now') - julianday(COALESCE(si.updated_at, si.created_at, s.updated_at, s.created_at))) AS INTEGER) >= 3
+        AND CAST((julianday('now') - julianday(COALESCE(si.updated_at, si.created_at, s.updated_at, s.created_at))) AS INTEGER) >= 3${empresaSql}
       ORDER BY dias_sin_movimiento DESC, si.id ASC
       LIMIT ?
     `,
-    [limit]
+    [...empresaParams, limit]
   );
 
   return [...pendingRows, ...staleRows]

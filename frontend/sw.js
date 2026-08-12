@@ -101,10 +101,10 @@ self.addEventListener("push", (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch {
-    data = { title: "Portal FMN", body: event.data?.text() || "Nueva notificación" };
+    data = { title: "Portal de Solicitudes", body: event.data?.text() || "Nueva notificación" };
   }
 
-  const title = data.title || "Portal Forestal MN";
+  const title = data.title || "Portal de Solicitudes";
   const options = {
     body: data.body || "Tienes una actualización en tus solicitudes",
     icon: "/assets/fmn-icon-192.png",

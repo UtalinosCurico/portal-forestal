@@ -9,6 +9,7 @@ const {
   normalizeEmpresa,
   empresaParaNombreEquipo,
 } = require("../config/empresas");
+const { NOMBRE_PORTAL } = require("../config/portal");
 
 // La tabla `equipos` tiene cuatro filas y casi nunca cambia, pero el filtro por
 // empresa se arma dentro de funciones sincronicas (buildWhereClause/buildScope).
@@ -184,6 +185,17 @@ function pushEmpresaCondition(conditions, options = {}) {
   return equipoIds;
 }
 
+/**
+ * Como se titula lo que sale del portal (un Excel, por ejemplo) segun desde
+ * donde se pidio. Si viene de una empresa concreta lleva su nombre; si abarca
+ * a las dos, lleva el nombre del portal.
+ */
+function etiquetaAlcance(actor, filters = {}) {
+  const empresa = resolveEmpresaFilter(actor, filters) || getEmpresaDelActor(actor);
+  const meta = empresa ? getEmpresa(empresa) : null;
+  return meta ? meta.nombre : NOMBRE_PORTAL;
+}
+
 async function listEmpresas() {
   const { equipos } = await ensureLoaded();
   return listEmpresasCatalogo().map((empresa) => ({
@@ -218,6 +230,7 @@ module.exports = {
   resolveEmpresaFilter,
   resolveEmpresaEquipoIds,
   pushEmpresaCondition,
+  etiquetaAlcance,
   listEmpresas,
   setEmpresaDeEquipo,
 };

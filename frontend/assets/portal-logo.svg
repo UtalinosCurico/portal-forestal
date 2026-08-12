@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Portal de Solicitudes">
+  <!-- Marca neutra del portal: se usa donde todavia no hay una empresa elegida
+       (el login) o donde no corresponde mostrar ninguna (la guia de uso).
+       Una vez dentro, la barra lateral muestra el logo de la empresa activa.
+       No lleva el nombre de ninguna de las dos empresas a proposito. -->
+  <defs>
+    <linearGradient id="portalFondo" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#f7faf8" />
+      <stop offset="100%" stop-color="#e2ebe6" />
+    </linearGradient>
+    <linearGradient id="portalArbol" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#3f7f63" />
+      <stop offset="100%" stop-color="#1f4736" />
+    </linearGradient>
+  </defs>
+
+  <circle cx="64" cy="64" r="56" fill="url(#portalFondo)" />
+  <circle cx="64" cy="64" r="54" fill="none" stroke="#24483a" stroke-width="4" />
+
+  <!-- Arbol -->
+  <path d="M64 26 89 57H76l15 20H74l12 17H42l12-17H37l15-20H39z" fill="url(#portalArbol)" />
+  <rect x="58" y="88" width="12" height="16" rx="4" fill="#6f4a2d" />
+</svg>

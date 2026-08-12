@@ -70,7 +70,7 @@ router.post(
 
       const result = await sendPushToEndpoint(endpoint, {
         title: "Prueba de notificaciones",
-        body: "Este celular ya puede recibir avisos del Portal FMN.",
+        body: "Este celular ya puede recibir avisos del portal.",
         url: "/web",
       });
 
@@ -91,7 +91,7 @@ router.post(
 
     const result = await sendPushToUser(req.user.id, {
       title: "Prueba de notificaciones",
-      body: "Este celular ya puede recibir avisos del Portal FMN.",
+      body: "Este celular ya puede recibir avisos del portal.",
       url: "/web",
     });
 

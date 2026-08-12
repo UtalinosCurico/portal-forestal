@@ -6,6 +6,7 @@
 
 const ExcelJS = require("exceljs");
 const consumoService = require("./consumoService");
+const empresasService = require("./empresasService");
 
 const C = {
   headerBg: "FF1A5C3A",
@@ -84,7 +85,7 @@ function anchos(sheet, medidas) {
 }
 
 /** Hoja 1: la que responde "cuanto stock tengo que tener". */
-function hojaResumen(libro, datos, filtros) {
+function hojaResumen(libro, datos, filtros, alcance) {
   const sheet = libro.addWorksheet("Resumen por producto");
   const cols = [
     "Producto",
@@ -100,7 +101,7 @@ function hojaResumen(libro, datos, filtros) {
     "Nombres agrupados",
   ];
 
-  titulo(sheet, "Consumo por producto — Portal FMN", cols.length);
+  titulo(sheet, `Consumo por producto — ${alcance}`, cols.length);
   meta(
     sheet,
     `Período: ${filtros.fechaDesde || "inicio"} a ${filtros.fechaHasta || "hoy"}  |  ` +
@@ -280,10 +281,10 @@ async function exportConsumoExcel(actor, filtros = {}) {
   const datos = await consumoService.getConsumo(actor, filtros);
 
   const libro = new ExcelJS.Workbook();
-  libro.creator = "Portal FMN";
+  libro.creator = "Portal de Solicitudes";
   libro.created = new Date();
 
-  hojaResumen(libro, datos, filtros);
+  hojaResumen(libro, datos, filtros, empresasService.etiquetaAlcance(actor, filtros));
   hojaEvolucion(libro, datos);
   hojaEquipos(libro, datos);
   hojaAtipicos(libro, datos);

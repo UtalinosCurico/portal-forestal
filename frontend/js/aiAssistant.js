@@ -1,7 +1,7 @@
 // ── Asistente IA flotante (PumAI) ───────────────────────────────────────────
 
 const AI_WELCOME =
-  "¡Hola! 🐾 Soy PumAI, tu asistente del Portal FMN. Puedo ayudarte con dudas sobre solicitudes, estados, roles y cómo usar el sistema. ¿En qué te ayudo?";
+  "¡Hola! 🐾 Soy PumAI, tu asistente del portal. Puedo ayudarte con dudas sobre solicitudes, estados, roles y cómo usar el sistema. ¿En qué te ayudo?";
 
 // Convierte markdown básico a HTML seguro
 function renderMarkdown(raw) {
@@ -171,7 +171,6 @@ export function initAiAssistant(context) {
 
   // ── Events ─────────────────────────────────────────────────────────────────
   btn.addEventListener("click", () => (isOpen ? close() : open()));
-  document.getElementById("puma-habitat-btn")?.addEventListener("click", () => { if (!isOpen) open(); });
   closeBtn?.addEventListener("click", close);
 
   form?.addEventListener("submit", (e) => {

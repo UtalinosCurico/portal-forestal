@@ -643,8 +643,8 @@ function renderSummary(rows) {
 
   const activeCount = summary.pendientes + summary.revision + summary.despacho;
   document.title = activeCount > 0
-    ? `(${activeCount}) Solicitudes — Portal FMN`
-    : "Solicitudes — Portal FMN";
+    ? `(${activeCount}) Solicitudes — Portal de Solicitudes`
+    : "Solicitudes — Portal de Solicitudes";
 }
 
 function renderStatusSnapshot(item, formatDate) {

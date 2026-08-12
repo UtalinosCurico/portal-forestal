@@ -349,7 +349,7 @@ async function resolveNotificationRecipientIds(notification) {
 
 function buildPushPayload(notification) {
   return {
-    title: notification?.titulo || "Portal FMN",
+    title: notification?.titulo || "Portal de Solicitudes",
     body: notification?.mensaje || "Tienes una notificación nueva.",
     url: "/web",
     notificationId: notification?.id || null,

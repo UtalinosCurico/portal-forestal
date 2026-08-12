@@ -324,6 +324,28 @@ async function getMyActions(actor, filters = {}) {
     });
   }
 
+  // "Lo que necesita tu accion hoy" arma sus propias consultas, sin buildScope,
+  // asi que el recorte por empresa hay que agregarlo aqui a mano. Si no, la
+  // secretaria ve en el panel de una empresa las solicitudes de la otra.
+  //
+  // Cada consulta numera sus marcadores por separado, por eso la condicion se
+  // arma una vez por consulta y no se comparte.
+  const condicionEmpresa = (paramsPrevios) => {
+    const conds = [];
+    const params = [];
+    empresasService.pushEmpresaCondition(conds, {
+      actor,
+      filters,
+      alias: "s",
+      push: (value) => {
+        params.push(value);
+        return `$${paramsPrevios + params.length}`;
+      },
+    });
+    return { sql: conds.length ? ` AND ${conds.join(" AND ")}` : "", params };
+  };
+
+  const empresaPendientes = condicionEmpresa(1);
   const { rows: pendingRows } = await pg.query(
     `
       SELECT
@@ -338,13 +360,14 @@ async function getMyActions(actor, filters = {}) {
         GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (NOW() - COALESCE(s.updated_at, s.created_at))) / 86400))::int AS dias_sin_movimiento
       FROM solicitudes s
       INNER JOIN usuarios_auth su ON su.id = s.solicitante_id
-      WHERE s.estado = $1
+      WHERE s.estado = $1${empresaPendientes.sql}
       ORDER BY dias_sin_movimiento DESC, s.id ASC
-      LIMIT $2
+      LIMIT $${2 + empresaPendientes.params.length}
     `,
-    [SOLICITUD_STATUS.PENDIENTE, limit]
+    [SOLICITUD_STATUS.PENDIENTE, ...empresaPendientes.params, limit]
   );
 
+  const empresaAtrasados = condicionEmpresa(0);
   const { rows: staleRows } = await pg.query(
     `
       SELECT
@@ -365,11 +388,11 @@ async function getMyActions(actor, filters = {}) {
       INNER JOIN usuarios_auth su ON su.id = s.solicitante_id
       WHERE si.estado_item = 'POR_GESTIONAR'
         AND s.estado NOT IN ('ENTREGADO', 'RECHAZADO')
-        AND GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (NOW() - COALESCE(si.updated_at, si.created_at, s.updated_at, s.created_at))) / 86400))::int >= 3
+        AND GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (NOW() - COALESCE(si.updated_at, si.created_at, s.updated_at, s.created_at))) / 86400))::int >= 3${empresaAtrasados.sql}
       ORDER BY dias_sin_movimiento DESC, si.id ASC
-      LIMIT $1
+      LIMIT $${1 + empresaAtrasados.params.length}
     `,
-    [limit]
+    [...empresaAtrasados.params, limit]
   );
 
   return [...pendingRows, ...staleRows]

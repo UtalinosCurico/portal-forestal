@@ -179,7 +179,8 @@ const SESSION_KEY = "fmn_auth_session";
 const SESSION_REMEMBER_KEY = "fmn_auth_session_persistent";
 const LAST_VIEW_KEY = "fmn_last_view";
 const EMPRESA_KEY = "fmn_empresa_activa";
-const TITLE_BASE = "Portal FMN";
+const TITLE_BASE = "Portal de Solicitudes";
+const PORTAL_LOGO = "/assets/portal-logo.svg";
 const NOTIFICATIONS_STALE_MS = 20000;
 
 // Maule Norte y Forest Saint son dos empresas distintas. La empresa activa
@@ -273,6 +274,7 @@ const offlineQueueModal    = document.getElementById("offline-queue-modal");
 const offlineQueueCloseBtn = document.getElementById("offline-queue-close-btn");
 const offlineQueueList     = document.getElementById("offline-queue-list");
 
+const sidebarLogo       = document.getElementById("sidebar-logo");
 const empresaSwitch     = document.getElementById("empresa-switch");
 const empresaSwitchList = document.getElementById("empresa-switch-list");
 
@@ -383,11 +385,20 @@ function withEmpresa(path) {
 }
 
 function applyEmpresaTheme() {
+  const meta = getEmpresaMeta(state.empresa);
   document.documentElement.dataset.empresa = state.empresa || "";
 
   const themeColorTag = document.querySelector('meta[name="theme-color"]');
   if (themeColorTag) {
     themeColorTag.setAttribute("content", state.empresa === "FOREST_SAINT" ? "#2a1240" : "#123126");
+  }
+
+  // El nombre del portal es siempre el mismo; lo que cambia es el logo, que es
+  // de la empresa en la que se está trabajando. Sin empresa (o sin logo
+  // declarado) se muestra la marca neutra del portal.
+  if (sidebarLogo) {
+    sidebarLogo.src = meta?.logo || PORTAL_LOGO;
+    sidebarLogo.alt = meta ? `${TITLE_BASE} — ${meta.nombre}` : TITLE_BASE;
   }
 
   updateDocumentTitle();
@@ -1251,7 +1262,7 @@ function renderAlertsFeed() {
           key,
           referenciaId: item.referencia_id || null,
           latest: item,
-          team: item.nombre_equipo || "Portal FMN",
+          team: item.nombre_equipo || TITLE_BASE,
           unreadCount: Number(item.leida) !== 1 ? 1 : 0,
           urgentCount: Number(item.leida) !== 1 && isUrgentNotification(item) ? 1 : 0,
           ids: [Number(item.id)],
@@ -1336,7 +1347,7 @@ function renderAlertsFeed() {
           </div>
           <p>${escapeHtml(item.mensaje || "-")}</p>
           <div class="alert-card-actions">
-            <span class="alert-card-meta">${escapeHtml(item.nombre_equipo || "Portal FMN")}</span>
+            <span class="alert-card-meta">${escapeHtml(item.nombre_equipo || TITLE_BASE)}</span>
             ${
               unread
                 ? `<button class="table-btn secondary" data-alert-read="${item.id}" type="button">

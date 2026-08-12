@@ -1,6 +1,7 @@
 const ExcelJS = require("exceljs");
 const solicitudesService = require("./solicitudesService");
 const { formatChileDate, formatChileDateTime } = require("../utils/dateTime");
+const empresasService = require("./empresasService");
 
 // ── Paleta de colores ─────────────────────────────────────────────────────────
 const C = {
@@ -135,7 +136,7 @@ function normalizeFilterLabel(value, fallback = "Todos") {
 }
 
 // ── Hoja 1: Solicitudes ───────────────────────────────────────────────────────
-function buildSheetSolicitudes(workbook, solicitudes, filters, actor) {
+function buildSheetSolicitudes(workbook, solicitudes, filters, actor, alcance) {
   const sheet = workbook.addWorksheet("Solicitudes", {
     pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1 },
   });
@@ -158,7 +159,7 @@ function buildSheetSolicitudes(workbook, solicitudes, filters, actor) {
   ];
 
   // Cabecera
-  applyTitleRow(sheet, "Portal Forestal Maule Norte — Reporte de Solicitudes", COLS, 1);
+  applyTitleRow(sheet, `${alcance} — Reporte de Solicitudes`, COLS, 1);
   applyMetaRow(sheet, `Generado por: ${actor.nombre || "Usuario"}  |  Fecha: ${formatChileDateTime(new Date())}`, COLS, 2);
   applyMetaRow(
     sheet,
@@ -231,7 +232,7 @@ function buildSheetSolicitudes(workbook, solicitudes, filters, actor) {
 }
 
 // ── Hoja 2: Detalle por ítem ──────────────────────────────────────────────────
-function buildSheetItems(workbook, solicitudes) {
+function buildSheetItems(workbook, solicitudes, alcance) {
   const sheet = workbook.addWorksheet("Detalle por ítem", {
     pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1 },
   });
@@ -255,7 +256,7 @@ function buildSheetItems(workbook, solicitudes) {
     { key: "recepcionado",  width: 20 },
   ];
 
-  applyTitleRow(sheet, "Portal Forestal Maule Norte — Detalle por Ítem", COLS, 1);
+  applyTitleRow(sheet, `${alcance} — Detalle por Ítem`, COLS, 1);
   applyMetaRow(sheet, "Un registro por cada ítem de cada solicitud, con tracking completo de gestión", COLS, 2);
   sheet.getRow(3).height = 6;
 
@@ -488,12 +489,13 @@ async function exportSolicitudesExcel(actor, filters = {}) {
   const solicitudes = await solicitudesService.listSolicitudesForExport(actor, filters);
 
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "Portal FMN";
+  workbook.creator = "Portal de Solicitudes";
   workbook.created = new Date();
   workbook.properties.date1904 = false;
 
-  buildSheetSolicitudes(workbook, solicitudes, filters, actor);
-  buildSheetItems(workbook, solicitudes);
+  const alcance = empresasService.etiquetaAlcance(actor, filters);
+  buildSheetSolicitudes(workbook, solicitudes, filters, actor, alcance);
+  buildSheetItems(workbook, solicitudes, alcance);
   buildSheetStats(workbook, solicitudes);
 
   const buffer = await workbook.xlsx.writeBuffer();
