@@ -1,6 +1,6 @@
-const CACHE_NAME = "portal-fmn-shell-v32";
+const CACHE_NAME = "portal-fmn-shell-v33";
 const DATA_CACHE  = "portal-fmn-data-v1";
-const OFFLINE_SHELL = ["/web", "/assets/fmn-icon-192.png", "/assets/fmn-icon-512.png"];
+const OFFLINE_SHELL = ["/web", "/assets/portal-icon-192.png", "/assets/portal-icon-512.png"];
 
 function isRuntimeAsset(url) {
   return (
@@ -8,6 +8,7 @@ function isRuntimeAsset(url) {
     url.pathname.endsWith(".html") ||
     url.pathname.endsWith(".js") ||
     url.pathname.endsWith(".css") ||
+    url.pathname.endsWith(".svg") ||
     url.pathname.endsWith(".webmanifest")
   );
 }
@@ -107,8 +108,8 @@ self.addEventListener("push", (event) => {
   const title = data.title || "Portal de Solicitudes";
   const options = {
     body: data.body || "Tienes una actualización en tus solicitudes",
-    icon: "/assets/fmn-icon-192.png",
-    badge: "/assets/fmn-icon-192.png",
+    icon: "/assets/portal-icon-192.png",
+    badge: "/assets/portal-icon-192.png",
     data: { url: data.url || "/web", solicitudId: data.solicitudId || null },
     vibrate: [200, 100, 200],
     tag: data.solicitudId ? `solicitud-${data.solicitudId}` : "fmn-push",

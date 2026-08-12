@@ -180,7 +180,6 @@ const SESSION_REMEMBER_KEY = "fmn_auth_session_persistent";
 const LAST_VIEW_KEY = "fmn_last_view";
 const EMPRESA_KEY = "fmn_empresa_activa";
 const TITLE_BASE = "Portal de Solicitudes";
-const PORTAL_LOGO = "/assets/portal-logo.svg";
 const NOTIFICATIONS_STALE_MS = 20000;
 
 // Maule Norte y Forest Saint son dos empresas distintas. La empresa activa
@@ -275,6 +274,8 @@ const offlineQueueCloseBtn = document.getElementById("offline-queue-close-btn");
 const offlineQueueList     = document.getElementById("offline-queue-list");
 
 const sidebarLogo       = document.getElementById("sidebar-logo");
+const aiFab             = document.getElementById("ai-assistant-btn");
+const aiDrawer          = document.getElementById("ai-assistant-drawer");
 const empresaSwitch     = document.getElementById("empresa-switch");
 const empresaSwitchList = document.getElementById("empresa-switch-list");
 
@@ -393,11 +394,9 @@ function applyEmpresaTheme() {
     themeColorTag.setAttribute("content", state.empresa === "FOREST_SAINT" ? "#2a1240" : "#123126");
   }
 
-  // El nombre del portal es siempre el mismo; lo que cambia es el logo, que es
-  // de la empresa en la que se está trabajando. Sin empresa (o sin logo
-  // declarado) se muestra la marca neutra del portal.
+  // El logo es el mismo para las dos empresas: solo se ajusta el texto
+  // alternativo para que un lector de pantalla diga en cuál se está trabajando.
   if (sidebarLogo) {
-    sidebarLogo.src = meta?.logo || PORTAL_LOGO;
     sidebarLogo.alt = meta ? `${TITLE_BASE} — ${meta.nombre}` : TITLE_BASE;
   }
 
@@ -1054,6 +1053,15 @@ function closeAlertsModal() {
 function setAuthenticatedUI(isAuthenticated) {
   loginScreen.classList.toggle("hidden", isAuthenticated);
   portalScreen.classList.toggle("hidden", !isAuthenticated);
+
+  // PumAI consulta el portal con la sesión del usuario: en la pantalla de
+  // acceso no tiene nada que responder, así que ahí no se muestra. Al cerrar
+  // sesión también se cierra el panel, para no dejarlo abierto sobre el login.
+  aiFab?.classList.toggle("hidden", !isAuthenticated);
+  if (!isAuthenticated) {
+    aiDrawer?.classList.remove("open");
+    aiFab?.setAttribute("aria-expanded", "false");
+  }
 }
 
 function isViewAllowed(viewName) {
