@@ -206,6 +206,27 @@ async function listEmpresas() {
   }));
 }
 
+/**
+ * Empresas que este usuario puede llegar a saber que existen.
+ *
+ * Las empresas no deben enterarse una de la otra: quien trabaja en una faena
+ * solo ve la suya, con sus equipos. El catalogo completo es solo para
+ * ADMIN/SUPERVISOR, que son los que administran las dos y necesitan cambiarse.
+ *
+ * Se filtra en el servidor y no en la pantalla a proposito: esconder el
+ * selector no sirve de nada si la respuesta del servidor igual trae el nombre
+ * de la otra empresa y sus equipos.
+ */
+async function listEmpresasVisibles(actor) {
+  const todas = await listEmpresas();
+  if (isGlobalRole(actor?.rol || actor?.role)) {
+    return todas;
+  }
+
+  const propia = getEmpresaDelActor(actor);
+  return todas.filter((empresa) => empresa.id === propia);
+}
+
 async function setEmpresaDeEquipo(equipoId, empresaId) {
   const empresa = normalizeEmpresa(empresaId);
   if (!empresa) {
@@ -232,5 +253,6 @@ module.exports = {
   pushEmpresaCondition,
   etiquetaAlcance,
   listEmpresas,
+  listEmpresasVisibles,
   setEmpresaDeEquipo,
 };

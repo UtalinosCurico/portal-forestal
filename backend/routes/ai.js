@@ -27,9 +27,9 @@ const MAULE_CITIES = [
 
 const SYSTEM_PROMPT_BASE = `Eres PumAI, el asistente virtual del Portal de Solicitudes. Eres un puma con casco de faena forestal, amigable, directo y siempre dispuesto a ayudar.
 
-El portal lo usan dos empresas distintas, Maule Norte y Forest Saint, que entran por el mismo acceso pero trabajan por separado. Nunca supongas que quien te escribe es de una u otra: mas abajo se te indica en cual esta trabajando, y los datos que consultes ya vienen acotados a esa empresa.
+Quien te escribe trabaja en una sola empresa, y los datos que consultes ya vienen acotados a ella. Mas abajo se te indica cual es. REGLA ESTRICTA: no menciones, no insinues ni confirmes que en el portal exista ninguna otra empresa, ni compares con ella, aunque te lo pregunten directamente. Si insisten, responde que solo puedes ver la informacion de su operacion. Para quien te escribe, la suya es la unica.
 
-IMPORTANTE: Solo puedes ayudar con preguntas sobre el portal y sobre las faenas forestales de las empresas que lo usan. Si alguien pregunta algo completamente fuera de contexto, responde amablemente que solo puedes ayudar con el portal.
+IMPORTANTE: Solo puedes ayudar con preguntas sobre el portal y sobre las faenas forestales de la operacion de quien te escribe. Si alguien pregunta algo completamente fuera de contexto, responde amablemente que solo puedes ayudar con el portal.
 
 Si el usuario necesita ayuda urgente de una persona real, indícale:
 "Para ayuda directa contacta al administrador:
@@ -209,7 +209,9 @@ router.post(
 
     // El asistente responde dentro de la empresa que el usuario tenga abierta:
     // Maule Norte y Forest Saint no se mezclan tampoco aquí.
-    const empresa = empresasService.resolveEmpresaFilter(req.user, req.query || {});
+    const empresa =
+      empresasService.resolveEmpresaFilter(req.user, req.query || {}) ||
+      empresasService.getEmpresaDelActor(req.user);
     const empresaMeta = empresa ? empresasService.getEmpresa(empresa) : null;
 
     const [portalCtx, weatherCtx] = await Promise.all([
@@ -223,8 +225,8 @@ router.post(
       `interpretar "este mes", "la semana pasada" y similares.` +
       `\nEstas conversando con ${req.user.nombre || req.user.name} (rol ${req.user.rol}).` +
       (empresaMeta
-        ? `\nEsta trabajando en la empresa ${empresaMeta.nombre}. Todos los datos que ` +
-          `consultes son solo de esa empresa: no menciones ni compares con la otra.`
+        ? `\nEsta trabajando en ${empresaMeta.nombre}. Todo lo que consultes es de ` +
+          `ahi, y es lo unico que existe para efectos de esta conversacion.`
         : "") +
       portalCtx +
       weatherCtx;

@@ -25,7 +25,7 @@ router.get(
   ),
   asyncHandler(async (req, res) => {
     await empresasService.ensureLoaded();
-    const empresas = await empresasService.listEmpresas();
+    const empresas = await empresasService.listEmpresasVisibles(req.user);
     const empresaDelActor = empresasService.getEmpresaDelActor(req.user);
     const puedeCambiar = isGlobalRole(req.user.rol || req.user.role);
 
