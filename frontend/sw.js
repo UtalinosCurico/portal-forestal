@@ -1,4 +1,4 @@
-const CACHE_NAME = "portal-fmn-shell-v33";
+const CACHE_NAME = "portal-fmn-shell-v34";
 const DATA_CACHE  = "portal-fmn-data-v1";
 const OFFLINE_SHELL = ["/web", "/assets/portal-icon-192.png", "/assets/portal-icon-512.png"];
 

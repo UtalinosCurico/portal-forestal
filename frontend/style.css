@@ -6793,7 +6793,7 @@ tbody tr {
   align-items: center;
   gap: 0.6rem;
   box-shadow: 0 8px 28px rgba(0,0,0,0.35);
-  max-width: min(92vw, 460px);
+  width: min(92vw, 460px);
   animation: install-banner-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
@@ -6806,6 +6806,27 @@ tbody tr {
   flex: 1;
   font-size: 0.84rem;
   line-height: 1.35;
+}
+
+/* "No volver a mostrar": apaga el aviso para siempre en este dispositivo.
+   Va dentro del texto, discreto, para que la accion obvia siga siendo leerlo. */
+.install-banner-never {
+  display: block;
+  margin-top: 0.5rem;
+  padding: 0;
+  background: none;
+  border: none;
+  color: #a8d8b8;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  min-height: 0;
+}
+
+.install-banner-never:hover {
+  color: #d6f0e0;
 }
 
 .install-banner-text strong {

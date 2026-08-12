@@ -2026,6 +2026,70 @@ function hideInstallBanner() {
   document.getElementById("install-banner")?.remove();
 }
 
+// Aviso de reinstalación tras el cambio de nombre e icono.
+//
+// Todo lo que está DENTRO del portal se actualiza solo: el service worker pide
+// a la red primero, así que al abrir la app con señal ya llega la versión
+// nueva. Lo que no se actualiza nunca es el acceso directo de la pantalla de
+// inicio en iOS: Safari le saca una foto al nombre y al icono cuando se
+// agrega, y no los vuelve a leer. La unica salida es reinstalarlo a mano, y
+// eso hay que pedirselo a la persona.
+//
+// Por eso el aviso se muestra solo a quien corre la app instalada en iOS. A
+// quien entra por el navegador no le aparece: no tiene nada que hacer.
+//
+// Y lleva fecha de vencimiento, que es lo que resuelve el caso incomodo: al
+// reinstalar, iOS borra el almacenamiento de la app, asi que la marca de
+// "ya lo vi" se pierde y el aviso volveria a salirle a quien justamente ya
+// hizo lo que se le pedia. Lo mismo le pasaria a alguien que instale el
+// portal por primera vez despues del cambio, que nunca tuvo el icono viejo:
+// desde el navegador no hay forma de saber que icono quedo grabado.
+//
+// Con la fecha, el aviso vive solo durante la transicion y despues no vuelve
+// a aparecerle a nadie. El costo es que, dentro de esa ventana, alguien puede
+// verlo una vez de mas y cerrarlo. Al vencer, esta funcion y su boton se
+// pueden borrar enteros.
+const ICONO_AVISO_KEY = "fmn_aviso_reinstalar_icono";
+const ICONO_AVISO_FECHA = "2026-08-12"; // cuándo se hizo el cambio
+const ICONO_AVISO_HASTA = "2026-08-26"; // dos semanas después
+
+function showIconRefreshNotice() {
+  if (!isStandaloneMode() || !isIOSDevice()) return;
+  if (new Date().toISOString().slice(0, 10) > ICONO_AVISO_HASTA) return;
+  if (localStorage.getItem(ICONO_AVISO_KEY)) return;
+  if (document.getElementById("icon-refresh-banner")) return;
+
+  const [anio, mes, dia] = ICONO_AVISO_FECHA.split("-");
+
+  const banner = document.createElement("div");
+  banner.id = "icon-refresh-banner";
+  banner.className = "install-banner";
+  banner.innerHTML = `
+    <span class="install-banner-text">
+      <strong>Actualización del ${dia}-${mes}-${anio}.</strong>
+      El portal cambió de nombre e icono. Para verlo en tu pantalla de inicio:
+      mantén presionado el icono, <strong>Eliminar app</strong>, y vuelve a
+      agregarlo desde Safari con <strong>Compartir → Añadir a inicio</strong>.
+      <button type="button" class="install-banner-never">No volver a mostrar</button>
+    </span>
+    <button class="install-banner-dismiss" aria-label="Cerrar por ahora">✕</button>
+  `;
+
+  // La ✕ solo lo cierra por ahora: al volver a abrir la app reaparece, porque
+  // quien todavía no reinstala sigue necesitando el recordatorio.
+  banner.querySelector(".install-banner-dismiss").addEventListener("click", () => {
+    banner.remove();
+  });
+
+  // Esto sí lo apaga para siempre en este dispositivo.
+  banner.querySelector(".install-banner-never").addEventListener("click", () => {
+    banner.remove();
+    localStorage.setItem(ICONO_AVISO_KEY, "1");
+  });
+
+  document.body.appendChild(banner);
+}
+
 function registerPWA() {
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register(`/sw.js?v=${ASSET_VERSION}`).then((registration) => {
@@ -2426,6 +2490,9 @@ async function handleLoginSubmit(event) {
     loginForm.reset();
     flushOfflineQueue();
     if (isIOSDevice() || state.deferredInstallPrompt) showInstallBanner();
+    // A quien ya lo tiene instalado hay que pedirle que lo reinstale:
+    // iOS no actualiza el icono ni el nombre por su cuenta.
+    showIconRefreshNotice();
 
     // Inicializar asistente IA
     import(`/js/aiAssistant.js?v=${ASSET_VERSION}`)
@@ -2848,6 +2915,9 @@ async function bootstrap() {
   flushOfflineQueue();
   // Mostrar banner de instalación si aplica (iOS siempre, Android cuando hay prompt)
   if (isIOSDevice() || state.deferredInstallPrompt) showInstallBanner();
+  // A quien ya lo tiene instalado hay que pedirle que lo reinstale:
+  // iOS no actualiza el icono ni el nombre por su cuenta.
+  showIconRefreshNotice();
   // Igual que al iniciar sesión: primero la empresa, después la vista.
   await loadEmpresas();
   await loadView(getDefaultView());
