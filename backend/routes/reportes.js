@@ -54,14 +54,7 @@ router.delete(
 
 router.get(
   "/consumo",
-  authorize(
-    ROLES.ADMIN,
-    ROLES.SUPERVISOR,
-    ROLES.SECRETARIA,
-    ROLES.JEFE_FAENA,
-    ROLES.MECANICO,
-    ROLES.OPERADOR
-  ),
+  authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.SECRETARIA),
   asyncHandler(async (req, res) => {
     const data = await consumoService.getConsumo(req.user, req.query || {});
     res.json({
@@ -76,14 +69,7 @@ router.get(
 // algo que solo hace falta al abrir un producto puntual.
 router.get(
   "/consumo/detalle",
-  authorize(
-    ROLES.ADMIN,
-    ROLES.SUPERVISOR,
-    ROLES.SECRETARIA,
-    ROLES.JEFE_FAENA,
-    ROLES.MECANICO,
-    ROLES.OPERADOR
-  ),
+  authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.SECRETARIA),
   asyncHandler(async (req, res) => {
     const data = await consumoService.getPedidosDeProducto(req.user, req.query || {});
     res.json({
@@ -133,14 +119,7 @@ router.delete(
 
 router.get(
   "/excel/consumo",
-  authorize(
-    ROLES.ADMIN,
-    ROLES.SUPERVISOR,
-    ROLES.SECRETARIA,
-    ROLES.JEFE_FAENA,
-    ROLES.MECANICO,
-    ROLES.OPERADOR
-  ),
+  authorize(ROLES.ADMIN, ROLES.SUPERVISOR, ROLES.SECRETARIA),
   asyncHandler(async (req, res) => {
     const { buffer, fileName } = await consumoExcelService.exportConsumoExcel(
       req.user,

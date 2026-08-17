@@ -296,7 +296,8 @@ const VIEWS = {
     file: `/views/reportes.html?v=${ASSET_VERSION}`,
     title: "Reportes",
     subtitle: "Consumo por producto y stock sugerido",
-    roles: ["ADMIN", "SUPERVISOR", "JEFE_FAENA"],
+    // Consumo y stock sugerido son informacion de gestion: no van a faena.
+    roles: ["ADMIN", "SUPERVISOR"],
   },
   usuarios: {
     file: `/views/usuarios.html?v=${ASSET_VERSION}`,

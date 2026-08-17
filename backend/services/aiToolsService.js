@@ -15,6 +15,16 @@ const consumoService = require("./consumoService");
 const solicitudesService = require("./solicitudesService");
 const equiposService = require("./equiposService");
 const { buildProductoKey } = require("../utils/productoKey");
+const { normalizeRole, ROLES } = require("../config/appRoles");
+
+// Consumo y stock sugerido son informacion de gestion: el modulo Reportes no se
+// le muestra a faena, asi que el asistente tampoco se la puede contar. Si no,
+// bastaria con preguntarle a PumAI para saltarse el permiso.
+const ROLES_QUE_VEN_CONSUMO = new Set([ROLES.ADMIN, ROLES.SUPERVISOR]);
+
+function puedeVerConsumo(actor) {
+  return ROLES_QUE_VEN_CONSUMO.has(normalizeRole(actor?.rol || actor?.role));
+}
 
 // Los resultados vuelven al contexto del modelo y se pagan como tokens: se
 // devuelve lo justo para responder, no el objeto completo del servicio.
@@ -196,7 +206,11 @@ function construirHerramientas(actor, opciones = {}) {
     },
   });
 
-  return [consultarConsumo, buscarSolicitudes, listarEquipos];
+  const herramientas = [buscarSolicitudes, listarEquipos];
+  if (puedeVerConsumo(actor)) {
+    herramientas.unshift(consultarConsumo);
+  }
+  return herramientas;
 }
 
 module.exports = {

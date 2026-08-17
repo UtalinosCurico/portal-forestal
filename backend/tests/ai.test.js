@@ -15,6 +15,11 @@ const { construirHerramientas } = require("../services/aiToolsService");
 const { __private: aiPrivate } = require("../routes/ai");
 
 const ACTOR = { id: 7, nombre: "Jefe de prueba", rol: "JEFE_FAENA", equipo_id: 2 };
+const ADMIN = { id: 1, nombre: "Admin de prueba", rol: "ADMIN", equipo_id: null };
+
+function porNombre(herramientas, nombre) {
+  return herramientas.find((h) => h.name === nombre);
+}
 
 // Mandar `thinking: adaptive` o `effort` a un modelo que no los soporta devuelve
 // 400 y el asistente deja de responder. Paso una vez por no revisarlo.
@@ -35,7 +40,7 @@ test("no se manda razonamiento adaptativo a modelos que no lo soportan", () => {
 });
 
 test("el asistente solo expone herramientas de consulta", () => {
-  const herramientas = construirHerramientas(ACTOR);
+  const herramientas = construirHerramientas(ADMIN);
   const nombres = herramientas.map((h) => h.name).sort();
 
   assert.deepEqual(nombres, ["buscar_solicitudes", "consultar_consumo", "listar_equipos"]);
@@ -47,6 +52,25 @@ test("el asistente solo expone herramientas de consulta", () => {
       !verbosProhibidos.test(herramienta.name),
       `la herramienta "${herramienta.name}" sugiere una accion que modifica datos`
     );
+  }
+});
+
+// El modulo Reportes -consumo por producto y stock sugerido- es informacion de
+// gestion y no se le muestra a faena. Si el asistente igual la contara, la
+// restriccion seria de fachada: bastaria preguntarle a PumAI.
+test("a faena el asistente no le entrega consumo ni stock sugerido", () => {
+  for (const rol of ["JEFE_FAENA", "MECANICO", "OPERADOR"]) {
+    const nombres = construirHerramientas({ id: 7, rol, equipo_id: 2 }).map((h) => h.name);
+    assert.ok(
+      !nombres.includes("consultar_consumo"),
+      `${rol} no deberia tener consultar_consumo, tiene: ${nombres.join(", ")}`
+    );
+    assert.ok(nombres.includes("buscar_solicitudes"), `${rol} si puede consultar sus solicitudes`);
+  }
+
+  for (const rol of ["ADMIN", "SUPERVISOR"]) {
+    const nombres = construirHerramientas({ id: 1, rol, equipo_id: null }).map((h) => h.name);
+    assert.ok(nombres.includes("consultar_consumo"), `${rol} si administra y necesita el consumo`);
   }
 });
 
@@ -78,14 +102,23 @@ test("cada herramienta consulta con el usuario autenticado, no con uno libre", a
   };
 
   try {
-    const herramientas = construirHerramientas(ACTOR);
-    for (const herramienta of herramientas) {
-      await herramienta.run({});
-    }
+    // Se prueba con los dos: el que tiene todas las herramientas y el de faena,
+    // que tiene menos. En ambos casos el actor debe viajar tal cual.
+    for (const quien of [ADMIN, ACTOR]) {
+      actoresRecibidos.length = 0;
+      const herramientas = construirHerramientas(quien);
+      for (const herramienta of herramientas) {
+        await herramienta.run({});
+      }
 
-    assert.equal(actoresRecibidos.length, 3, "las tres herramientas deben consultar un servicio");
-    for (const actor of actoresRecibidos) {
-      assert.equal(actor, ACTOR, "la herramienta debe pasar el usuario autenticado tal cual");
+      assert.equal(
+        actoresRecibidos.length,
+        herramientas.length,
+        "cada herramienta debe consultar un servicio"
+      );
+      for (const actor of actoresRecibidos) {
+        assert.equal(actor, quien, "la herramienta debe pasar el usuario autenticado tal cual");
+      }
     }
   } finally {
     consumoService.getConsumo = originales.getConsumo;
@@ -105,14 +138,14 @@ test("una herramienta no puede elegir por que usuario consultar", async () => {
   };
 
   try {
-    const [consultarConsumo] = construirHerramientas(ACTOR);
+    const consultarConsumo = porNombre(construirHerramientas(ADMIN), "consultar_consumo");
 
     // Aunque el modelo intente colar otro usuario en los argumentos, se ignora:
     // el actor viene del token, no de lo que escriba el modelo.
-    await consultarConsumo.run({ usuarioId: 999, actor: { rol: "ADMIN" }, rol: "ADMIN" });
+    await consultarConsumo.run({ usuarioId: 999, actor: { rol: "OPERADOR" }, rol: "OPERADOR" });
 
-    assert.equal(actorUsado, ACTOR);
-    assert.equal(actorUsado.rol, "JEFE_FAENA");
+    assert.equal(actorUsado, ADMIN);
+    assert.equal(actorUsado.rol, "ADMIN");
   } finally {
     consumoService.getConsumo = original;
   }
