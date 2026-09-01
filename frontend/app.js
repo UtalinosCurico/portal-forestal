@@ -179,6 +179,7 @@ const SESSION_KEY = "fmn_auth_session";
 const SESSION_REMEMBER_KEY = "fmn_auth_session_persistent";
 const LAST_VIEW_KEY = "fmn_last_view";
 const EMPRESA_KEY = "fmn_empresa_activa";
+const SW_RELOAD_KEY = "fmn_sw_reload";
 const TITLE_BASE = "Portal de Solicitudes";
 const NOTIFICATIONS_STALE_MS = 20000;
 
@@ -2101,12 +2102,45 @@ function registerPWA() {
       // Ignorar errores silenciosamente.
     });
 
-    let reloadedOnControllerChange = false;
+    // Cuando entra una version nueva del service worker, la pagina que ya esta
+    // abierta sigue con el codigo viejo, asi que se recarga sola para tomarla.
+    //
+    // Con cuidado, porque este patron se va en bucle con facilidad: la bandera
+    // que habia aqui era una variable de la pagina, y la recarga la volvia a
+    // poner en false. Si por cualquier motivo el worker cambiaba en cada carga
+    // -dos puntos de entrada declarando versiones distintas, por ejemplo-, la
+    // pantalla quedaba recargandose sola sin que nadie pudiera usarla.
+    //
+    // Ahora la marca sobrevive a la recarga, asi que se recarga como maximo una
+    // vez por visita y el ciclo no puede empezar.
+    const controladorInicial = navigator.serviceWorker.controller?.scriptURL || "";
+
     navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (reloadedOnControllerChange) {
+      // Primera instalacion en este navegador: no hay una version vieja en
+      // pantalla que refrescar, y recargar aqui solo interrumpe a quien esta
+      // escribiendo su clave.
+      if (!controladorInicial) {
         return;
       }
-      reloadedOnControllerChange = true;
+
+      // Una sola recarga automatica por visita, pase lo que pase. Antes esta
+      // marca era una variable de la pagina y la propia recarga la borraba, asi
+      // que no cortaba nada. Guardarla por version tampoco alcanza: si dos
+      // versiones se alternan, cada una se ve "nueva" respecto de la anterior y
+      // el ciclo sigue. Contra el usuario, un ciclo es lo peor que puede pasar
+      // -no alcanza ni a escribir su clave-, y quedarse en la version anterior
+      // hasta que recargue a mano no le rompe nada.
+      try {
+        if (sessionStorage.getItem(SW_RELOAD_KEY)) {
+          return;
+        }
+        sessionStorage.setItem(SW_RELOAD_KEY, "1");
+      } catch {
+        // Sin sessionStorage no hay forma de recordar que ya recargamos, asi
+        // que no se recarga: es preferible una version vieja a un ciclo.
+        return;
+      }
+
       window.location.reload();
     });
   }

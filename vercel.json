@@ -23,7 +23,7 @@
     },
     {
       "src": "/web/?",
-      "dest": "/frontend/index.html"
+      "dest": "backend/server.js"
     },
     {
       "src": "/(app\\.js|style\\.css)",

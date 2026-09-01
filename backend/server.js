@@ -44,7 +44,7 @@ function createApp() {
 
   // Endpoints públicos.
   app.get("/", (req, res) => {
-    res.send("Portal Forestal Maule Norte funcionando");
+    res.send("Portal de Solicitudes funcionando");
   });
   app.use("/api/test", testRoutes);
   app.use("/api/auth", authRoutes);
@@ -68,9 +68,14 @@ function createApp() {
   app.use("/api/novedades", novedadesRoutes);
   app.use("/api/search", searchRoutes);
 
-  // Frontend estático.
-  app.use(express.static(FRONTEND_DIR));
-
+  // Frontend.
+  //
+  // index.html lleva el marcador __APP_VER__ con la version desplegada, y hay
+  // que reemplazarlo ANTES de entregarlo. Por eso estas rutas van delante del
+  // estatico: si express.static alcanzaba a servir el archivo, salia crudo, y
+  // entonces la app declaraba una version distinta segun la URL por la que
+  // entro cada persona. Con dos versiones dando vueltas el navegador cree que
+  // hay un service worker nuevo en cada carga y la pantalla se recarga sola.
   function serveIndexWithVersion(req, res) {
     const sha = (process.env.VERCEL_GIT_COMMIT_SHA || "").slice(0, 8);
     const version = sha || new Date().toISOString().slice(0, 10).replace(/-/g, "");
@@ -83,7 +88,9 @@ function createApp() {
     }
   }
 
-  app.get("/web", serveIndexWithVersion);
+  app.get(["/web", "/index.html"], serveIndexWithVersion);
+
+  app.use(express.static(FRONTEND_DIR, { index: false }));
 
   app.use(notFoundHandler);
   app.use(errorHandler);
