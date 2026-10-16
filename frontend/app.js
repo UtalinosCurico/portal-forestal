@@ -194,6 +194,7 @@ const EMPRESA_SCOPED_PATHS = [
   "/api/equipos",
   "/api/search",
   "/api/ai",
+  "/api/powerbi",
 ];
 
 const state = {
