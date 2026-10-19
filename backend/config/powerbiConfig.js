@@ -12,7 +12,7 @@ const POWERBI_POR_EMPRESA = Object.freeze({
   [EMPRESAS.MAULE_NORTE.id]: Object.freeze({
     title: "Indicadores Maule Norte",
     src:
-      "https://app.powerbi.com/view?r=eyJrIjoiOGZhMjM5YjktMjZkOS00OTIxLTllNTAtZjc5ZmFiMWI0YjY4IiwidCI6IjgwMmRkMjdiLWY2NDYtNGY4NC05NDBiLTkyMzlmNDE5NDY2YSIsImMiOjR9&pageName=dc87f86d29075e638925",
+      "https://app.powerbi.com/view?r=eyJrIjoiOGZhMjM5YjktMjZkOS00OTIxLTllNTAtZjc5ZmFiMWI0YjY4IiwidCI6IjgwMmRkMjdiLWY2NDYtNGY4NC05NDBiLTkyMzlmNDE5NDY2YSIsImMiOjR9",
   }),
   [EMPRESAS.FOREST_SAINT.id]: Object.freeze({
     title: "Indicadores Forest Saint",
