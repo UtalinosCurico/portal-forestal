@@ -103,7 +103,7 @@ function renderMyActions(rows, container, countEl) {
         <button class="my-action-card" data-open-solicitud="${row.solicitud_id}" type="button">
           <div class="my-action-top">
             <span class="mini-chip">${getActionTypeLabel(row.tipo)}</span>
-            <span class="urgencia-badge ${getUrgencyClass(days)}">${days} dia${days !== 1 ? "s" : ""}</span>
+            <span class="urgencia-badge ${getUrgencyClass(days)}">${days} día${days !== 1 ? "s" : ""}</span>
           </div>
           <strong>${row.titulo || "Accion pendiente"}</strong>
           <p>${row.descripcion || `Solicitud #${row.solicitud_id}`}</p>
@@ -212,6 +212,36 @@ function renderCharts(data, formatDateOnly) {
 
   destroyCharts();
 
+  // Los colores se leen del tema activo al dibujar, no se escriben a mano.
+  // Antes estaban fijos en verde y por eso los graficos seguian verdes al
+  // cambiar a Forest Saint. Al cambiar de empresa app.js aplica el tema y
+  // vuelve a dibujar la vista, asi que basta con leerlos aca.
+  const tema = getComputedStyle(document.documentElement);
+  const leer = (nombre, respaldo) => tema.getPropertyValue(nombre).trim() || respaldo;
+  const acento = leer("--accent", "#2f7d5a");
+  const acentoProfundo = leer("--accent-deep", "#1e5a3f");
+  const acentoRgb = leer("--accent-rgb", "47, 125, 90");
+
+  // El grafico por estado usa los colores de ESTADO, que significan lo mismo en
+  // las dos empresas, en vez de cuatro tonos de la marca que no se distinguian.
+  // El servidor manda la ETIQUETA ("En gestión", "Despachado"), no el codigo,
+  // asi que se compara sin tildes ni mayusculas.
+  const COLOR_ESTADO = {
+    pendiente: "#d39a2c",
+    "en gestion": "#3f7fd0",
+    despachado: "#1f9aa6",
+    entregado: "#2f9a5c",
+    rechazado: "#c24a4a",
+  };
+  const colorDeEstado = (item) => {
+    const clave = String(item.estado || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+    return COLOR_ESTADO[clave] || "#9aa4ad";
+  };
+
   estadoChart = new window.Chart(estadoCtx, {
     type: "doughnut",
     data: {
@@ -219,7 +249,7 @@ function renderCharts(data, formatDateOnly) {
       datasets: [
         {
           data: (data.solicitudes_por_estado || []).map((item) => item.total),
-          backgroundColor: ["#1f6f50", "#3b8f66", "#62ad81", "#93c9ab"],
+          backgroundColor: (data.solicitudes_por_estado || []).map(colorDeEstado),
           borderWidth: 0,
         },
       ],
@@ -238,7 +268,7 @@ function renderCharts(data, formatDateOnly) {
         {
           label: "Solicitudes",
           data: (data.solicitudes_por_equipo || []).map((item) => item.total),
-          backgroundColor: "#2f7d5a",
+          backgroundColor: acento,
           borderRadius: 8,
         },
       ],
@@ -263,8 +293,8 @@ function renderCharts(data, formatDateOnly) {
         {
           label: "Solicitudes",
           data: (data.solicitudes_ultimos_7_dias || []).map((item) => item.total),
-          borderColor: "#1f6f50",
-          backgroundColor: "rgba(47,125,90,0.15)",
+          borderColor: acentoProfundo,
+          backgroundColor: `rgba(${acentoRgb}, 0.15)`,
           fill: true,
           tension: 0.3,
         },

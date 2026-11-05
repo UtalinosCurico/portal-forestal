@@ -13,6 +13,11 @@
     <link rel="apple-touch-icon" href="/assets/portal-icon-180.png" />
     <link rel="manifest" href="/manifest.webmanifest?v=__APP_VER__" />
     <link rel="stylesheet" href="/style.css?v=__APP_VER__" />
+    <!-- Tema "Faena Clara": capa visual sobre style.css. Para volver al aspecto
+         anterior basta con quitar estas tres lineas. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" />
+    <link rel="stylesheet" href="/tema.css?v=__APP_VER__" />
     <script>window.__APP_VERSION__ = "__APP_VER__";</script>
   </head>
   <body>
@@ -151,11 +156,13 @@
         </div>
 
         <nav class="sidebar-nav" id="sidebar-nav">
-          <button class="nav-item active" data-view="dashboard"><span class="nav-icon" aria-hidden="true">📊</span> Dashboard</button>
-          <button class="nav-item" data-view="solicitudes"><span class="nav-icon" aria-hidden="true">📋</span> Solicitudes</button>
-          <button class="nav-item" data-view="reportes"><span class="nav-icon" aria-hidden="true">📦</span> Reportes</button>
-          <button class="nav-item" data-view="usuarios"><span class="nav-icon" aria-hidden="true">👥</span> Usuarios</button>
-          <button class="nav-item" data-view="powerbi"><span class="nav-icon" aria-hidden="true">📈</span> Power BI</button>
+          <!-- Iconos de trazo en vez de emojis: los emojis se dibujan distinto en
+               cada telefono y no toman el color del texto. -->
+          <button class="nav-item active" data-view="dashboard"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span> Dashboard</button>
+          <button class="nav-item" data-view="solicitudes"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/></svg></span> Solicitudes</button>
+          <button class="nav-item" data-view="reportes"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16v-5M12 16V8M17 16V7"/></svg></span> Reportes</button>
+          <button class="nav-item" data-view="usuarios"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Usuarios</button>
+          <button class="nav-item" data-view="powerbi"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 7l-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></svg></span> Power BI</button>
         </nav>
 
         <!-- Empresa activa. Maule Norte y Forest Saint son dos empresas: lo que

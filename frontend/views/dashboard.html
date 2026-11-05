@@ -1,10 +1,16 @@
+<!--
+  Orden pensado para quien abre el portal en la mañana: primero lo que necesita
+  atención, despues los numeros, despues el detalle. Antes los filtros y las
+  novedades iban arriba y "lo que necesita tu accion" quedaba en cuarto lugar.
+  Todos los id se conservan: dashboard.js los busca por id, no por posicion.
+-->
 <div class="view-grid">
   <section class="card hero-card full dashboard-hero-card">
     <div class="section-head">
       <div>
-        <h4>Resumen diario</h4>
+        <h4>Resumen del día</h4>
         <p class="muted-text">
-          Revisa solicitudes activas, novedades y seguimiento del período seleccionado.
+          Solicitudes activas, lo que espera respuesta y lo que cambió en el período.
         </p>
       </div>
       <div class="actions-inline wrap-actions">
@@ -15,49 +21,38 @@
       </div>
     </div>
     <div id="dashboard-filter-summary" class="dashboard-filter-summary"></div>
-  </section>
 
-  <section class="card full">
-    <div class="section-head">
-      <h4>Filtros</h4>
-      <div class="actions-inline wrap-actions">
-        <button id="dashboard-filter-btn" class="action-btn" type="button">Aplicar</button>
-        <button id="dashboard-clear-btn" class="action-btn secondary" type="button">Limpiar</button>
-        <button id="dashboard-export-btn" class="action-btn" type="button">Exportar Excel</button>
+    <details class="dashboard-filtros">
+      <summary>Ajustar fechas y equipo</summary>
+      <div class="dashboard-filtros-cuerpo">
+        <form id="dashboard-filter-form" class="form-grid cols-3">
+          <div>
+            <label for="dashboard-fecha-desde">Fecha desde</label>
+            <input id="dashboard-fecha-desde" name="fechaDesde" type="date" />
+          </div>
+          <div>
+            <label for="dashboard-fecha-hasta">Fecha hasta</label>
+            <input id="dashboard-fecha-hasta" name="fechaHasta" type="date" />
+          </div>
+          <div id="dashboard-equipo-field">
+            <label for="dashboard-equipo-id">Equipo</label>
+            <select id="dashboard-equipo-id" name="equipoId"></select>
+          </div>
+        </form>
+        <div class="actions-inline wrap-actions">
+          <button id="dashboard-filter-btn" class="action-btn" type="button">Aplicar</button>
+          <button id="dashboard-clear-btn" class="action-btn secondary" type="button">Limpiar</button>
+          <button id="dashboard-export-btn" class="action-btn secondary" type="button">Exportar Excel</button>
+        </div>
       </div>
-    </div>
-
-    <form id="dashboard-filter-form" class="form-grid cols-3">
-      <div>
-        <label for="dashboard-fecha-desde">Fecha desde</label>
-        <input id="dashboard-fecha-desde" name="fechaDesde" type="date" />
-      </div>
-      <div>
-        <label for="dashboard-fecha-hasta">Fecha hasta</label>
-        <input id="dashboard-fecha-hasta" name="fechaHasta" type="date" />
-      </div>
-      <div id="dashboard-equipo-field">
-        <label for="dashboard-equipo-id">Equipo</label>
-        <select id="dashboard-equipo-id" name="equipoId"></select>
-      </div>
-    </form>
-  </section>
-
-  <section id="dashboard-alerts-card" class="card full">
-    <div class="section-head compact-head">
-      <div>
-        <h4>Novedades recientes</h4>
-        <p class="muted-text">Solicitudes, mensajes y cambios recientes</p>
-      </div>
-    </div>
-    <div id="dashboard-alerts-list" class="alert-feed"></div>
+    </details>
   </section>
 
   <section id="dashboard-my-actions-card" class="card full">
     <div class="section-head compact-head">
       <div>
-        <h4>Lo que necesita tu acción hoy</h4>
-        <p class="muted-text">Prioridades operativas ordenadas por tiempo sin movimiento</p>
+        <h4>Lo que necesita tu atención hoy</h4>
+        <p class="muted-text">Ordenado por el tiempo que lleva sin movimiento</p>
       </div>
       <span id="dashboard-my-actions-count" class="mini-chip active">0 acciones</span>
     </div>
@@ -81,6 +76,16 @@
     <div id="metric-dashboard-visible" class="kpi-value">0</div>
     <p>Últimas solicitudes mostradas en esta vista</p>
   </article>
+
+  <section id="dashboard-alerts-card" class="card full">
+    <div class="section-head compact-head">
+      <div>
+        <h4>Novedades recientes</h4>
+        <p class="muted-text">Solicitudes, mensajes y cambios recientes</p>
+      </div>
+    </div>
+    <div id="dashboard-alerts-list" class="alert-feed"></div>
+  </section>
 
   <section class="card chart-card">
     <h4>Solicitudes por estado</h4>

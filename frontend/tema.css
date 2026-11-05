@@ -1,0 +1,608 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   Tema "Faena Clara"
+
+   Capa visual que se carga DESPUES de style.css. No cambia estructura ni
+   comportamiento: solo color, tipografia, espaciado y movimiento. Vive en un
+   archivo aparte a proposito: si algo no gusta se revierte quitando una
+   linea del index.html, sin tocar las 7.600 lineas de style.css.
+
+   Regla de oro de este archivo: NINGUN color de marca escrito a mano. Todo
+   sale de las variables de abajo, porque Maule Norte (verde) y Forest Saint
+   (morado) comparten el portal y el selector de la barra lateral solo cambia
+   variables. Un hex fijo se queda verde cuando se elige Forest Saint, que es
+   exactamente por que antes el portal no se transformaba entero.
+
+   Excepcion deliberada: los colores de ESTADO (pendiente, en gestion,
+   entregada...) son iguales en las dos empresas. "Entregada" es verde porque
+   significa que llego, no porque sea la marca.
+
+   Las reglas van con el prefijo `:root` para ganar en especificidad a las de
+   style.css sin recurrir a !important.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* ── Paleta ─────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Marca de la empresa activa */
+  --accent: #2f7d5a;
+  --accent-deep: #1e5a3f;
+  --accent-soft: #e7f2ec;
+  --accent-line: #c9e2d4;
+  --accent-rgb: 47, 125, 90;
+
+  /* Barra lateral */
+  --ink: #0b1712;
+  --ink-2: #13241c;
+  --on-ink: #8fdbb2;
+
+  /* Neutros compartidos */
+  --fc-text: #15191c;
+  --fc-text-2: #2b3238;
+  --fc-muted: #5b6670;
+  --fc-line: #e7ebee;
+  --fc-line-2: #eef1f3;
+  --fc-ground: #f4f5f7;
+  --fc-surface: #ffffff;
+  --fc-hover: #f8faf9;
+
+  /* Estados: iguales en las dos empresas */
+  --st-pendiente-bg: #fdf1dc;   --st-pendiente-fg: #8a5200;
+  --st-gestion-bg: #e6eefb;     --st-gestion-fg: #1d4f96;
+  --st-despacho-bg: #e0f3f4;    --st-despacho-fg: #0b5d66;
+  --st-entregada-bg: #e3f3ea;   --st-entregada-fg: #17643c;
+  --st-rechazada-bg: #fbe7e7;   --st-rechazada-fg: #9b2626;
+
+  --fc-radius: 16px;
+  --fc-radius-lg: 18px;
+  --fc-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --fc-shadow: 0 1px 2px rgba(16, 24, 20, 0.04);
+  --fc-shadow-lift: 0 1px 2px rgba(16, 24, 20, 0.04), 0 14px 32px rgba(16, 24, 20, 0.09);
+  --fc-font: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Las variables viejas de style.css se reapuntan a la paleta nueva, asi
+     las cerca de 175 reglas que ya las usan adoptan el tema sin tocarlas. */
+  --brand-strong: var(--accent);
+  --brand-deep: var(--accent-deep);
+  --brand-rgb: var(--accent-rgb);
+  --bg: var(--fc-ground);
+  --surface: var(--fc-surface);
+  --surface-soft: var(--fc-surface);
+  --line: var(--fc-line);
+  --text: var(--fc-text);
+  --muted: var(--fc-muted);
+  --chip-bg: #f2f4f6;
+  --chip-line: var(--fc-line);
+  --chip-text: var(--fc-text-2);
+  --chip-active-bg: var(--accent-soft);
+  --chip-active-line: var(--accent-line);
+  --chip-active-text: var(--accent-deep);
+  --shadow-card: var(--fc-shadow);
+}
+
+:root[data-empresa="FOREST_SAINT"] {
+  --accent: #6b43ad;
+  --accent-deep: #4a2a7c;
+  --accent-soft: #f1ebfa;
+  --accent-line: #ddd0f1;
+  --accent-rgb: 107, 67, 173;
+
+  --ink: #130b1d;
+  --ink-2: #1e1230;
+  --on-ink: #cdb2f5;
+
+  --forest-700: #4a2a7c;
+  --forest-600: #5b3690;
+  --forest-500: #6b43ad;
+  --forest-200: #ddd0f1;
+  --forest-100: #ece5f8;
+  --forest-50: #f7f3fd;
+
+  /* Mismo gris frio que Maule Norte: la empresa se distingue por la barra y
+     el acento, no por teñir todo el fondo. */
+  --bg: var(--fc-ground);
+  --surface-soft: var(--fc-surface);
+  --line: var(--fc-line);
+  --text: var(--fc-text);
+  --muted: var(--fc-muted);
+  --brand-strong: var(--accent);
+  --brand-deep: var(--accent-deep);
+  --brand-rgb: var(--accent-rgb);
+  --chip-bg: #f2f4f6;
+  --chip-line: var(--fc-line);
+  --chip-text: var(--fc-text-2);
+  --chip-active-bg: var(--accent-soft);
+  --chip-active-line: var(--accent-line);
+  --chip-active-text: var(--accent-deep);
+  --shadow-card: var(--fc-shadow);
+}
+
+/* ── Base ───────────────────────────────────────────────────────────────── */
+
+:root body {
+  font-family: var(--fc-font);
+  color: var(--fc-text);
+  background: var(--fc-ground);
+  -webkit-font-smoothing: antialiased;
+}
+
+:root .num,
+:root .kpi-value {
+  font-variant-numeric: tabular-nums;
+}
+
+:root :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── Barra lateral ──────────────────────────────────────────────────────── */
+
+:root .sidebar {
+  background: var(--ink);
+  color: rgba(255, 255, 255, 0.74);
+  border-right: 0;
+  box-shadow: none;
+  gap: 1.1rem;
+}
+
+:root .sidebar-header h2 {
+  color: #ffffff;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+:root .sidebar-header p,
+:root #user-badge {
+  color: rgba(255, 255, 255, 0.58);
+}
+
+:root .sidebar-nav {
+  gap: 2px;
+}
+
+:root .nav-item {
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.74);
+  font-weight: 600;
+  box-shadow: none;
+  gap: 0.75rem;
+  transition: background 0.16s, color 0.16s;
+}
+
+:root .nav-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  transform: none;
+}
+
+:root .nav-item.active {
+  background: rgba(255, 255, 255, 0.09);
+  border: 0;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+/* Punto de la empresa junto a la seccion activa. */
+:root .nav-item.active::after {
+  content: "";
+  margin-left: auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--on-ink);
+}
+
+/* Los iconos son SVG de trazo (antes eran emojis, que se ven distinto en cada
+   telefono). Heredan el color del texto. */
+:root .nav-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+:root .nav-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Selector de empresa: dos opciones apiladas, la activa en blanco. */
+:root .empresa-switch {
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 0;
+}
+
+:root .empresa-switch-title {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.5rem 0.25rem;
+  margin: 0;
+}
+
+:root .empresa-switch-list {
+  gap: 4px;
+}
+
+:root .empresa-option {
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+:root .empresa-option:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
+:root .empresa-option.active {
+  background: #ffffff;
+  color: var(--fc-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+:root .empresa-option.active small {
+  color: var(--fc-muted);
+}
+
+/* Botones del pie de la barra: discretos sobre la tinta. */
+:root .datascope-btn,
+:root .help-btn,
+:root .sidebar-install-btn,
+:root .logout-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.74);
+  font-weight: 600;
+  box-shadow: none;
+  transition: background 0.16s, color 0.16s, border-color 0.16s;
+}
+
+:root .datascope-btn:hover,
+:root .help-btn:hover,
+:root .sidebar-install-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  transform: none;
+}
+
+:root .logout-btn {
+  border-color: transparent;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+:root .logout-btn:hover {
+  background: rgba(240, 120, 120, 0.12);
+  color: #ffb4b4;
+  transform: none;
+}
+
+/* ── Zona principal ─────────────────────────────────────────────────────── */
+
+:root .main-content {
+  background: var(--fc-ground);
+}
+
+:root .topbar-heading h3 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: var(--fc-text);
+}
+
+:root #page-subtitle {
+  color: var(--fc-muted);
+  font-weight: 500;
+}
+
+:root .view-container {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* ── Tarjetas ───────────────────────────────────────────────────────────── */
+
+:root .card {
+  background: var(--fc-surface);
+  border: 1px solid var(--fc-line);
+  border-radius: var(--fc-radius-lg);
+  box-shadow: var(--fc-shadow);
+  padding: 1.35rem 1.5rem;
+}
+
+:root .card:not(.no-hover):hover {
+  box-shadow: var(--fc-shadow);
+  border-color: var(--fc-line);
+}
+
+:root .card h4 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--fc-text);
+}
+
+:root .muted-text {
+  color: var(--fc-muted);
+}
+
+/* Sin el borde de color a la izquierda: era el adorno que mas delataba una
+   plantilla generica. */
+:root .kpi-card,
+:root .reportes-kpi {
+  border-left-width: 1px;
+  border-left-color: var(--fc-line);
+  border-left-style: solid;
+}
+
+:root .kpi-card h4 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--fc-muted);
+  letter-spacing: 0;
+}
+
+:root .kpi-value {
+  font-size: 2.15rem;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--fc-text);
+}
+
+:root .kpi-card p {
+  color: var(--fc-muted);
+  font-size: 0.82rem;
+}
+
+/* ── Botones, chips, campos ─────────────────────────────────────────────── */
+
+:root .action-btn {
+  background: var(--accent);
+  color: #ffffff;
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: transform 0.12s, background 0.16s, border-color 0.16s, color 0.16s;
+}
+
+:root .action-btn:hover {
+  background: var(--accent-deep);
+  border-color: var(--accent-deep);
+  transform: none;
+}
+
+:root .action-btn:active {
+  transform: scale(0.97);
+}
+
+:root .action-btn.secondary {
+  background: var(--fc-surface);
+  color: var(--fc-text);
+  border: 1px solid #dfe5e9;
+  box-shadow: none;
+}
+
+:root .action-btn.secondary:hover {
+  background: #eef1f3;
+  border-color: #d3dade;
+}
+
+:root .mini-chip {
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+:root .mini-chip.active {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  color: var(--accent-deep);
+}
+
+:root input:focus,
+:root select:focus,
+:root textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+/* ── Tablas ─────────────────────────────────────────────────────────────── */
+
+:root .table-wrap table th {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fc-muted);
+  background: transparent;
+  border-bottom: 1px solid var(--fc-line-2);
+}
+
+:root .table-wrap table td {
+  border-bottom: 1px solid #f2f4f6;
+}
+
+:root .table-wrap table tbody tr {
+  transition: background 0.14s;
+}
+
+:root .table-wrap table tbody tr:hover {
+  background: var(--fc-hover);
+}
+
+/* ── Estados ────────────────────────────────────────────────────────────── */
+
+:root .status-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+:root .status-pendiente { background: var(--st-pendiente-bg); color: var(--st-pendiente-fg); }
+:root .status-en-revision,
+:root .status-aprobado { background: var(--st-gestion-bg); color: var(--st-gestion-fg); }
+:root .status-en-despacho,
+:root .status-enviado { background: var(--st-despacho-bg); color: var(--st-despacho-fg); }
+:root .status-entregado { background: var(--st-entregada-bg); color: var(--st-entregada-fg); }
+:root .status-rechazado { background: var(--st-rechazada-bg); color: var(--st-rechazada-fg); }
+
+/* ── Dashboard ──────────────────────────────────────────────────────────── */
+
+:root .dashboard-hero-card {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* La barra superior ya titula la pagina ("Dashboard"): repetir un segundo
+   titulo justo debajo se leia como un error. Del encabezado queda solo la
+   franja util: cuando se actualizo, el boton y los filtros. */
+:root .dashboard-hero-card .section-head > div:first-child {
+  display: none;
+}
+
+:root .dashboard-hero-card .section-head {
+  justify-content: flex-end;
+}
+
+/* "Lo que necesita tu atencion hoy" es lo primero que se mira: un poco mas de
+   presencia que el resto. */
+:root #dashboard-my-actions-card {
+  padding: 1.5rem;
+}
+
+:root .my-actions-list {
+  gap: 12px;
+}
+
+:root .my-action-card {
+  background: var(--fc-surface);
+  border: 1px solid #eceff2;
+  border-radius: 14px;
+  box-shadow: none;
+  text-align: left;
+  transition: transform 0.2s var(--fc-ease), box-shadow 0.2s, border-color 0.2s;
+}
+
+:root .my-action-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--fc-shadow-lift);
+  border-color: #dfe4e8;
+}
+
+:root .my-action-card strong {
+  color: var(--fc-text);
+  font-weight: 700;
+}
+
+:root .my-action-card p,
+:root .my-action-meta {
+  color: var(--fc-muted);
+}
+
+:root .alert-card {
+  background: var(--fc-surface);
+  border: 1px solid #eceff2;
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+/* Filtros plegados: se usan poco y antes ocupaban el segundo lugar. */
+:root .dashboard-filtros {
+  border-top: 1px solid var(--fc-line-2);
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+}
+
+:root .dashboard-filtros > summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent-deep);
+  list-style: none;
+}
+
+:root .dashboard-filtros > summary::-webkit-details-marker {
+  display: none;
+}
+
+:root .dashboard-filtros > summary::before {
+  content: "▸ ";
+}
+
+:root .dashboard-filtros[open] > summary::before {
+  content: "▾ ";
+}
+
+:root .dashboard-filtros-cuerpo {
+  margin-top: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+/* ── Movimiento ─────────────────────────────────────────────────────────── */
+
+@keyframes fc-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* La vista en si no se mueve: solo "espera" a que terminen sus tarjetas.
+   app.js quita la clase view-entering cuando termina la animacion de este
+   elemento (escucha animationend sobre el y solo sobre el). Con la animacion
+   vieja de 0,4 s la clase se iba antes de que terminaran las ultimas tarjetas
+   del escalonado, y esas quedaban cortadas a mitad de camino. */
+@keyframes fc-hold {
+  from { opacity: 1; }
+  to { opacity: 1; }
+}
+
+:root .view-container.view-entering > .view-grid {
+  animation: fc-hold 0.9s linear;
+}
+
+/* Al entrar a una vista, las tarjetas suben una tras otra. */
+:root .view-container.view-entering > .view-grid > * {
+  animation: fc-rise 0.56s var(--fc-ease) backwards;
+}
+
+:root .view-container.view-entering > .view-grid > *:nth-child(2) { animation-delay: 50ms; }
+:root .view-container.view-entering > .view-grid > *:nth-child(3) { animation-delay: 100ms; }
+:root .view-container.view-entering > .view-grid > *:nth-child(4) { animation-delay: 150ms; }
+:root .view-container.view-entering > .view-grid > *:nth-child(5) { animation-delay: 200ms; }
+:root .view-container.view-entering > .view-grid > *:nth-child(6) { animation-delay: 250ms; }
+:root .view-container.view-entering > .view-grid > *:nth-child(n + 7) { animation-delay: 300ms; }
+
+/* Quien pide reducir el movimiento en su equipo no ve animaciones. */
+@media (prefers-reduced-motion: reduce) {
+  :root *,
+  :root *::before,
+  :root *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
