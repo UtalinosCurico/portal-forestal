@@ -1887,15 +1887,29 @@ async function loadView(viewName, options = {}) {
   viewContainer.classList.add("view-entering");
   const enteredView = viewContainer.firstElementChild;
   if (enteredView) {
-    enteredView.addEventListener(
-      "animationend",
-      (event) => {
-        if (event.target === enteredView) {
-          viewContainer.classList.remove("view-entering");
-        }
-      },
-      { once: true }
-    );
+    // animationend burbujea: el de un contador o una tarjeta interna llega
+    // antes que el de la vista. Con { once: true } ese primer evento ajeno
+    // consumia el listener y la clase view-entering quedaba puesta para
+    // siempre; entonces cada modal de la vista se re-animaba al abrirse.
+    // Ademas hay un respaldo por si animationend no llega nunca.
+    let respaldo = 0;
+    const terminarEntrada = () => {
+      enteredView.removeEventListener("animationend", alTerminarAnimacion);
+      window.clearTimeout(respaldo);
+      // Si entretanto se cargo otra vista, la clase ya es de esa otra.
+      if (viewContainer.contains(enteredView)) {
+        viewContainer.classList.remove("view-entering");
+      }
+    };
+    const alTerminarAnimacion = (event) => {
+      if (event.target === enteredView) {
+        terminarEntrada();
+      }
+    };
+    enteredView.addEventListener("animationend", alTerminarAnimacion);
+    respaldo = window.setTimeout(terminarEntrada, 1600);
+  } else {
+    viewContainer.classList.remove("view-entering");
   }
   viewContainer.dataset.viewName = targetView;
   pageTitle.textContent = meta.title;

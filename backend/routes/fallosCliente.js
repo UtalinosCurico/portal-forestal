@@ -67,17 +67,18 @@ router.post(
     logger.warn("fallo en el navegador de un usuario", { quien, vista, texto, donde });
 
     // Se responde ya: el navegador no tiene por que esperar a que se avise.
-    res.json({ status: "ok", data: { registrado: true } });
-
-    if (yaSeAviso(texto)) {
-      return;
+    // En Vercel la funcion se congela apenas se responde: lo que quede
+    // pendiente despues de res.json puede no ejecutarse nunca. Por eso el
+    // aviso se espera antes de responder (y si falla, la respuesta sale igual).
+    if (!yaSeAviso(texto)) {
+      await notificacionesService
+        .createFalloClienteNotification({ texto, vista, quien })
+        .catch((error) => {
+          logger.warn("no se pudo avisar del fallo de cliente", { errorMessage: error?.message });
+        });
     }
 
-    notificacionesService
-      .createFalloClienteNotification({ texto, vista, quien })
-      .catch((error) => {
-        logger.warn("no se pudo avisar del fallo de cliente", { errorMessage: error?.message });
-      });
+    res.json({ status: "ok", data: { registrado: true } });
   })
 );
 

@@ -1,5 +1,16 @@
 let _ctx = null;
 
+// Titulo, descripcion y autor los escribe cualquier usuario y se muestran en
+// la pantalla del ADMIN: sin escapar, un feedback con HTML se ejecutaba ahi.
+function escapar(valor) {
+  return String(valor ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
 const el = (id) => document.getElementById(id);
 
 export function initFeedback(ctx) {
@@ -31,12 +42,13 @@ export function initFeedback(ctx) {
     const markBtn = e.target.closest("[data-fb-mark]");
     const delBtn  = e.target.closest("[data-fb-delete]");
     if (markBtn) {
-      await _ctx.apiRequest(`/feedback/${markBtn.dataset.fbMark}/leido`, { method: "PATCH" });
+      await _ctx.apiRequest(`/api/feedback/${markBtn.dataset.fbMark}/leido`, { method: "PATCH" });
       loadFeedbackList();
       refreshFeedbackBadge();
     }
     if (delBtn) {
-      await _ctx.apiRequest(`/feedback/${delBtn.dataset.fbDelete}`, { method: "DELETE" });
+      if (!window.confirm("¿Eliminar este feedback? No se puede deshacer.")) return;
+      await _ctx.apiRequest(`/api/feedback/${delBtn.dataset.fbDelete}`, { method: "DELETE" });
       loadFeedbackList();
       refreshFeedbackBadge();
     }
@@ -54,7 +66,7 @@ export function initFeedback(ctx) {
     submitBtn.disabled = true;
     submitBtn.textContent = "Enviando...";
     try {
-      await _ctx.apiRequest("/feedback", { method: "POST", body: JSON.stringify({ tipo, titulo, descripcion }) });
+      await _ctx.apiRequest("/api/feedback", { method: "POST", body: JSON.stringify({ tipo, titulo, descripcion }) });
       el("feedback-form").reset();
       closeFeedbackModal();
       _ctx.showToast("¡Feedback enviado! Gracias por tu aporte.");
@@ -80,7 +92,7 @@ async function loadFeedbackList() {
   const list = el("feedback-list");
   if (!list) return;
   try {
-    const { data } = await _ctx.apiRequest("/feedback");
+    const { data } = await _ctx.apiRequest("/api/feedback");
     const items = Array.isArray(data) ? data : [];
     if (!items.length) {
       list.innerHTML = "<div class='history-empty'>Sin feedback recibido todavía.</div>";
@@ -90,13 +102,13 @@ async function loadFeedbackList() {
     list.innerHTML = items.map((fb) => `
       <div class="feedback-card ${fb.leido ? "leido" : ""}" data-fb-id="${fb.id}">
         <div class="feedback-card-head">
-          <span class="feedback-card-tipo ${fb.tipo}">${TIPO_LABEL[fb.tipo] || fb.tipo}</span>
-          <span class="feedback-card-titulo">${fb.titulo}</span>
+          <span class="feedback-card-tipo ${escapar(fb.tipo)}">${TIPO_LABEL[fb.tipo] || escapar(fb.tipo)}</span>
+          <span class="feedback-card-titulo">${escapar(fb.titulo)}</span>
           ${!fb.leido ? '<span class="mini-chip active" style="font-size:0.72rem">Nuevo</span>' : ""}
         </div>
-        <p class="feedback-card-desc">${fb.descripcion}</p>
+        <p class="feedback-card-desc">${escapar(fb.descripcion)}</p>
         <div class="feedback-card-meta">
-          <span>👤 ${fb.autor_nombre || "Usuario"}</span>
+          <span>👤 ${escapar(fb.autor_nombre || "Usuario")}</span>
           <span>📅 ${fb.created_at ? fb.created_at.slice(0, 16).replace("T", " ") : "-"}</span>
         </div>
         <div class="feedback-card-actions">
@@ -113,7 +125,7 @@ export async function refreshFeedbackBadge(apiRequest) {
   try {
     const fn = apiRequest || _ctx?.apiRequest;
     if (!fn) return;
-    const { data } = await fn("/feedback/count");
+    const { data } = await fn("/api/feedback/count");
     const n = data?.unread || 0;
     const badge = el("feedback-badge");
     badge?.classList.toggle("hidden", n === 0);

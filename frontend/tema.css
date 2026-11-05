@@ -584,8 +584,10 @@
   animation: fc-hold 0.9s linear;
 }
 
-/* Al entrar a una vista, las tarjetas suben una tras otra. */
-:root .view-container.view-entering > .view-grid > * {
+/* Al entrar a una vista, las tarjetas suben una tras otra. Los modales
+   quedan fuera: tambien son hijos de .view-grid y, si se abrian durante la
+   entrada, aparecian con retraso y desplazados. */
+:root .view-container.view-entering > .view-grid > *:not(.modal) {
   animation: fc-rise 0.56s var(--fc-ease) backwards;
 }
 
@@ -604,5 +606,1690 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   SOLICITUDES
+   Bandeja, panel de pendientes y, sobre todo, "Gestionar solicitud".
+   Solo variables de marca: en Forest Saint todo pasa a morado solo. Los
+   colores de estado (pendiente, en gestion...) son los mismos en ambas.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Encabezado de la vista ─────────────────────────────────────────────── */
+
+/* Como en el Dashboard: la barra superior ya dice "Solicitudes". Queda la
+   franja util (botones) y los filtros rapidos, sin tarjeta alrededor. */
+:root .view-grid > .hero-card:has(#solicitudes-quick-filters) {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+:root .view-grid > .hero-card:has(#solicitudes-quick-filters) > .section-head > div:first-child {
+  display: none;
+}
+
+:root .view-grid > .hero-card:has(#solicitudes-quick-filters) > .section-head {
+  justify-content: flex-end;
+  margin-bottom: 0;
+}
+
+/* ── Filtros rapidos: tarjetas limpias con un punto de color ───────────── */
+
+:root .quick-strip {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+:root .quick-tile,
+:root .quick-tile[data-quick-filter] {
+  min-height: 92px;
+  padding: 14px 16px;
+  gap: 6px;
+  align-content: space-between;
+  background: var(--fc-surface);
+  border: 1px solid var(--fc-line);
+  border-radius: var(--fc-radius);
+  box-shadow: var(--fc-shadow);
+  transition: transform 0.2s var(--fc-ease), box-shadow 0.2s, border-color 0.2s;
+}
+
+:root .quick-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--fc-shadow-lift);
+  border-color: #dfe4e8;
+  background: var(--fc-surface);
+}
+
+:root .quick-tile .quick-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fc-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+:root .quick-tile .quick-label::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--accent);
+}
+
+:root .quick-tile[data-quick-filter="PENDIENTE"] .quick-label::before { background: var(--st-pendiente-fg); }
+:root .quick-tile[data-quick-filter="EN_REVISION"] .quick-label::before { background: var(--st-gestion-fg); }
+:root .quick-tile[data-quick-filter="EN_DESPACHO"] .quick-label::before { background: var(--st-despacho-fg); }
+:root .quick-tile[data-quick-filter="URGENTES"] .quick-label::before { background: var(--st-rechazada-fg); }
+:root .quick-tile[data-quick-filter="ARCHIVED"] .quick-label::before { background: #a3adb5; }
+
+:root .quick-tile .quick-value {
+  color: var(--fc-text);
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+:root .quick-tile[data-quick-filter].active {
+  background: var(--fc-surface);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12);
+}
+
+:root .quick-tile[data-quick-filter].active .quick-label {
+  color: var(--accent-deep);
+  font-weight: 700;
+}
+
+:root .quick-tile[data-quick-filter].active .quick-value {
+  color: var(--accent-deep);
+}
+
+:root .quick-strip-hint {
+  margin-top: 10px;
+  color: var(--fc-muted);
+  font-size: 0.82rem;
+}
+
+@media (max-width: 1100px) {
+  :root .quick-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  :root .view-grid > .hero-card:has(#solicitudes-quick-filters) > .section-head > .actions-inline {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  :root .view-grid > .hero-card:has(#solicitudes-quick-filters) > .section-head > .actions-inline > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  :root .view-grid > .hero-card:has(#solicitudes-quick-filters) > .section-head > .actions-inline > .action-btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  :root .quick-strip {
+    display: flex;
+    gap: 10px;
+  }
+
+  :root .quick-tile,
+  :root .quick-tile[data-quick-filter] {
+    min-width: 118px;
+    min-height: 82px;
+    padding: 12px 14px;
+  }
+
+  :root .quick-tile .quick-value {
+    font-size: 1.5rem;
+  }
+}
+
+/* ── Panel "Pendientes" (productos por comprar) ─────────────────────────── */
+
+:root .pending-inline-card .section-head p.muted-text {
+  display: none;
+}
+
+:root .pending-collapse-btn {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 10px;
+  border: 1px solid var(--fc-line);
+  background: var(--fc-surface);
+  color: transparent;
+  font-size: 0;
+  box-shadow: none;
+}
+
+/* El JS escribe ▲/▼ en el boton; se oculta y se dibuja una flecha que gira
+   segun aria-expanded (que el JS tambien mantiene). */
+:root .pending-collapse-btn::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--fc-text-2);
+  border-bottom: 2px solid var(--fc-text-2);
+  transform: translateY(2px) rotate(-135deg);
+  transition: transform 0.2s var(--fc-ease);
+}
+
+:root .pending-collapse-btn[aria-expanded="false"]::before {
+  transform: translateY(-2px) rotate(45deg);
+}
+
+:root .pending-collapse-btn:hover {
+  background: var(--fc-hover);
+}
+
+:root .inline-pending-table {
+  display: grid;
+  gap: 10px;
+}
+
+:root .ipt-group {
+  border: 1px solid var(--fc-line);
+  border-radius: 14px;
+  background: var(--fc-surface);
+}
+
+:root .ipt-group-head {
+  gap: 10px;
+  padding: 10px 14px;
+  background: #f8f9fa;
+  border-bottom: 1px solid var(--fc-line-2);
+}
+
+:root .ipt-group-id {
+  color: var(--accent-deep);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+:root .ipt-group-equipo {
+  color: var(--fc-text);
+  font-weight: 700;
+}
+
+:root .ipt-group-quien {
+  color: var(--fc-muted);
+}
+
+:root .ipt-group-head .mini-chip {
+  background: var(--st-pendiente-bg);
+  color: var(--st-pendiente-fg);
+  border: 0;
+  font-weight: 700;
+}
+
+:root .ipt-open-btn {
+  min-height: 32px;
+  padding: 0 14px;
+  border-radius: 9px;
+  background: var(--fc-surface);
+  color: var(--accent-deep);
+  border: 1px solid var(--accent-line);
+  font-weight: 700;
+  box-shadow: none;
+}
+
+:root .ipt-open-btn:hover {
+  background: var(--accent-soft);
+}
+
+:root .ipt-item {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--fc-line-2);
+  align-items: center;
+}
+
+:root .ipt-name {
+  color: var(--fc-text);
+  font-weight: 600;
+}
+
+:root .ipt-ref,
+:root .ipt-uf {
+  background: #f2f4f6;
+  color: var(--fc-text-2);
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+
+:root .ipt-nota {
+  background: var(--st-pendiente-bg);
+  color: var(--st-pendiente-fg);
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+
+:root .ipt-qty {
+  color: var(--fc-text);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Bandeja ────────────────────────────────────────────────────────────── */
+
+/* "Abre una solicitud para ver..." se entiende solo. */
+:root .solicitudes-list-card > .section-head p.muted-text {
+  display: none;
+}
+
+:root .solicitudes-list-card .search-summary {
+  color: var(--fc-muted);
+  font-size: 0.82rem;
+}
+
+:root .solicitudes-list-card .col-id strong {
+  color: var(--fc-text);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+:root .solicitudes-list-card td strong {
+  font-weight: 700;
+}
+
+/* Una sola accion por fila: "Gestionar" lleva el color de la empresa; "Ver
+   detalle" queda como boton de contorno para no competir. */
+:root .solicitudes-list-card .table-btn {
+  min-height: 38px;
+  border-radius: 10px;
+  background: var(--fc-surface);
+  color: var(--accent-deep);
+  border: 1px solid var(--accent-line);
+  font-weight: 700;
+  box-shadow: none;
+}
+
+:root .solicitudes-list-card .table-btn:hover {
+  background: var(--accent-soft);
+}
+
+:root .solicitudes-list-card .table-btn.table-btn-emphasis {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+:root .solicitudes-list-card .table-btn.table-btn-emphasis:hover {
+  background: var(--accent-deep);
+  border-color: var(--accent-deep);
+}
+
+:root .urgencia-badge {
+  border: 0;
+  min-height: 22px;
+  padding: 2px 9px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+:root .urgencia-verde { background: var(--st-entregada-bg); color: var(--st-entregada-fg); }
+:root .urgencia-amarillo { background: var(--st-pendiente-bg); color: var(--st-pendiente-fg); }
+:root .urgencia-rojo { background: var(--st-rechazada-bg); color: var(--st-rechazada-fg); }
+
+/* Tarjetas de la bandeja en el celular: sin franja de color arriba, el estado
+   ya lo dice la etiqueta. */
+:root .solicitud-mobile-card {
+  border: 1px solid var(--fc-line);
+  border-radius: var(--fc-radius-lg);
+  box-shadow: var(--fc-shadow);
+}
+
+:root .solicitud-mobile-card .smc-accent {
+  display: none;
+}
+
+:root .smc-body {
+  padding: 14px 16px 16px;
+}
+
+:root .smc-id-label {
+  color: var(--accent-deep);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+:root .smc-equipo {
+  font-weight: 800;
+}
+
+:root .solicitud-mobile-summary {
+  color: var(--fc-text);
+  font-weight: 600;
+}
+
+:root .solicitud-mobile-meta span {
+  background: #f2f4f6;
+  color: var(--fc-text-2);
+}
+
+:root .solicitud-mobile-next-step {
+  color: var(--accent-deep);
+}
+
+:root .solicitud-mobile-open {
+  min-height: 46px;
+  border-radius: 12px;
+}
+
+:root .solicitud-mobile-open:not(.cta-emphasis) {
+  background: var(--fc-surface);
+  color: var(--accent-deep);
+  border: 1px solid var(--accent-line);
+  box-shadow: none;
+}
+
+/* ── Modales en general ─────────────────────────────────────────────────── */
+
+:root .modal-backdrop {
+  background: rgba(var(--ink-rgb), 0.42);
+  backdrop-filter: blur(6px) saturate(0.9);
+  -webkit-backdrop-filter: blur(6px) saturate(0.9);
+}
+
+:root .modal-content {
+  border: 0;
+  border-radius: 22px;
+  background: var(--fc-surface);
+  box-shadow:
+    0 30px 70px rgba(var(--ink-rgb), 0.24),
+    0 6px 16px rgba(var(--ink-rgb), 0.08);
+}
+
+:root .modal-header h4 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--fc-text);
+}
+
+:root .icon-btn.icon-btn-close {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  border: 0;
+  background: #f2f4f6;
+  color: var(--fc-text-2);
+  box-shadow: none;
+  transition: background 0.15s, transform 0.2s var(--fc-ease);
+}
+
+:root .icon-btn.icon-btn-close:hover {
+  background: #e7ebee;
+  transform: rotate(90deg);
+}
+
+:root .icon-btn.icon-btn-close svg {
+  display: block;
+}
+
+/* ── Gestionar solicitud: estructura ────────────────────────────────────── */
+
+:root #solicitudes-detail-modal .modal-content {
+  padding: 0;
+}
+
+:root #solicitudes-detail-modal .detail-header {
+  gap: 16px;
+  margin: 0;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--fc-line);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+:root .detail-head-main {
+  min-width: 0;
+}
+
+:root .detail-head-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+:root #solicitudes-detail-modal .detail-header h4 {
+  font-size: 1.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
+:root .detail-head-meta {
+  margin: 4px 0 0;
+  color: var(--fc-muted);
+  font-size: 0.88rem;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+:root .detail-head-meta:empty {
+  display: none;
+}
+
+/* Titulos de seccion dentro del detalle. */
+:root #solicitudes-detail-modal .detail-panel h5 {
+  margin: 0;
+  color: var(--fc-text);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.005em;
+}
+
+/* "Productos de la solicitud" y "Agregar producto" en la misma linea; el
+   texto de ayuda de al lado sobraba. Sin tocar display: en el celular el
+   panel se oculta o se muestra segun la pestana. */
+:root #solicitudes-detail-modal .detail-panel-primary {
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 12px;
+}
+
+:root #solicitudes-detail-modal .detail-panel-primary > * {
+  grid-column: 1 / -1;
+}
+
+:root #solicitudes-detail-modal .detail-panel-primary > h5 {
+  grid-column: 1;
+  align-self: center;
+}
+
+:root #solicitudes-detail-modal .detail-panel-primary > .compact-head {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0;
+  justify-content: flex-end;
+}
+
+:root #solicitudes-detail-modal .detail-panel-primary > .compact-head > p {
+  display: none;
+}
+
+:root #detail-add-item-btn {
+  width: auto;
+  min-height: 38px;
+  padding: 0 14px;
+  white-space: nowrap;
+  border-radius: 10px;
+}
+
+/* El acceso al chat ya esta en el pie (y en la pestana Chat del celular),
+   con el mismo contador de mensajes nuevos. */
+:root #solicitudes-detail-modal .chat-shortcut-card {
+  display: none;
+}
+
+/* Datos que no se editan: se leen como texto, no como campos. */
+:root #solicitudes-detail-form input[readonly] {
+  background: #f6f7f9;
+  border-color: transparent;
+  color: var(--fc-text-2);
+  font-weight: 600;
+}
+
+:root #solicitudes-detail-form label {
+  color: var(--fc-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+:root #solicitudes-detail-form .form-hint {
+  color: var(--fc-muted);
+  font-size: 0.78rem;
+}
+
+@media (min-width: 901px) {
+  :root #solicitudes-detail-modal .modal-content {
+    width: min(1200px, calc(100vw - 3rem));
+    max-height: calc(100vh - 3rem);
+  }
+
+  :root #solicitudes-detail-modal .detail-header {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+  }
+
+  :root #solicitudes-detail-modal .detail-layout {
+    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr);
+    gap: 24px;
+    align-items: start;
+    padding: 22px 24px 26px;
+  }
+
+  :root #solicitudes-detail-modal .detail-panel-primary {
+    display: grid;
+    row-gap: 16px;
+    align-content: start;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+  }
+
+  :root #solicitudes-detail-modal .detail-panel-secondary {
+    background: #f6f7f9;
+    border: 0;
+    border-radius: 18px;
+    padding: 20px;
+  }
+
+  :root #solicitudes-detail-modal .detail-panel-segment + .detail-panel-segment {
+    margin-top: 22px;
+    padding-top: 20px;
+    border-top: 1px solid var(--fc-line);
+  }
+}
+
+/* ── Tarjeta de cada producto ───────────────────────────────────────────── */
+
+:root #detail-items-list {
+  gap: 12px;
+}
+
+:root #solicitudes-detail-modal .item-tracking-card {
+  padding: 16px 18px;
+  background: var(--fc-surface);
+  border: 1px solid var(--fc-line);
+  border-radius: 16px;
+  box-shadow: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+:root #solicitudes-detail-modal .item-tracking-card:hover {
+  border-color: #dfe4e8;
+  box-shadow: var(--fc-shadow-lift);
+}
+
+:root #solicitudes-detail-modal .item-tracking-head {
+  gap: 16px;
+}
+
+:root #solicitudes-detail-modal .item-tracking-title {
+  flex: 1;
+  gap: 12px;
+}
+
+:root .itc-top {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+:root .itc-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+}
+
+:root .itc-icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+:root .itc-name {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+:root .itc-name strong {
+  color: var(--fc-text);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+:root .itc-datos {
+  color: var(--fc-muted);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+:root .itc-qty {
+  display: grid;
+  justify-items: end;
+  line-height: 1;
+  text-align: right;
+}
+
+:root .itc-qty b {
+  color: var(--fc-text);
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+:root .itc-qty small {
+  margin-top: 4px;
+  color: var(--fc-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+:root .itc-detalle {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f6f7f9;
+  color: var(--fc-text-2);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+:root .itc-personas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  margin: 0;
+}
+
+:root .itc-personas dt {
+  color: var(--fc-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+:root .itc-personas dd {
+  margin: 2px 0 0;
+  color: var(--fc-text);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+:root .itc-personas .itc-vacio dd {
+  color: var(--fc-muted);
+  font-weight: 500;
+}
+
+:root .itc-gestion {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--st-gestion-bg);
+  color: var(--st-gestion-fg);
+}
+
+:root .itc-gestion span {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+:root .itc-gestion p {
+  margin: 3px 0 0;
+  font-size: 0.88rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+:root .itc-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--fc-line-2);
+}
+
+/* Avance del producto como control segmentado. */
+:root .item-quick-actions {
+  display: inline-flex;
+  gap: 2px;
+  margin: 0;
+  padding: 3px;
+  border-radius: 11px;
+  background: #f2f4f6;
+}
+
+:root .item-quick-btn {
+  min-height: 32px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fc-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+:root .item-quick-btn:hover:not(.item-quick-active):not(:disabled) {
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--fc-text);
+  border-color: transparent;
+}
+
+:root .item-quick-btn.item-quick-active {
+  background: var(--fc-surface);
+  border-color: transparent;
+  color: var(--accent-deep);
+  box-shadow: 0 1px 2px rgba(16, 24, 20, 0.1), 0 0 0 1px var(--accent-line);
+}
+
+:root #solicitudes-detail-modal .solicitud-configure-item-btn {
+  min-width: 0;
+  min-height: 38px;
+  margin: 0;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: var(--fc-surface);
+  color: var(--fc-text-2);
+  border: 1px solid var(--fc-line);
+  font-weight: 700;
+  box-shadow: none;
+  white-space: nowrap;
+}
+
+:root #solicitudes-detail-modal .solicitud-configure-item-btn:hover {
+  background: var(--fc-hover);
+  border-color: #d5dbe0;
+  color: var(--fc-text);
+}
+
+:root #solicitudes-detail-modal .item-row-actions {
+  margin-top: 8px;
+}
+
+:root #solicitudes-detail-modal .item-tracking-meta {
+  color: #8a949c;
+  font-size: 0.74rem;
+}
+
+/* Estado de cada producto: mismos colores que el estado de la solicitud. */
+:root .item-status-badge { height: 26px; font-size: 0.75rem; }
+:root .item-status-por-gestionar,
+:root .item-status-no-aplica { background: #f2f4f6; color: var(--fc-muted); }
+:root .item-status-gestionado { background: var(--st-gestion-bg); color: var(--st-gestion-fg); }
+:root .item-status-enviado { background: var(--st-despacho-bg); color: var(--st-despacho-fg); }
+:root .item-status-entregado { background: var(--st-entregada-bg); color: var(--st-entregada-fg); }
+:root .item-status-resuelto-faena { background: var(--st-pendiente-bg); color: var(--st-pendiente-fg); }
+
+/* ── Cambiar el estado de la solicitud: opciones tipo radio ─────────────── */
+
+/* El selector de estado ocupa todo el ancho: en media columna las opciones
+   quedaban de 100 px y los textos se partian en tres lineas. */
+:root #solicitud-detail-status-field {
+  grid-column: 1 / -1;
+}
+
+:root #solicitud-detail-status-field .form-hint {
+  display: none;
+}
+
+/* "Comentario" repetia el titulo de la tarjeta; queda solo para lectores de
+   pantalla. */
+:root #solicitud-process-comment-card > label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+:root #solicitud-process-comment-card textarea {
+  margin-top: 10px;
+}
+
+
+:root .status-action-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 6px;
+}
+
+:root .status-action-btn {
+  position: relative;
+  min-height: 58px;
+  padding: 10px 12px 10px 36px;
+  gap: 2px;
+  align-content: center;
+  border-radius: 12px;
+  background: var(--fc-surface);
+  color: var(--fc-text);
+  border: 1px solid var(--fc-line);
+  box-shadow: none;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+:root .status-action-btn::before {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin-top: -7px;
+  border-radius: 50%;
+  border: 2px solid #c9d0d6;
+  background: var(--fc-surface);
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+:root .status-action-btn:hover {
+  background: var(--fc-hover);
+  border-color: #d5dbe0;
+}
+
+:root .status-action-btn strong {
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+:root .status-action-btn span {
+  color: var(--fc-muted);
+  font-size: 0.74rem;
+  opacity: 1;
+}
+
+:root .status-action-btn.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-deep);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
+}
+
+:root .status-action-btn.active::before {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: inset 0 0 0 3px var(--fc-surface);
+}
+
+:root .status-action-btn.active span {
+  color: var(--accent-deep);
+  opacity: 0.8;
+}
+
+:root .status-action-btn[data-status-value="RECHAZADO"]:hover {
+  background: var(--st-rechazada-bg);
+  border-color: transparent;
+}
+
+:root .status-action-btn[data-status-value="RECHAZADO"].active {
+  background: var(--st-rechazada-bg);
+  border-color: var(--st-rechazada-fg);
+  color: var(--st-rechazada-fg);
+  box-shadow: none;
+}
+
+:root .status-action-btn[data-status-value="RECHAZADO"].active::before {
+  border-color: var(--st-rechazada-fg);
+  background: var(--st-rechazada-fg);
+}
+
+:root .status-action-btn[data-status-value="RECHAZADO"].active span {
+  color: var(--st-rechazada-fg);
+}
+
+/* ── Avance de la solicitud: linea de tiempo vertical ───────────────────── */
+
+:root .status-stepper {
+  margin-bottom: 18px;
+}
+
+:root .status-flow {
+  gap: 0;
+}
+
+:root .status-flow-step,
+:root .status-flow-step.done,
+:root .status-flow-step.current,
+:root .status-flow-step.rejected {
+  position: relative;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 0 0 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  animation: none;
+}
+
+:root .status-flow-step:last-child {
+  padding-bottom: 0;
+}
+
+/* Linea que une un paso con el siguiente. */
+:root .status-flow-step:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 30px;
+  bottom: 2px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--fc-line);
+}
+
+:root .status-flow-step.done:not(:last-child)::before {
+  background: var(--accent);
+}
+
+:root .status-flow-dot,
+:root .status-flow-step .status-flow-dot {
+  width: 28px;
+  height: 28px;
+  border: 2px solid #d5dbe0;
+  background: var(--fc-surface);
+  color: #8a949c;
+  font-size: 0.75rem;
+  font-weight: 800;
+  animation: none;
+}
+
+:root .status-flow-step.done .status-flow-dot {
+  border-color: var(--accent);
+  background-color: var(--accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+  background-size: 14px 14px;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: transparent;
+}
+
+:root .status-flow-step.current .status-flow-dot {
+  border-color: var(--accent);
+  background: var(--fc-surface);
+  color: var(--accent-deep);
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.16);
+}
+
+:root .status-flow-step.rejected .status-flow-dot {
+  border-color: var(--st-rechazada-fg);
+  background: var(--st-rechazada-fg);
+  color: #fff;
+  box-shadow: 0 0 0 4px var(--st-rechazada-bg);
+}
+
+:root .status-flow-copy {
+  padding-top: 4px;
+  gap: 1px;
+}
+
+:root .status-flow-copy strong {
+  color: #8a949c;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+:root .status-flow-step.done .status-flow-copy strong {
+  color: var(--fc-text-2);
+}
+
+:root .status-flow-step.current .status-flow-copy strong {
+  color: var(--fc-text);
+  font-weight: 800;
+}
+
+:root .status-flow-step.rejected .status-flow-copy strong {
+  color: var(--st-rechazada-fg);
+}
+
+:root .status-flow-copy small {
+  color: var(--fc-muted);
+  font-size: 0.76rem;
+}
+
+:root .status-flow-step:not(.current) .status-flow-copy small {
+  display: none;
+}
+
+/* ── Resumen de avance de productos ─────────────────────────────────────── */
+
+/* Flex y no grid: la barra ocupa todas las columnas de la grilla y con eso
+   auto-fit no colapsaba las vacias; dos tarjetas quedaban en un tercio. */
+:root .progress-summary-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+:root .progress-bar-wrap {
+  flex: 1 1 100%;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+:root .progress-summary-card {
+  flex: 1 1 92px;
+}
+
+:root .progress-bar-track {
+  height: 6px;
+  background: #e3e7ea;
+}
+
+:root .progress-bar-fill {
+  background: var(--accent);
+}
+
+:root .progress-bar-label {
+  color: var(--fc-text-2);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+:root .progress-summary-card {
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--fc-line);
+  border-radius: 12px;
+  background: var(--fc-surface);
+}
+
+:root .progress-summary-label {
+  color: var(--fc-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+:root .progress-summary-card strong {
+  color: var(--fc-text);
+  font-size: 1.3rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Tarjetas de apoyo del panel derecho ────────────────────────────────── */
+
+:root .delivery-assistant-card,
+:root .process-comment-card {
+  margin: 16px 0 0;
+  padding: 16px;
+  border: 1px solid var(--fc-line);
+  border-radius: 14px;
+  background: var(--fc-surface);
+}
+
+:root .delivery-assistant-card h5,
+:root .process-comment-card h5 {
+  margin: 0 0 4px;
+}
+
+:root .delivery-assistant-card .muted-text,
+:root .process-comment-card .muted-text {
+  font-size: 0.84rem;
+}
+
+/* Recepcion pendiente / todo enviado: el aviso que la persona tiene que ver. */
+:root .confirm-box,
+:root .deliver-ready-banner {
+  padding: 16px 18px;
+  border: 1px solid var(--accent-line);
+  border-radius: 14px;
+  background: var(--accent-soft);
+}
+
+:root .confirm-box strong,
+:root .deliver-ready-banner strong {
+  color: var(--accent-deep);
+  font-weight: 800;
+}
+
+:root .confirm-box p,
+:root .deliver-ready-banner p {
+  color: var(--fc-text-2);
+}
+
+/* ── Linea de tiempo (historial) ────────────────────────────────────────── */
+
+:root #solicitudes-detail-modal .history-list {
+  gap: 10px;
+}
+
+:root #solicitudes-detail-modal .history-marker {
+  width: 10px;
+  height: 10px;
+  margin-top: 14px;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.14);
+}
+
+:root #solicitudes-detail-modal .history-content {
+  padding: 10px 12px;
+  border: 1px solid var(--fc-line);
+  border-radius: 12px;
+  background: var(--fc-surface);
+}
+
+:root #solicitudes-detail-modal .history-headline strong {
+  color: var(--fc-text);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+:root #solicitudes-detail-modal .history-headline .mini-chip {
+  background: #f2f4f6;
+  color: var(--fc-muted);
+  border: 0;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+:root #solicitudes-detail-modal .history-content p,
+:root #solicitudes-detail-modal .history-detail-grid span {
+  color: var(--fc-text-2);
+  font-size: 0.84rem;
+}
+
+:root #solicitudes-detail-modal .history-content > span {
+  color: var(--fc-muted);
+  font-size: 0.76rem;
+}
+
+/* ── Pie fijo con las acciones ──────────────────────────────────────────── */
+
+:root .detail-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--fc-line);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+:root .detail-footer-secondary,
+:root .detail-footer-primary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+:root .detail-footer-primary {
+  margin-left: auto;
+}
+
+:root .detail-footer .action-btn {
+  width: auto;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+:root .detail-footer .detail-danger-btn {
+  background: transparent;
+  border-color: transparent;
+  color: var(--st-rechazada-fg);
+  box-shadow: none;
+}
+
+:root .detail-footer .detail-danger-btn:hover {
+  background: var(--st-rechazada-bg);
+  border-color: transparent;
+}
+
+@media (min-width: 901px) {
+  :root .detail-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+  }
+}
+
+/* ── Chat ───────────────────────────────────────────────────────────────── */
+
+/* La animacion de entrada del modal terminaba con fill "forwards", o sea con
+   un transform puesto para siempre. Un transform en un ancestro convierte a
+   position: fixed en relativo a ese ancestro: el chat "fijo" quedaba pegado
+   al modal desplazado y, si la persona habia bajado en la solicitud, se abria
+   cientos de pixeles mas arriba, fuera de la pantalla. Con "backwards" el
+   modal se ve igual al terminar, pero sin transform. */
+:root .modal-content,
+:root #solicitudes-detail-modal .modal-content {
+  animation-fill-mode: backwards;
+}
+
+/* El velo del chat cubre la pantalla, no solo la parte del modal que estaba
+   a la vista. */
+:root .chat-drawer-scrim {
+  position: fixed;
+  z-index: 5;
+}
+
+:root .chat-drawer {
+  z-index: 6;
+}
+
+
+:root .chat-drawer {
+  background: var(--fc-surface);
+  border-left: 1px solid var(--fc-line);
+}
+
+:root .chat-drawer-head {
+  background: var(--fc-surface);
+  border-bottom: 1px solid var(--fc-line-2);
+}
+
+:root .chat-drawer-head strong {
+  color: var(--fc-text);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+:root .chat-drawer-list {
+  gap: 10px;
+  margin: 0;
+  padding: 14px 12px;
+  border-radius: 16px;
+  background: #f4f5f7;
+}
+
+:root .chat-item {
+  max-width: 86%;
+  padding: 9px 13px 10px;
+  border: 0;
+  border-radius: 16px;
+  box-shadow: 0 1px 1px rgba(16, 24, 20, 0.05);
+}
+
+:root .chat-item.chat-theirs {
+  background: var(--fc-surface);
+  border-bottom-left-radius: 6px;
+}
+
+:root .chat-item.chat-mine {
+  background: var(--accent);
+  border-bottom-right-radius: 6px;
+  color: #fff;
+}
+
+:root .chat-header {
+  gap: 10px;
+  color: var(--fc-muted);
+  font-size: 0.72rem;
+}
+
+:root .chat-item strong {
+  color: var(--fc-text);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+:root .chat-item.chat-mine .chat-header,
+:root .chat-item.chat-mine .chat-target {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+:root .chat-item.chat-mine strong {
+  color: #fff;
+}
+
+:root .chat-target {
+  color: var(--fc-muted);
+  font-size: 0.72rem;
+}
+
+:root .chat-item p {
+  margin: 4px 0 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+:root .chat-item.chat-mine .chat-remove-image-btn {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border-color: transparent;
+}
+
+:root .chat-image {
+  border-radius: 12px;
+}
+
+:root .chat-composer {
+  gap: 10px;
+  background: var(--fc-surface);
+  border-top: 0;
+}
+
+:root .chat-composer label {
+  color: var(--fc-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+:root .chat-composer textarea {
+  min-height: 74px;
+  border-radius: 12px;
+  resize: vertical;
+}
+
+:root .chat-composer input[type="file"] {
+  font-size: 0.82rem;
+  color: var(--fc-muted);
+}
+
+:root .chat-composer input[type="file"]::file-selector-button {
+  margin-right: 10px;
+  padding: 7px 12px;
+  border: 1px solid var(--fc-line);
+  border-radius: 9px;
+  background: var(--fc-surface);
+  color: var(--fc-text-2);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* La manilla de la hoja del chat es un <button> y heredaba el relleno de
+   color de los botones: se veia como una barra verde enorme. */
+:root .chat-drawer-handle,
+:root .chat-drawer-handle:hover,
+:root .chat-drawer-handle:active {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  min-height: 0;
+}
+
+/* "Volver" y la X hacian lo mismo: en el computador queda la X; en el
+   celular, "Volver", que se entiende mejor en la hoja. */
+@media (min-width: 901px) {
+  :root .chat-back-btn {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  :root #solicitud-chat-close-btn {
+    display: none;
+  }
+
+  :root .chat-back-btn {
+    min-height: 38px;
+    padding: 0 14px;
+    border-radius: 10px;
+  }
+
+  /* Mas espacio para leer la conversacion: el formulario se compacta. */
+  :root .chat-composer {
+    gap: 8px;
+    padding-top: 10px;
+  }
+
+  :root .chat-composer label[for="solicitud-message-destinatario"],
+  :root .chat-composer label[for="solicitud-message-text"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  :root .chat-composer textarea {
+    min-height: 60px;
+  }
+
+  :root .chat-composer .action-btn {
+    min-height: 46px;
+  }
+}
+
+/* ── Nueva solicitud y Configurar producto ──────────────────────────────── */
+
+:root #solicitudes-create-modal .modal-content,
+:root #solicitud-item-modal .modal-content {
+  padding: 22px 24px 0;
+}
+
+:root #solicitudes-create-modal .modal-header,
+:root #solicitud-item-modal .modal-header {
+  margin-bottom: 18px;
+  align-items: flex-start;
+}
+
+:root #solicitudes-create-modal h5 {
+  margin: 0;
+  color: var(--fc-text);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+:root #create-items-list .item-row {
+  padding: 14px 16px;
+  border: 1px solid var(--fc-line);
+  border-radius: 14px;
+  background: #f8f9fa;
+  box-shadow: none;
+}
+
+:root #create-items-list .solicitud-remove-item-btn {
+  background: transparent;
+  border: 0;
+  color: var(--st-rechazada-fg);
+  box-shadow: none;
+}
+
+:root #create-items-list .solicitud-remove-item-btn:hover {
+  background: var(--st-rechazada-bg);
+}
+
+/* Botones de guardar siempre a la vista al final del formulario. */
+:root #solicitudes-form > .actions-inline:last-child,
+:root #solicitud-item-form > .actions-inline:last-child {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 6px -24px 0;
+  padding: 14px 24px;
+  border-top: 1px solid var(--fc-line);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* ── Celular: hoja inferior ─────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  /* Una fila mas para el pie con las acciones. */
+  :root #solicitudes-detail-modal .modal-content {
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    border-radius: 24px 24px 0 0;
+  }
+
+  :root #solicitudes-detail-modal .detail-header {
+    padding: 4px 16px 12px;
+    border-bottom: 0;
+    background: var(--fc-surface);
+  }
+
+  :root #solicitudes-detail-modal .detail-header h4 {
+    font-size: 1.2rem;
+  }
+
+  :root .detail-head-meta {
+    font-size: 0.82rem;
+  }
+
+  /* Pestanas como control segmentado. */
+  :root #solicitudes-detail-modal .detail-mobile-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin: 0 16px 8px;
+    padding: 4px;
+    gap: 2px;
+    border-radius: 12px;
+    background: #f2f4f6;
+    box-shadow: none;
+  }
+
+  :root #solicitudes-detail-modal .detail-tab-btn {
+    min-height: 38px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--fc-muted);
+    font-size: 0.84rem;
+    font-weight: 700;
+    box-shadow: none;
+  }
+
+  :root #solicitudes-detail-modal .detail-tab-btn.active {
+    background: var(--fc-surface);
+    color: var(--fc-text);
+    box-shadow: 0 1px 2px rgba(16, 24, 20, 0.1);
+  }
+
+  :root #solicitudes-detail-modal .detail-layout {
+    padding: 10px 16px 18px;
+    border-top: 1px solid var(--fc-line-2);
+  }
+
+  :root #solicitudes-detail-modal .detail-panel-segment {
+    padding: 16px;
+    border: 0;
+    border-radius: 16px;
+    background: #f6f7f9;
+  }
+
+  :root #solicitudes-detail-modal .item-tracking-card {
+    padding: 14px;
+  }
+
+  :root .itc-top {
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  :root .itc-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+  }
+
+  :root .item-quick-actions {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    width: 100%;
+  }
+
+  :root .item-quick-btn {
+    min-height: 38px;
+    padding: 0 6px;
+  }
+
+  :root .status-action-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  :root .detail-footer {
+    gap: 8px;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: var(--fc-surface);
+    box-shadow: 0 -8px 22px rgba(var(--ink-rgb), 0.06);
+  }
+
+  :root .detail-footer-primary {
+    order: 1;
+    width: 100%;
+    margin: 0;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+  }
+
+  :root .detail-footer-secondary {
+    order: 2;
+    width: 100%;
+    justify-content: center;
+  }
+
+  :root .detail-footer-secondary:not(:has(> :not(.hidden))) {
+    display: none;
+  }
+
+  :root .detail-footer .action-btn {
+    min-height: 46px;
+    padding: 0 12px;
+  }
+
+  :root .detail-footer-secondary .action-btn {
+    min-height: 34px;
+    padding: 0 12px;
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    font-size: 0.82rem;
+  }
+
+  /* En la hoja ya estan la X y la manilla para cerrar. */
+  :root .detail-footer .detail-cancel-btn {
+    display: none;
+  }
+
+  :root .chat-drawer {
+    border-left: 0;
+  }
+
+  :root #solicitudes-create-modal .modal-content,
+  :root #solicitud-item-modal .modal-content {
+    padding-top: 8px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  :root #solicitudes-form > .actions-inline:last-child,
+  :root #solicitud-item-form > .actions-inline:last-child {
+    margin: 6px -16px 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (max-width: 540px) {
+  :root .status-action-grid {
+    grid-template-columns: 1fr;
+  }
+
+  :root .itc-personas {
+    gap: 8px 16px;
   }
 }

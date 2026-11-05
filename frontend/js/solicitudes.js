@@ -26,7 +26,7 @@ const STATUS_LABELS = {
 };
 
 const STATUS_OPTIONS = [
-  { key: "PENDIENTE", label: "Pendiente", hint: "Recien creada o en espera" },
+  { key: "PENDIENTE", label: "Pendiente", hint: "Recién creada o en espera" },
   { key: "EN_REVISION", label: "En gestión", hint: "Se encuentra en gestión" },
   { key: "APROBADO", label: "Aprobada", hint: "Lista para gestión" },
   { key: "EN_DESPACHO", label: "En despacho", hint: "Va en camino" },
@@ -268,12 +268,12 @@ function renderHistoryDetail(detail) {
     .filter(Boolean);
 
   if (parts.length <= 1) {
-    return `<p>${parts[0] || "Sin detalle"}</p>`;
+    return `<p>${escaparTexto(parts[0] || "Sin detalle")}</p>`;
   }
 
   return `
     <div class="history-detail-grid">
-      ${parts.map((part) => `<span>${part}</span>`).join("")}
+      ${parts.map((part) => `<span>${escaparTexto(part)}</span>`).join("")}
     </div>
   `;
 }
@@ -294,7 +294,7 @@ function renderHistory(historial = [], formatDate) {
               <span class="mini-chip">${formatDate(item.created_at)}</span>
             </div>
             ${renderHistoryDetail(item.detalle)}
-            <span>${item.actor_name || "Sistema"}</span>
+            <span>${escaparTexto(item.actor_name || "Sistema")}</span>
           </div>
         </article>
       `
@@ -372,30 +372,22 @@ function renderProgressSummary(items = []) {
       </div>
       <span class="progress-bar-label">${progressLabel}</span>
     </div>
+    ${[
+      ["Productos", summary.totalItems, true],
+      ["Por gestionar", summary.porGestionar],
+      ["Gestionados", summary.gestionados],
+      ["Enviados", summary.enviados],
+      ["Entregados", summary.entregados],
+      ["Resueltos en faena", summary.resueltoFaena],
+      ["No aplica", summary.noAplica],
+    ]
+      .filter(([, valor, siempre]) => siempre || Number(valor) > 0)
+      .map(([label, valor]) => `
     <div class="progress-summary-card">
-      <span class="progress-summary-label">Productos</span>
-      <strong>${summary.totalItems}</strong>
-    </div>
-    <div class="progress-summary-card">
-      <span class="progress-summary-label">Por gestionar</span>
-      <strong>${summary.porGestionar}</strong>
-    </div>
-    <div class="progress-summary-card">
-      <span class="progress-summary-label">N/A</span>
-      <strong>${summary.noAplica}</strong>
-    </div>
-    <div class="progress-summary-card">
-      <span class="progress-summary-label">Resuelto en faena</span>
-      <strong>${summary.resueltoFaena}</strong>
-    </div>
-    <div class="progress-summary-card">
-      <span class="progress-summary-label">Enviados</span>
-      <strong>${summary.enviados}</strong>
-    </div>
-    <div class="progress-summary-card">
-      <span class="progress-summary-label">Entregados</span>
-      <strong>${summary.entregados}</strong>
-    </div>
+      <span class="progress-summary-label">${label}</span>
+      <strong>${Number(valor) || 0}</strong>
+    </div>`)
+      .join("")}
   `;
 }
 
@@ -562,13 +554,13 @@ function renderMessages(messages = [], options = {}) {
   const { formatDate, canRemoveImage, currentUserId } = options;
 
   if (!messages.length) {
-    return "<div class='history-empty'>Todavia no hay mensajes en esta solicitud.</div>";
+    return "<div class='history-empty'>Todavía no hay mensajes en esta solicitud.</div>";
   }
 
   return messages
     .map((message) => {
       const destinatario = message.destinatario_nombre
-        ? `<div class="chat-target">Para: ${message.destinatario_nombre}</div>`
+        ? `<div class="chat-target">Para: ${escaparTexto(message.destinatario_nombre)}</div>`
         : "";
 
       const imageActions =
@@ -582,10 +574,11 @@ function renderMessages(messages = [], options = {}) {
              </button>`
           : "";
 
-      const imagen = message.imagen_data
+      const imagenUrl = imagenSegura(message.imagen_data);
+      const imagen = imagenUrl
         ? `<div class="chat-image-block">
-             <a href="${message.imagen_data}" target="_blank" rel="noreferrer">
-               <img src="${message.imagen_data}" alt="${message.imagen_nombre || "Adjunto"}" class="chat-image" />
+             <a href="${imagenUrl}" target="_blank" rel="noreferrer">
+               <img src="${imagenUrl}" alt="${escaparAtributo(message.imagen_nombre || "Adjunto")}" class="chat-image" />
              </a>
              ${imageActions}
            </div>`
@@ -595,11 +588,11 @@ function renderMessages(messages = [], options = {}) {
       return `
         <article class="chat-item ${isMine ? "chat-mine" : "chat-theirs"}">
           <div class="chat-header">
-            <strong>${message.remitente_nombre || "Usuario"}</strong>
+            <strong>${escaparTexto(message.remitente_nombre || "Usuario")}</strong>
             <span>${formatDate(message.created_at)}</span>
           </div>
           ${destinatario}
-          ${message.mensaje ? `<p>${message.mensaje}</p>` : ""}
+          ${message.mensaje ? `<p>${escaparTexto(message.mensaje)}</p>` : ""}
           ${imagen}
         </article>
       `;
@@ -682,11 +675,11 @@ function renderRows(rows, tableBody, mobileList, formatDate, role) {
             <div class="table-subline">${formatDate(item.created_at)}</div>
           </td>
           <td class="col-equipo">
-            <strong>${item.nombre_equipo || item.equipo || "-"}</strong>
-            <div class="table-subline">${solicitante}</div>
+            <strong>${escaparTexto(item.nombre_equipo || item.equipo || "-")}</strong>
+            <div class="table-subline">${escaparTexto(solicitante)}</div>
           </td>
           <td class="col-resumen">
-            <strong>${item.resumen_items || item.repuesto || "-"}</strong>
+            <strong>${escaparTexto(item.resumen_items || item.repuesto || "-")}</strong>
             <div class="table-subline">${item.total_items || 1} prod. · ${
               item.total_unidades || item.cantidad || 0
             } uds</div>
@@ -725,12 +718,12 @@ function renderRows(rows, tableBody, mobileList, formatDate, role) {
             <div class="solicitud-mobile-top">
               <div>
                 <span class="smc-id-label">#${item.id}</span>
-                <div class="smc-equipo">${item.nombre_equipo || item.equipo || "-"}</div>
-                <div class="smc-solicitante">${solicitante}</div>
+                <div class="smc-equipo">${escaparTexto(item.nombre_equipo || item.equipo || "-")}</div>
+                <div class="smc-solicitante">${escaparTexto(solicitante)}</div>
               </div>
               ${renderStatusBadge(item.estado)}
             </div>
-            <p class="solicitud-mobile-summary">${item.resumen_items || item.repuesto || "-"}</p>
+            <p class="solicitud-mobile-summary">${escaparTexto(item.resumen_items || item.repuesto || "-")}</p>
             <div class="solicitud-mobile-meta">
               <span>${item.total_items || 1} prod. · ${item.total_unidades || item.cantidad || 0} uds</span>
               <span>${renderStatusSnapshot(item, formatDate)}</span>
@@ -761,8 +754,25 @@ function escaparAtributo(valor) {
   return String(valor ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;");
+}
+
+/**
+ * Escapa texto escrito por usuarios (productos, mensajes, nombres) antes de
+ * meterlo en el HTML. Sin esto, un mensaje con "<" rompia la vista y un
+ * producto como Manguera 1/2" se cortaba al editarlo (la comilla cerraba el
+ * atributo value).
+ */
+function escaparTexto(valor) {
+  return escaparAtributo(valor);
+}
+
+/** Solo se muestran imagenes embebidas; el servidor ya exige data:image/. */
+function imagenSegura(url) {
+  const valor = String(url || "");
+  return valor.startsWith("data:image/") ? escaparAtributo(valor) : "";
 }
 
 function buildCreateItemRow(item = {}, options = {}) {
@@ -772,13 +782,13 @@ function buildCreateItemRow(item = {}, options = {}) {
       <div class="form-grid cols-3 compact-grid">
         <div>
           <label>Producto</label>
-          <input class="solicitud-item-name" value="${item.nombre_item || ""}" ${
+          <input class="solicitud-item-name" value="${escaparAtributo(item.nombre_item || "")}" ${
             editable ? "" : "disabled"
           } autocomplete="off" spellcheck="false" />
         </div>
         <div>
-          <label>Numero de parte</label>
-          <input class="solicitud-item-code" value="${item.codigo_referencia || item.codigo || ""}" ${
+          <label>Número de parte</label>
+          <input class="solicitud-item-code" value="${escaparAtributo(item.codigo_referencia || item.codigo || "")}" ${
             editable ? "" : "disabled"
           } autocomplete="off" spellcheck="false" />
         </div>
@@ -790,20 +800,20 @@ function buildCreateItemRow(item = {}, options = {}) {
         </div>
         <div>
           <label>Unidad / talla</label>
-          <input class="solicitud-item-unit" value="${item.unidad_medida || ""}" ${
+          <input class="solicitud-item-unit" value="${escaparAtributo(item.unidad_medida || "")}" ${
             editable ? "" : "disabled"
           } autocomplete="off" spellcheck="false" />
         </div>
         <div>
           <label>Usuario final</label>
-          <input class="solicitud-item-final-user" value="${item.usuario_final || ""}" ${
+          <input class="solicitud-item-final-user" value="${escaparAtributo(item.usuario_final || "")}" ${
             editable ? "" : "disabled"
           } autocomplete="off" spellcheck="false" />
         </div>
         <input type="hidden" class="solicitud-item-status" value="POR_GESTIONAR" />
         <div class="full">
           <label>Detalle</label>
-          <input class="solicitud-item-detail" value="${item.detalle || item.comentario || ""}"
+          <input class="solicitud-item-detail" value="${escaparAtributo(item.detalle || item.comentario || "")}"
                  data-visto="${escaparAtributo(item.detalle || item.comentario || "")}" ${
             editable ? "" : "disabled"
           } autocomplete="off" spellcheck="false" />
@@ -830,51 +840,64 @@ function buildDetailItemRow(item = {}, options = {}) {
     solicitante = "-",
   } = options;
   const canConfigure = editableBase || canManageItem;
-  const summaryLine = [
-    ["Cantidad", item.cantidad || 1],
-    ["Unidad / talla", item.unidad_medida || "Sin unidad o talla"],
-    ["Número de parte", item.codigo_referencia || "Sin número de parte"],
-    ["Usuario final", item.usuario_final || "Sin usuario final"],
-  ];
-  const detailText = item.detalle || item.comentario || "Sin detalle";
-  const gestion = item.comentario_gestion
-    ? `<div class="table-subline">Comentario de gestión: ${item.comentario_gestion}</div>`
-    : "";
-  const encargado = item.encargado_nombre
-    ? `<div class="table-subline">Encargado: ${item.encargado_nombre}</div>`
-    : `<div class="table-subline">Encargado: Sin asignar</div>`;
-  const enviadoPor = item.enviado_por_nombre
-    ? `<div class="table-subline">Enviado por: ${item.enviado_por_nombre}</div>`
-    : `<div class="table-subline">Enviado por: Sin registrar</div>`;
-  const recepcionadoPor = item.recepcionado_por_nombre
-    ? `<div class="table-subline">Recepcionado por: ${item.recepcionado_por_nombre}</div>`
-    : `<div class="table-subline">Recepcionado por: Sin registrar</div>`;
-  const solicitanteNombre =
-    item.solicitante_name || item.solicitante_nombre || item.solicitante || solicitante || "-";
+  const cantidad = Number(item.cantidad) || 1;
+  const unidad = String(item.unidad_medida || "").trim();
+  const datos = [
+    item.codigo_referencia ? `N.º de parte ${escaparTexto(item.codigo_referencia)}` : "",
+    item.usuario_final ? `Usuario final: ${escaparTexto(item.usuario_final)}` : "",
+  ].filter(Boolean);
+  const detalle = String(item.detalle || item.comentario || "").trim();
+  // El solicitante es el mismo de toda la solicitud y ya va en el encabezado;
+  // solo se repite aqui si este producto lo pidio otra persona.
+  const solicitanteItem = String(
+    item.solicitante_name || item.solicitante_nombre || item.solicitante || ""
+  ).trim();
+  const otroSolicitante = solicitanteItem && solicitanteItem !== String(solicitante || "").trim();
+  const personas = [
+    ["Encargado", item.encargado_nombre || (canManageItem ? "Sin asignar" : "")],
+    ["Enviado por", item.enviado_por_nombre],
+    ["Recepcionado por", item.recepcionado_por_nombre],
+    ["Solicitado por", otroSolicitante ? solicitanteItem : ""],
+  ].filter(([, valor]) => valor);
 
   return `
-    <article class="item-row item-tracking-card" data-item-id="${item.id || ""}">
+    <article class="item-row item-tracking-card" data-item-id="${escaparAtributo(item.id || "")}">
       <div class="item-tracking-head">
         <div class="item-tracking-title">
-          <strong>${item.nombre_item || "Nuevo producto"}</strong>
-          <div class="item-meta-grid">
-            ${summaryLine.map(([label, value]) => `
-              <span class="item-meta-pill"><b>${label}</b>${value}</span>
-            `).join("")}
+          <div class="itc-top">
+            <span class="itc-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="m3 8 9 5 9-5"/><path d="M12 13v8"/></svg>
+            </span>
+            <div class="itc-name">
+              <strong>${escaparTexto(item.nombre_item || "Nuevo producto")}</strong>
+              ${datos.length ? `<span class="itc-datos">${datos.join(" · ")}</span>` : ""}
+            </div>
+            <div class="itc-qty">
+              <b>${cantidad}</b>
+              <small>${unidad ? escaparTexto(unidad) : "cantidad"}</small>
+            </div>
           </div>
-          <div class="table-subline item-detail-line">Detalle: ${detailText}</div>
-          <div class="table-subline">Solicitado por: ${solicitanteNombre}</div>
-          <div class="item-status-preview">${renderItemStatusBadge(item.estado_item || "POR_GESTIONAR")}</div>
-          ${encargado}
-          ${enviadoPor}
-          ${recepcionadoPor}
-          ${gestion}
-          ${canManageItem ? `
-          <div class="item-quick-actions">
-            ${["GESTIONADO", "ENVIADO", "ENTREGADO"].map((s) => `
-              <button class="item-quick-btn${item.estado_item === s ? " item-quick-active" : ""}" data-quick-status="${s}" type="button">${getItemStatusLabel(s)}</button>
+          ${detalle ? `<p class="itc-detalle">${escaparTexto(detalle)}</p>` : ""}
+          ${personas.length ? `
+          <dl class="itc-personas">
+            ${personas.map(([label, valor]) => `
+              <div class="${valor === "Sin asignar" ? "itc-vacio" : ""}"><dt>${label}</dt><dd>${escaparTexto(valor)}</dd></div>
             `).join("")}
+          </dl>` : ""}
+          ${item.comentario_gestion ? `
+          <div class="itc-gestion">
+            <span>Comentario de gestión</span>
+            <p>${escaparTexto(item.comentario_gestion)}</p>
           </div>` : ""}
+          <div class="itc-foot">
+            <div class="item-status-preview">${renderItemStatusBadge(item.estado_item || "POR_GESTIONAR")}</div>
+            ${canManageItem ? `
+            <div class="item-quick-actions" role="group" aria-label="Cambiar estado del producto">
+              ${["GESTIONADO", "ENVIADO", "ENTREGADO"].map((s) => `
+                <button class="item-quick-btn${item.estado_item === s ? " item-quick-active" : ""}" data-quick-status="${s}" type="button">${getItemStatusLabel(s)}</button>
+              `).join("")}
+            </div>` : ""}
+          </div>
         </div>
         ${
           canConfigure
@@ -1121,6 +1144,7 @@ export async function initSolicitudesView(context) {
   const detailHistoryPanel = document.getElementById("solicitud-detail-history-panel");
   const detailTitle = document.getElementById("solicitud-detail-title");
   const detailBadge = document.getElementById("solicitud-detail-badge");
+  const detailMeta = document.getElementById("solicitud-detail-meta");
   const detailEquipo = document.getElementById("solicitud-detail-equipo");
   const detailEquipoSelect = document.getElementById("solicitud-detail-equipo-id");
   const detailSolicitante = document.getElementById("solicitud-detail-solicitante");
@@ -1304,20 +1328,20 @@ export async function initSolicitudesView(context) {
         <div class="ipt-group" style="animation-delay:${delay}s">
           <div class="ipt-group-head">
             <span class="ipt-group-id">#${solicitudId}</span>
-            <span class="ipt-group-equipo">${first.solicitud_equipo || "Sin equipo"}</span>
-            <span class="ipt-group-quien">${first.solicitante_nombre || "?"}</span>
+            <span class="ipt-group-equipo">${escaparTexto(first.solicitud_equipo || "Sin equipo")}</span>
+            <span class="ipt-group-quien">${escaparTexto(first.solicitante_nombre || "Sin solicitante")}</span>
             <span class="mini-chip">${estado}</span>
             <button class="ipt-open-btn" type="button" data-open-solicitud="${solicitudId}">Ver</button>
           </div>`;
       for (const item of groupItems) {
-        const ref = item.codigo_referencia ? `<span class="ipt-ref">${item.codigo_referencia}</span>` : "";
-        const nota = item.comentario ? `<span class="ipt-nota">${item.comentario}</span>` : "";
-        const uf = item.usuario_final ? `<span class="ipt-uf">👤 ${item.usuario_final}</span>` : "";
+        const ref = item.codigo_referencia ? `<span class="ipt-ref">${escaparTexto(item.codigo_referencia)}</span>` : "";
+        const nota = item.comentario ? `<span class="ipt-nota">${escaparTexto(item.comentario)}</span>` : "";
+        const uf = item.usuario_final ? `<span class="ipt-uf">Para ${escaparTexto(item.usuario_final)}</span>` : "";
         html += `
           <div class="ipt-item">
-            <span class="ipt-name">${item.nombre_item || "Sin nombre"}</span>
+            <span class="ipt-name">${escaparTexto(item.nombre_item || "Sin nombre")}</span>
             ${ref}${nota}${uf}
-            <span class="ipt-qty">${item.cantidad ?? ""} <small>${item.unidad_medida || ""}</small></span>
+            <span class="ipt-qty">${escaparTexto(item.cantidad ?? "")} <small>${escaparTexto(item.unidad_medida || "")}</small></span>
           </div>`;
       }
       html += `</div>`;
@@ -1490,19 +1514,19 @@ export async function initSolicitudesView(context) {
     equipoSelect.innerHTML = equipos.length
       ? [
           "<option value=''>Seleccionar equipo</option>",
-          ...equipos.map((item) => `<option value="${item.id}">${item.nombre_equipo}</option>`),
+          ...equipos.map((item) => `<option value="${item.id}">${escaparTexto(item.nombre_equipo)}</option>`),
         ].join("")
       : "<option value=''>Sin equipos</option>";
 
     filterEquipoSelect.innerHTML = [
       "<option value=''>Todos</option>",
-      ...equipos.map((item) => `<option value="${item.id}">${item.nombre_equipo}</option>`),
+      ...equipos.map((item) => `<option value="${item.id}">${escaparTexto(item.nombre_equipo)}</option>`),
     ].join("");
 
     detailEquipoSelect.innerHTML = equipos.length
       ? [
           "<option value=''>Seleccionar equipo</option>",
-          ...equipos.map((item) => `<option value="${item.id}">${item.nombre_equipo}</option>`),
+          ...equipos.map((item) => `<option value="${item.id}">${escaparTexto(item.nombre_equipo)}</option>`),
         ].join("")
       : "<option value=''>Sin equipos</option>";
   }
@@ -1567,8 +1591,8 @@ export async function initSolicitudesView(context) {
         (contacto) =>
           `<option value="${contacto.id}" ${
             Number(contacto.id) === Number(item.encargado_id) ? "selected" : ""
-          }>${contacto.nombre} - ${contacto.rol}${
-            contacto.equipo_nombre ? ` - ${contacto.equipo_nombre}` : ""
+          }>${escaparTexto(contacto.nombre)} - ${contacto.rol}${
+            contacto.equipo_nombre ? ` - ${escaparTexto(contacto.equipo_nombre)}` : ""
           }</option>`
       ),
     ].join("");
@@ -1579,8 +1603,8 @@ export async function initSolicitudesView(context) {
         (contacto) =>
           `<option value="${contacto.id}" ${
             Number(contacto.id) === Number(item.enviado_por_id) ? "selected" : ""
-          }>${contacto.nombre} - ${contacto.rol}${
-            contacto.equipo_nombre ? ` - ${contacto.equipo_nombre}` : ""
+          }>${escaparTexto(contacto.nombre)} - ${contacto.rol}${
+            contacto.equipo_nombre ? ` - ${escaparTexto(contacto.equipo_nombre)}` : ""
           }</option>`
       ),
     ].join("");
@@ -1591,8 +1615,8 @@ export async function initSolicitudesView(context) {
         (contacto) =>
           `<option value="${contacto.id}" ${
             Number(contacto.id) === Number(item.recepcionado_por_id) ? "selected" : ""
-          }>${contacto.nombre} - ${contacto.rol}${
-            contacto.equipo_nombre ? ` - ${contacto.equipo_nombre}` : ""
+          }>${escaparTexto(contacto.nombre)} - ${contacto.rol}${
+            contacto.equipo_nombre ? ` - ${escaparTexto(contacto.equipo_nombre)}` : ""
           }</option>`
       ),
     ].join("");
@@ -1976,8 +2000,8 @@ export async function initSolicitudesView(context) {
       "<option value=''>Elige destinatario para notificar</option>",
       ...contactos.map(
         (contacto) =>
-          `<option value="${contacto.id}">${contacto.nombre} - ${contacto.rol}${
-            contacto.equipo_nombre ? ` - ${contacto.equipo_nombre}` : ""
+          `<option value="${contacto.id}">${escaparTexto(contacto.nombre)} - ${contacto.rol}${
+            contacto.equipo_nombre ? ` - ${escaparTexto(contacto.equipo_nombre)}` : ""
           }</option>`
       ),
     ].join("");
@@ -2019,6 +2043,15 @@ export async function initSolicitudesView(context) {
     currentSolicitud = solicitud;
     detailTitle.textContent = `Solicitud #${solicitud.id}`;
     detailBadge.innerHTML = renderStatusBadge(solicitud.estado);
+    if (detailMeta) {
+      detailMeta.textContent = [
+        solicitud.nombre_equipo || solicitud.equipo,
+        solicitud.solicitante_name || solicitud.solicitante,
+        solicitud.created_at ? `creada el ${context.formatDate(solicitud.created_at)}` : "",
+      ]
+        .filter(Boolean)
+        .join(" · ");
+    }
     detailEquipo.value = solicitud.nombre_equipo || solicitud.equipo || "-";
     detailEquipo.classList.toggle("hidden", isGlobalRole);
     detailEquipoSelect.classList.toggle("hidden", !isGlobalRole);
@@ -2118,6 +2151,9 @@ export async function initSolicitudesView(context) {
     closeChatDrawer({ syncTab: false, syncHistory: false });
     detailTitle.textContent = `Solicitud #${solicitudId}`;
     detailBadge.innerHTML = renderStatusBadge("PENDIENTE");
+    if (detailMeta) {
+      detailMeta.textContent = "Cargando la solicitud…";
+    }
     detailEquipo.value = "Cargando...";
     detailEquipo.classList.toggle("hidden", isGlobalRole);
     detailEquipoSelect.classList.toggle("hidden", !isGlobalRole);
@@ -2945,7 +2981,7 @@ export async function initSolicitudesView(context) {
         method: "PATCH",
         body: JSON.stringify({ archivar: false }),
       });
-      context.showToast("Solicitud restaurada al inbox");
+      context.showToast("Solicitud restaurada a la bandeja");
       closeChatDrawer();
       closeDetailSurface();
       await loadSolicitudes({ showLoading: false });

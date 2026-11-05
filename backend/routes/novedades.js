@@ -6,7 +6,7 @@ const { authenticate } = require("../middleware/auth");
 const { authorize } = require("../middleware/authorize");
 const { run, all } = require("../database/db");
 const { ROLES } = require("../config/appRoles");
-const { HttpError } = require("../utils/errors");
+const { HttpError } = require("../utils/httpError");
 const { isOperationalPgEnabled, getOperationalPool } = require("../services/operationalPgStore");
 
 const router = express.Router();
