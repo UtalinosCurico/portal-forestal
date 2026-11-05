@@ -39,7 +39,7 @@ const UNIDAD_SINONIMOS = new Map([
 function stripAccents(value) {
   return String(value ?? "")
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
 /**
