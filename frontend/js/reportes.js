@@ -1,3 +1,4 @@
+import { confirmar } from "./dialogo.js";
 // Vista de consumo por producto.
 //
 // Dividida en tres pestanas porque cumplen roles distintos: Resumen es lo que
@@ -13,8 +14,42 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
+// Cifras para la vista con formato chileno: "1.234" y "2,5". Solo para
+// mostrar: lo que vuelve a la lógica o a un input se queda como número.
+function formatoNumero(valor) {
+  if (valor === null || valor === undefined || valor === "") return "";
+  const numero = Number(valor);
+  return Number.isFinite(numero) ? numero.toLocaleString("es-CL") : String(valor);
+}
+
+// "1 solicitud", "3 solicitudes": nunca "1 solicitudes" ni "solicitud(es)".
+function conCantidad(cantidad, singular, plural) {
+  return `${formatoNumero(cantidad)} ${Number(cantidad) === 1 ? singular : plural}`;
+}
+
+// El servidor deja las unidades en singular ("unidad", "caja"). Junto a una
+// cantidad distinta de 1 se muestran en plural; las abreviaturas (kg, lt, mt)
+// y las unidades escritas a mano quedan tal cual.
+const PLURAL_UNIDAD = {
+  unidad: "unidades",
+  caja: "cajas",
+  rollo: "rollos",
+  par: "pares",
+  paquete: "paquetes",
+  bolsa: "bolsas",
+};
+
+function unidadPara(cantidad, unidad) {
+  const texto = String(unidad || "");
+  return Number(cantidad) === 1 ? texto : PLURAL_UNIDAD[texto] || texto;
+}
+
+// Fecha local en AAAA-MM-DD. Con toISOString() salía en UTC y, de noche en
+// Chile, el "Hasta" quedaba en el día siguiente.
 function fechaISO(date) {
-  return date.toISOString().slice(0, 10);
+  const mes = String(date.getMonth() + 1).padStart(2, "0");
+  const dia = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${mes}-${dia}`;
 }
 
 function calcularPeriodo(clave) {
@@ -111,8 +146,8 @@ function renderBarras(serie, periodo, mediaMovil = null) {
                 i % paso === 0 || i === claves.length - 1 || claves.length <= 8;
               return `
                 <div class="reportes-barra ${esIncompleto ? "incompleta" : ""}"
-                     title="${escapeHtml(etiquetas[i])}: ${valor}${esIncompleto ? " (aun no termina)" : ""}">
-                  <div class="reportes-barra-valor">${paso > 2 && !mostrarEtiqueta ? "" : valor}</div>
+                     title="${escapeHtml(etiquetas[i])}: ${formatoNumero(valor)}${esIncompleto ? " (aún no termina)" : ""}">
+                  <div class="reportes-barra-valor">${paso > 2 && !mostrarEtiqueta ? "" : formatoNumero(valor)}</div>
                   <div class="reportes-barra-riel">
                     <div class="reportes-barra-relleno" style="height:${alto}%"></div>
                   </div>
@@ -128,7 +163,7 @@ function renderBarras(serie, periodo, mediaMovil = null) {
     </div>
     ${
       claves.length > 10
-        ? `<p class="reportes-hint-scroll">${claves.length} periodos — arrastra de lado para ver todos.</p>`
+        ? `<p class="reportes-hint-scroll">${conCantidad(claves.length, "período", "períodos")} — arrastra de lado para ver todos.</p>`
         : ""
     }
   `;
@@ -149,12 +184,12 @@ function renderTopProductos(productos, contenedor, limite = 7) {
     .map((p) => {
       const porcentaje = Math.round((p.total_unidades / totalGeneral) * 100);
       return `
-        <div class="reportes-top-fila" title="${escapeHtml(p.nombre)}: ${p.total_unidades} (${porcentaje}% del total)">
+        <div class="reportes-top-fila" title="${escapeHtml(p.nombre)}: ${formatoNumero(p.total_unidades)} (${porcentaje}% del total)">
           <span class="reportes-top-nombre">${escapeHtml(p.nombre)}</span>
           <span class="reportes-top-riel">
             <span class="reportes-top-relleno" style="width:${Math.max(2, Math.round((p.total_unidades / maximo) * 100))}%"></span>
           </span>
-          <span class="reportes-top-valor">${p.total_unidades}</span>
+          <span class="reportes-top-valor">${formatoNumero(p.total_unidades)}</span>
         </div>
       `;
     })
@@ -176,7 +211,7 @@ function renderDesgloseEquipos(porEquipo) {
           <span class="reportes-equipo-riel">
             <span class="reportes-equipo-relleno" style="width:${Math.round((valor / total) * 100)}%"></span>
           </span>
-          <span class="reportes-equipo-valor">${valor}</span>
+          <span class="reportes-equipo-valor">${formatoNumero(valor)}</span>
         </div>
       `
         )
@@ -189,9 +224,9 @@ function renderVariantes(variantes = []) {
   if (variantes.length <= 1) return "";
   return `
     <div class="reportes-variantes">
-      <strong>Se escribio de ${variantes.length} formas distintas:</strong>
+      <strong>Se escribió de ${formatoNumero(variantes.length)} formas distintas:</strong>
       ${variantes
-        .map((v) => `<span class="mini-chip">${escapeHtml(v.nombre)} (${v.conteo})</span>`)
+        .map((v) => `<span class="mini-chip">${escapeHtml(v.nombre)} (${formatoNumero(v.conteo)})</span>`)
         .join(" ")}
     </div>
   `;
@@ -210,7 +245,7 @@ function celdaProyeccion(proyeccion) {
   }
   return `
     <span class="reportes-proyeccion">
-      <strong>~${proyeccion.valor}</strong>
+      <strong>~${formatoNumero(proyeccion.valor)}</strong>
       <span class="reportes-chip confianza-${escapeHtml(proyeccion.confianza.nivel)}">${escapeHtml(
         proyeccion.confianza.etiqueta
       )}</span>
@@ -246,9 +281,9 @@ function renderAtipicos(atipicos, card, lista) {
           </span>
         </div>
         <div class="reportes-atipico-cifras">
-          <span class="reportes-atipico-cantidad">${a.cantidad}</span>
+          <span class="reportes-atipico-cantidad">${formatoNumero(a.cantidad)}</span>
           <span class="reportes-atipico-comparacion">
-            lo normal es ${a.valor_tipico}${a.veces_lo_tipico ? ` · ${a.veces_lo_tipico}x` : ""}
+            lo normal es ${formatoNumero(a.valor_tipico)}${a.veces_lo_tipico ? ` · ${formatoNumero(a.veces_lo_tipico)}x` : ""}
           </span>
         </div>
         <span class="reportes-atipico-ir">Revisar →</span>
@@ -262,7 +297,7 @@ function renderAtipicos(atipicos, card, lista) {
 function renderSinDatos(mensaje) {
   return `
     <div class="reportes-vacio">
-      <strong>Todavia no hay datos suficientes</strong>
+      <strong>Todavía no hay datos suficientes</strong>
       <p class="muted-text">${escapeHtml(mensaje)}</p>
     </div>`;
 }
@@ -332,8 +367,8 @@ function renderNecesidadProxima(productos, contenedor, unidadPeriodo) {
         <li class="reportes-necesidad-fila">
           <span class="reportes-necesidad-nombre">${escapeHtml(p.nombre)}</span>
           <span class="reportes-necesidad-cantidad">
-            <strong>${p.proyeccion.valor}</strong>
-            <span class="reportes-necesidad-unidad">${escapeHtml(p.unidad || "")}</span>
+            <strong>${formatoNumero(p.proyeccion.valor)}</strong>
+            <span class="reportes-necesidad-unidad">${escapeHtml(unidadPara(p.proyeccion.valor, p.unidad))}</span>
           </span>
           <span class="reportes-necesidad-confianza ${c.clase}" title="${escapeHtml(
             c.detalle
@@ -388,8 +423,8 @@ function renderABC(abc, contenedor, criterioActivo = "cantidad") {
               Math.round((p.participacion / maximo) * 100)
             )}%"></span>
           </span>
-          <span class="reportes-abc-valor">${p.participacion}%</span>
-          <span class="reportes-abc-acumulado" title="Acumulado hasta este producto">${p.acumulado}%</span>
+          <span class="reportes-abc-valor">${formatoNumero(p.participacion)}%</span>
+          <span class="reportes-abc-acumulado" title="Acumulado hasta este producto">${formatoNumero(p.acumulado)}%</span>
         </div>`
         )
         .join("")}
@@ -409,13 +444,15 @@ function renderAsociados(asociados, contenedor) {
   }
 
   if (!asociados.pares.length) {
+    const revisadas = asociados.solicitudes_analizadas;
     contenedor.innerHTML = `
       <div class="reportes-vacio ok">
         <strong>No se detectaron productos que se pidan juntos</strong>
         <p class="muted-text">
-          Se revisaron ${asociados.solicitudes_analizadas} solicitudes con más de un
-          producto y no aparecio ninguna combinación que se repita más de lo que
-          cabria esperar por azar.
+          Se ${Number(revisadas) === 1 ? "revisó" : "revisaron"}
+          ${conCantidad(revisadas, "solicitud", "solicitudes")} con más de un
+          producto y no apareció ninguna combinación que se repita más de lo que
+          cabría esperar por azar.
         </p>
       </div>`;
     return;
@@ -429,10 +466,10 @@ function renderAsociados(asociados, contenedor) {
         <div class="reportes-asociado">
           <div class="reportes-asociado-texto">
             Cuando se pide <strong>${escapeHtml(p.producto)}</strong>,
-            el <strong>${p.confianza}%</strong> de las veces tambien se pide
+            el <strong>${formatoNumero(p.confianza)}%</strong> de las veces también se pide
             <strong>${escapeHtml(p.se_pide_con)}</strong>
             <span class="reportes-asociado-meta">
-              ${p.veces_juntos} veces juntos · ${p.veces_mas_que_el_azar}x mas que por azar
+              ${conCantidad(p.veces_juntos, "vez", "veces")} juntos · ${formatoNumero(p.veces_mas_que_el_azar)}x más que por azar
             </span>
           </div>
         </div>
@@ -451,9 +488,11 @@ function renderEquipos(datosEquipos, resumenEl, concentracionesEl) {
           (e) => `
       <div class="reportes-equipo-tarjeta">
         <strong>${escapeHtml(e.equipo)}</strong>
-        <span class="reportes-equipo-cifra">${e.unidades}<small> uds</small></span>
+        <span class="reportes-equipo-cifra">${formatoNumero(e.unidades)}<small> ${
+          Number(e.unidades) === 1 ? "unidad" : "unidades"
+        }</small></span>
         <span class="table-subline">
-          ${e.solicitudes} solicitudes · ${e.participacion_unidades}% del total
+          ${conCantidad(e.solicitudes, "solicitud", "solicitudes")} · ${formatoNumero(e.participacion_unidades)}% del total
         </span>
       </div>`
         )
@@ -470,19 +509,19 @@ function renderEquipos(datosEquipos, resumenEl, concentracionesEl) {
           <div class="reportes-concentracion">
             <span>
               <strong>${escapeHtml(c.equipo)}</strong> se lleva el
-              <strong>${c.participacion_del_producto}%</strong> de
+              <strong>${formatoNumero(c.participacion_del_producto)}%</strong> de
               <strong>${escapeHtml(c.producto)}</strong>
               <span class="reportes-asociado-meta">
-                por su actividad le corresponderia ${c.participacion_esperada}%
+                por su actividad le correspondería ${formatoNumero(c.participacion_esperada)}%
               </span>
             </span>
-            <span class="reportes-chip alerta">${c.veces_lo_esperado}x</span>
+            <span class="reportes-chip alerta">${formatoNumero(c.veces_lo_esperado)}x</span>
           </div>`
           )
           .join("")}
       </div>`
     : `<p class="muted-text reportes-nota">
-         Ningun equipo consume un producto muy por encima de lo que le corresponde.
+         Ningún equipo consume un producto muy por encima de lo que le corresponde.
        </p>`;
 }
 
@@ -497,7 +536,7 @@ function renderEstacionalidad(estacionalidad, contenedor) {
   contenedor.innerHTML = `
     <p class="muted-text reportes-nota">
       Mes de mayor consumo: <strong>${escapeHtml(estacionalidad.mes_peak.mes)}</strong> ·
-      el mas bajo: <strong>${escapeHtml(estacionalidad.mes_mas_bajo.mes)}</strong>
+      el más bajo: <strong>${escapeHtml(estacionalidad.mes_mas_bajo.mes)}</strong>
     </p>
     <div class="reportes-top">
       ${estacionalidad.meses
@@ -505,7 +544,7 @@ function renderEstacionalidad(estacionalidad, contenedor) {
           (m) => `
         <div class="reportes-top-fila">
           <span class="reportes-top-nombre">${escapeHtml(m.mes)}</span>
-          <span class="reportes-top-valor">${m.unidades}</span>
+          <span class="reportes-top-valor">${formatoNumero(m.unidades)}</span>
           <span class="reportes-top-riel">
             <span class="reportes-top-relleno" style="width:${Math.max(2, Math.round((m.unidades / maximo) * 100))}%"></span>
           </span>
@@ -530,21 +569,23 @@ function renderTarjetasMovil(visibles, periodo, lista) {
             }
           </div>
           <span class="reportes-card-total">
-            ${p.total_unidades}<small>${p.unidad ? ` ${escapeHtml(p.unidad)}` : ""}</small>
+            ${formatoNumero(p.total_unidades)}<small>${
+              p.unidad ? ` ${escapeHtml(unidadPara(p.total_unidades, p.unidad))}` : ""
+            }</small>
           </span>
         </div>
         <div class="reportes-card-datos">
-          <span><em>Típico</em> ${p.tipico}</span>
-          <span><em>Stock</em> ${p.sugerido_min} a ${p.sugerido_max}</span>
-          <span><em>Solicitudes</em> ${p.total_solicitudes}</span>
+          <span><em>Típico</em> ${formatoNumero(p.tipico)}</span>
+          <span><em>Stock</em> ${formatoNumero(p.sugerido_min)} a ${formatoNumero(p.sugerido_max)}</span>
+          <span><em>Solicitudes</em> ${formatoNumero(p.total_solicitudes)}</span>
         </div>
         <div class="reportes-card-chips">
           ${chipRegularidad(p.regularidad)}
           ${chipTendencia(p.tendencia)}
-          ${p.atipicos ? `<span class="reportes-chip alerta">${p.atipicos} a revisar</span>` : ""}
+          ${p.atipicos ? `<span class="reportes-chip alerta">${formatoNumero(p.atipicos)} a revisar</span>` : ""}
         </div>
         <div class="reportes-card-detalle hidden">
-          <h5>Evolucion</h5>
+          <h5>Evolución</h5>
           ${renderBarras(p.serie, periodo)}
           <h5>Por equipo</h5>
           ${renderDesgloseEquipos(p.por_equipo) || "<p class='muted-text'>Sin desglose.</p>"}
@@ -567,8 +608,8 @@ function renderFilas(productos, periodo, tbody, filtroTexto, mobileList, puedeRe
     // Estado vacio con salida: decir que pasa y que hacer, no solo "sin datos".
     const vacio = filtro
       ? `<div class="reportes-vacio">
-           <strong>Ningun producto coincide con "${escapeHtml(filtro)}"</strong>
-           <p class="muted-text">Prueba con parte del nombre, o revisa si se escribio distinto en las solicitudes.</p>
+           <strong>Ningún producto coincide con "${escapeHtml(filtro)}"</strong>
+           <p class="muted-text">Prueba con parte del nombre, o revisa si se escribió distinto en las solicitudes.</p>
          </div>`
       : `<div class="reportes-vacio">
            <strong>No hubo pedidos en este período</strong>
@@ -584,10 +625,14 @@ function renderFilas(productos, periodo, tbody, filtroTexto, mobileList, puedeRe
 
   tbody.innerHTML = visibles
     .map((p) => {
-      const unidad = p.unidad ? ` ${escapeHtml(p.unidad)}` : "";
+      const unidad = p.unidad ? ` ${escapeHtml(unidadPara(p.total_unidades, p.unidad))}` : "";
       const pocosDatos =
         p.periodos_con_consumo <= 1
-          ? `<div class="table-subline reportes-aviso">Solo ${p.periodos_con_consumo} período con consumo: referencial.</div>`
+          ? `<div class="table-subline reportes-aviso">${
+              p.periodos_con_consumo === 1
+                ? "Solo 1 período con consumo: referencial."
+                : "Ningún período completo con consumo: referencial."
+            }</div>`
           : "";
 
       return `
@@ -600,7 +645,9 @@ function renderFilas(productos, periodo, tbody, filtroTexto, mobileList, puedeRe
                   ? `<button class="reportes-renombrar-btn" data-renombrar="${escapeHtml(p.clave)}"
                        data-nombre-actual="${escapeHtml(p.nombre)}"
                        data-personalizado="${p.nombre_personalizado ? "1" : ""}"
-                       type="button" title="${p.nombre_personalizado ? "Quitar renombre" : "Renombrar"}">
+                       type="button"
+                       title="${p.nombre_personalizado ? "Volver al nombre original" : "Cambiar nombre"}"
+                       aria-label="${p.nombre_personalizado ? "Volver al nombre original" : "Cambiar nombre"}">
                        ${p.nombre_personalizado ? "↺" : "✎"}
                      </button>`
                   : ""
@@ -621,33 +668,37 @@ function renderFilas(productos, periodo, tbody, filtroTexto, mobileList, puedeRe
                      ${(p.desglose_unidades || [])
                        .map(
                          (d) =>
-                           `<span class="reportes-unidad-parte"><strong>${d.total}</strong> ${escapeHtml(
-                             d.unidad || "sin unidad"
+                           `<span class="reportes-unidad-parte"><strong>${formatoNumero(
+                             d.total
+                           )}</strong> ${escapeHtml(
+                             d.unidad ? unidadPara(d.total, d.unidad) : "sin unidad"
                            )}</span>`
                        )
                        .join("")}
                      <span class="reportes-chip alerta">unidades mezcladas</span>
                    </span>`
-                : `<strong>${p.total_unidades}</strong>${unidad}`
+                : `<strong>${formatoNumero(p.total_unidades)}</strong>${unidad}`
             }
           </td>
-          <td>${p.tipico}</td>
+          <td>${formatoNumero(p.tipico)}</td>
           <td>
-            <span class="reportes-stock">${p.sugerido_min} a <strong>${p.sugerido_max}</strong></span>
+            <span class="reportes-stock">${formatoNumero(p.sugerido_min)} a <strong>${formatoNumero(
+              p.sugerido_max
+            )}</strong></span>
             ${pocosDatos}
           </td>
           <td>${celdaProyeccion(p.proyeccion)}</td>
           <td>
             ${chipRegularidad(p.regularidad)}
             ${chipTendencia(p.tendencia)}
-            ${p.atipicos ? `<span class="reportes-chip alerta">${p.atipicos} a revisar</span>` : ""}
+            ${p.atipicos ? `<span class="reportes-chip alerta">${formatoNumero(p.atipicos)} a revisar</span>` : ""}
           </td>
         </tr>
         <tr class="reportes-detalle hidden" data-detalle="${escapeHtml(p.clave)}">
           <td colspan="6">
             <div class="reportes-detalle-grid">
               <div>
-                <h5>Evolucion</h5>
+                <h5>Evolución</h5>
                 ${renderBarras(p.serie, periodo)}
               </div>
               <div>
@@ -677,7 +728,7 @@ function renderPedidosIndividuales(datos, contenedor) {
   }
 
   contenedor.innerHTML = `
-    <h5>Pedido por pedido (${datos.total_pedidos})</h5>
+    <h5>Pedido por pedido (${formatoNumero(datos.total_pedidos)})</h5>
     <div class="reportes-pedidos-lista">
       <div class="reportes-pedido-fila encabezado" role="row">
         <span>Fecha</span>
@@ -692,7 +743,7 @@ function renderPedidosIndividuales(datos, contenedor) {
           (p) => `
         <div class="reportes-pedido-fila ${p.atipico ? "atipico" : ""}" role="row">
           <span class="reportes-pedido-fecha" data-etiqueta="Fecha">${escapeHtml(p.fecha_corta)}</span>
-          <span class="reportes-pedido-cantidad" data-etiqueta="Cantidad">${p.cantidad}</span>
+          <span class="reportes-pedido-cantidad" data-etiqueta="Cantidad">${formatoNumero(p.cantidad)}</span>
           <span class="reportes-pedido-equipo" data-etiqueta="Equipo">${escapeHtml(p.equipo)}</span>
           <span class="reportes-pedido-solicitante" data-etiqueta="Pedido por">${escapeHtml(p.solicitante)}</span>
           <span class="reportes-pedido-solicitud" data-etiqueta="Solicitud">#${p.solicitud_id}</span>
@@ -727,6 +778,12 @@ function renderSimulacion(sim) {
 
   const d = sim.detalle;
   const maxCaja = Math.max(...d.histograma.map((c) => c.cuenta), 1);
+  const semanasAtipicas = sim.semanas_atipicas || [];
+  const unaSemana = semanasAtipicas.length === 1;
+  // Con decimales ("2,5") la coma ya no sirve para separar la lista.
+  const separadorCantidades = semanasAtipicas.some((a) => !Number.isInteger(Number(a.cantidad)))
+    ? "; "
+    : ", ";
 
   return `
     <div class="reportes-sim">
@@ -734,12 +791,17 @@ function renderSimulacion(sim) {
       <p class="reportes-sim-frase"><strong>${escapeHtml(sim.frase)}</strong></p>
 
       ${
-        sim.semanas_atipicas?.length
+        semanasAtipicas.length
           ? `<p class="reportes-sim-aviso">
-               Se dejó fuera ${sim.semanas_atipicas.length} semana(s) con pedidos
-               fuera de lo normal (${sim.semanas_atipicas
-                 .map((a) => a.cantidad)
-                 .join(", ")}). Revísalas por si fueron error de tipeo.
+               Se ${unaSemana ? "dejó" : "dejaron"} fuera
+               ${conCantidad(semanasAtipicas.length, "semana", "semanas")} con pedidos
+               fuera de lo normal (${semanasAtipicas
+                 .map((a) => formatoNumero(a.cantidad))
+                 .join(separadorCantidades)}). ${
+                   unaSemana
+                     ? "Revísala por si fue un error de tipeo."
+                     : "Revísalas por si fueron errores de tipeo."
+                 }
              </p>`
           : ""
       }
@@ -748,8 +810,8 @@ function renderSimulacion(sim) {
         <summary>Ver el método y la distribución</summary>
 
         <dl class="reportes-sim-datos">
-          <dt>Consumo medio</dt><dd>${d.demanda_media_semanal} por semana</dd>
-          <dt>Semanas usadas</dt><dd>${d.semanas_observadas}</dd>
+          <dt>Consumo medio</dt><dd>${formatoNumero(d.demanda_media_semanal)} por semana</dd>
+          <dt>Semanas usadas</dt><dd>${formatoNumero(d.semanas_observadas)}</dd>
           <dt>Demora en llegar</dt>
           <dd>${d.lead_time_dias.minimo} a ${d.lead_time_dias.maximo} días (normalmente ${d.lead_time_dias.probable})</dd>
           <dt>Variabilidad</dt>
@@ -758,9 +820,9 @@ function renderSimulacion(sim) {
         </dl>
 
         <p class="reportes-sim-percentiles">
-          Con <strong>${d.percentiles.p50}</strong> alcanza la mitad de las semanas ·
-          con <strong>${d.percentiles.p90}</strong>, el 90% ·
-          con <strong>${d.percentiles.p99}</strong>, el 99%
+          Con <strong>${formatoNumero(d.percentiles.p50)}</strong> alcanza la mitad de las semanas ·
+          con <strong>${formatoNumero(d.percentiles.p90)}</strong>, el 90% ·
+          con <strong>${formatoNumero(d.percentiles.p99)}</strong>, el 99%
         </p>
 
         <div class="reportes-sim-histograma" role="img"
@@ -769,7 +831,9 @@ function renderSimulacion(sim) {
             .map(
               (c) => `<span class="reportes-sim-caja"
                             style="height:${Math.max(3, Math.round((c.cuenta / maxCaja) * 100))}%"
-                            title="${c.desde} a ${c.hasta}: ${c.cuenta} de ${d.iteraciones}"></span>`
+                            title="${formatoNumero(c.desde)} a ${formatoNumero(c.hasta)}: ${formatoNumero(
+                              c.cuenta
+                            )} de ${formatoNumero(d.iteraciones)}"></span>`
             )
             .join("")}
         </div>
@@ -1009,10 +1073,10 @@ export async function initReportesView(context) {
   }
 
   function pintarResumen() {
-    el("reportes-total-unidades").textContent = datos.totales.unidades;
-    el("reportes-total-productos").textContent = datos.totales.productos_distintos;
-    el("reportes-total-solicitudes").textContent = datos.totales.solicitudes;
-    el("reportes-total-atipicos").textContent = datos.totales.pedidos_atipicos;
+    el("reportes-total-unidades").textContent = formatoNumero(datos.totales.unidades);
+    el("reportes-total-productos").textContent = formatoNumero(datos.totales.productos_distintos);
+    el("reportes-total-solicitudes").textContent = formatoNumero(datos.totales.solicitudes);
+    el("reportes-total-atipicos").textContent = formatoNumero(datos.totales.pedidos_atipicos);
 
     el("reportes-kpi-atipicos").classList.toggle(
       "con-alerta",
@@ -1042,27 +1106,27 @@ export async function initReportesView(context) {
     const porPedir = (datos.productos || []).filter(
       (p) => p.proyeccion && Number(p.proyeccion.valor) > 0
     ).length;
-    el("reportes-proyeccion-valor").textContent = porPedir || "-";
+    el("reportes-proyeccion-valor").textContent = porPedir ? formatoNumero(porPedir) : "-";
     el("reportes-proyeccion-confianza").textContent = porPedir
-      ? "productos por pedir · mira el listado"
+      ? `${porPedir === 1 ? "producto" : "productos"} por pedir · mira el listado`
       : "Sin historial suficiente";
 
     const avisoIncompleto = el("reportes-aviso-incompleto");
     if (datos.periodo.incompleto) {
-      avisoIncompleto.textContent = `"${datos.periodo.etiqueta_incompleto}" aun no termina. Se muestra, pero no se usa para calcular tendencia ni stock.`;
+      avisoIncompleto.textContent = `"${datos.periodo.etiqueta_incompleto}" aún no termina. Se muestra, pero no se usa para calcular tendencia ni stock.`;
       avisoIncompleto.classList.remove("hidden");
     } else {
       avisoIncompleto.classList.add("hidden");
     }
 
     const cantidad = datos.periodo.claves.length;
-    const plural = cantidad === 1 ? unidad : unidad === "mes" ? "meses" : "semanas";
     el("reportes-rango-texto").textContent =
-      `${cantidad} ${plural} · ${datos.totales.unidades} unidades · ` +
-      `${datos.totales.productos_distintos} productos`;
+      `${conCantidad(cantidad, unidad, unidad === "mes" ? "meses" : "semanas")} · ` +
+      `${conCantidad(datos.totales.unidades, "unidad", "unidades")} · ` +
+      `${conCantidad(datos.totales.productos_distintos, "producto", "productos")}`;
 
     const pendientes = datos.posibles_duplicados.length;
-    nombresBadge.textContent = pendientes;
+    nombresBadge.textContent = formatoNumero(pendientes);
     nombresBadge.classList.toggle("hidden", pendientes === 0);
   }
 
@@ -1282,7 +1346,10 @@ export async function initReportesView(context) {
   function poblarSelectores(claveA, claveB) {
     const opciones = datos.productos
       .map(
-        (p) => `<option value="${escapeHtml(p.clave)}">${escapeHtml(p.nombre)} (${p.total_unidades})</option>`
+        (p) =>
+          `<option value="${escapeHtml(p.clave)}">${escapeHtml(p.nombre)} (${formatoNumero(
+            p.total_unidades
+          )})</option>`
       )
       .join("");
 
@@ -1308,7 +1375,11 @@ export async function initReportesView(context) {
       return;
     }
 
-    unificarAviso.textContent = `Quedaran juntos: ${a.total_unidades + b.total_unidades} unidades en total.`;
+    unificarAviso.textContent = `Quedarán juntos: ${conCantidad(
+      a.total_unidades + b.total_unidades,
+      "unidad",
+      "unidades"
+    )} en total.`;
     confirmar.disabled = false;
 
     unificarOpciones.innerHTML = [a, b]
@@ -1318,7 +1389,11 @@ export async function initReportesView(context) {
           <input type="radio" name="reportes-canonico" value="${escapeHtml(p.clave)}" ${i === 0 ? "checked" : ""} />
           <span>
             <strong>${escapeHtml(p.nombre)}</strong>
-            <span class="table-subline">Se queda con este nombre (${p.total_unidades} unidades hoy)</span>
+            <span class="table-subline">Se queda con este nombre (${conCantidad(
+              p.total_unidades,
+              "unidad",
+              "unidades"
+            )} hoy)</span>
           </span>
         </label>
       `
@@ -1376,7 +1451,11 @@ export async function initReportesView(context) {
   unificadosList.addEventListener("click", async (event) => {
     const boton = event.target.closest("[data-deshacer]");
     if (!boton) return;
-    if (!window.confirm("Deshacer esta unificación? Los productos volveran a contarse por separado.")) {
+    if (!(await confirmar({
+      titulo: "¿Deshacer esta unificación?",
+      mensaje: "Los productos volverán a contarse por separado.",
+      aceptar: "Deshacer",
+    }))) {
       return;
     }
     try {

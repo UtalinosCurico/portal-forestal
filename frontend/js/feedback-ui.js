@@ -1,3 +1,4 @@
+import { confirmar } from "./dialogo.js";
 let _ctx = null;
 
 // Titulo, descripcion y autor los escribe cualquier usuario y se muestran en
@@ -47,7 +48,7 @@ export function initFeedback(ctx) {
       refreshFeedbackBadge();
     }
     if (delBtn) {
-      if (!window.confirm("¿Eliminar este feedback? No se puede deshacer.")) return;
+      if (!(await confirmar({ titulo: "¿Eliminar este feedback?", mensaje: "Esta acción no se puede deshacer.", aceptar: "Eliminar", peligro: true }))) return;
       await _ctx.apiRequest(`/api/feedback/${delBtn.dataset.fbDelete}`, { method: "DELETE" });
       loadFeedbackList();
       refreshFeedbackBadge();
@@ -98,7 +99,7 @@ async function loadFeedbackList() {
       list.innerHTML = "<div class='history-empty'>Sin feedback recibido todavía.</div>";
       return;
     }
-    const TIPO_LABEL = { idea: "💡 Idea", error: "🐛 Error" };
+    const TIPO_LABEL = { idea: "Idea", error: "Error" };
     list.innerHTML = items.map((fb) => `
       <div class="feedback-card ${fb.leido ? "leido" : ""}" data-fb-id="${fb.id}">
         <div class="feedback-card-head">
@@ -108,8 +109,8 @@ async function loadFeedbackList() {
         </div>
         <p class="feedback-card-desc">${escapar(fb.descripcion)}</p>
         <div class="feedback-card-meta">
-          <span>👤 ${escapar(fb.autor_nombre || "Usuario")}</span>
-          <span>📅 ${fb.created_at ? fb.created_at.slice(0, 16).replace("T", " ") : "-"}</span>
+          <span>${escapar(fb.autor_nombre || "Usuario")}</span>
+          <span>${fb.created_at ? escapar(_ctx?.formatDate ? _ctx.formatDate(fb.created_at) : fb.created_at) : "-"}</span>
         </div>
         <div class="feedback-card-actions">
           ${!fb.leido ? `<button class="action-btn secondary" style="font-size:0.8rem;min-height:30px;padding:0.2rem 0.7rem" data-fb-mark="${fb.id}">Marcar leído</button>` : ""}

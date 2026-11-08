@@ -13,6 +13,7 @@
 const { betaTool } = require("@anthropic-ai/sdk/helpers/beta/json-schema");
 const consumoService = require("./consumoService");
 const solicitudesService = require("./solicitudesService");
+const { formatChileDateKey } = require("../utils/dateTime");
 const equiposService = require("./equiposService");
 const { buildProductoKey } = require("../utils/productoKey");
 const { normalizeRole, ROLES } = require("../config/appRoles");
@@ -38,12 +39,12 @@ function recortar(texto, largo = 60) {
 
 /** Rango por defecto: ultimos 3 meses, que es lo que suele preguntarse. */
 function rangoPorDefecto() {
-  const hoy = new Date();
-  const desde = new Date(hoy.getFullYear(), hoy.getMonth() - 2, 1);
-  return {
-    fechaDesde: desde.toISOString().slice(0, 10),
-    fechaHasta: hoy.toISOString().slice(0, 10),
-  };
+  // "Hoy" segun Chile, no segun UTC (despues de las 21:00 UTC ya es manana).
+  const hoyChile = formatChileDateKey(new Date());
+  const [anio, mes] = hoyChile.split("-").map(Number);
+  const inicio = new Date(Date.UTC(anio, mes - 1 - 2, 1));
+  const desde = `${inicio.getUTCFullYear()}-${String(inicio.getUTCMonth() + 1).padStart(2, "0")}-01`;
+  return { fechaDesde: desde, fechaHasta: hoyChile };
 }
 
 // `empresa` acota todas las herramientas a Maule Norte o Forest Saint, igual

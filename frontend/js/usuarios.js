@@ -1,5 +1,46 @@
+import { confirmar } from "./dialogo.js";
 function roleNeedsEquipo(rol) {
   return ["JEFE_FAENA", "MECANICO", "OPERADOR"].includes(String(rol || "").trim().toUpperCase());
+}
+
+// Los roles viajan como código (JEFE_FAENA...): a la vista va su nombre.
+const ETIQUETA_ROL = {
+  ADMIN: "Administrador",
+  SUPERVISOR: "Supervisor",
+  JEFE_FAENA: "Jefe de faena",
+  MECANICO: "Mecánico",
+  OPERADOR: "Operador",
+};
+
+function etiquetaRol(rol) {
+  return ETIQUETA_ROL[rol] || rol || "-";
+}
+
+function normalizarBusqueda(texto) {
+  return String(texto || "")
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// El servidor compara la búsqueda con el código del rol, pero en pantalla se
+// ve el nombre ("Jefe de faena", "Mecánico"). Si lo escrito es el comienzo de
+// ese nombre y no calza ya con el código, se busca por el código.
+function terminoBusqueda(texto) {
+  const buscado = normalizarBusqueda(texto);
+  if (buscado.length < 3) {
+    return texto;
+  }
+
+  const literal = String(texto || "").trim().toLowerCase();
+  const codigo = Object.keys(ETIQUETA_ROL).find(
+    (rol) =>
+      normalizarBusqueda(ETIQUETA_ROL[rol]).startsWith(buscado) &&
+      !rol.toLowerCase().includes(literal)
+  );
+  return codigo || texto;
 }
 
 function normalizeEmailValue(value) {
@@ -18,7 +59,7 @@ function escapeHtml(value) {
 function buildEquipoOptions(equipos, includeEmpty = true) {
   const options = [];
   if (includeEmpty) {
-    options.push("<option value=''>Sin team</option>");
+    options.push("<option value=''>Sin equipo</option>");
   }
 
   for (const equipo of equipos) {
@@ -40,13 +81,14 @@ function getStatusMeta(user) {
   return { label: "Inactivo", className: "status-rechazado" };
 }
 
-function getFilterLabel(filterName) {
-  return {
-    activos: "activos",
-    inactivos: "inactivos",
-    archivados: "archivados",
-    todos: "totales",
-  }[filterName] || "activos";
+function getFilterLabel(filterName, count) {
+  const [singular, plural] = {
+    activos: ["activo", "activos"],
+    inactivos: ["inactivo", "inactivos"],
+    archivados: ["archivado", "archivados"],
+    todos: ["en total", "en total"],
+  }[filterName] || ["activo", "activos"];
+  return count === 1 ? singular : plural;
 }
 
 function canEditUser(sessionRole, user) {
@@ -124,7 +166,7 @@ function renderActionButtons({ sessionRole, currentUserId, user, mutationLocked 
 
   if (!actions.length) {
     if (sessionRole === "SUPERVISOR" && user.rol === "ADMIN") {
-      return "<span class='table-subline'>Cuenta ADMIN protegida</span>";
+      return "<span class='table-subline'>Cuenta de administrador protegida</span>";
     }
 
     return "<span class='table-subline'>Sin acciones</span>";
@@ -154,7 +196,7 @@ function renderUsuariosRows(rows, options) {
             ${user.archivado ? "<div class='table-subline'>Solo visible por trazabilidad</div>" : ""}
           </td>
           <td>${escapeHtml(user.email)}</td>
-          <td>${escapeHtml(user.rol)}</td>
+          <td>${escapeHtml(etiquetaRol(user.rol))}</td>
           <td>${escapeHtml(teamLabel)}</td>
           <td><span class="status-badge ${status.className}">${status.label}</span></td>
           <td>${formatDate(user.fecha_creacion)}</td>
@@ -285,15 +327,15 @@ export async function initUsuariosView(context) {
 
   function updateFilterSummary() {
     const count = usuariosCache.length;
-    const label = getFilterLabel(currentFilter);
-    const fragments = [`${count} usuario(s) ${label}`];
+    const label = getFilterLabel(currentFilter, count);
+    const fragments = [`${count} ${count === 1 ? "usuario" : "usuarios"} ${label}`];
 
     if (currentRoleFilter) {
-      fragments.push(`rol: ${currentRoleFilter}`);
+      fragments.push(`rol: ${etiquetaRol(currentRoleFilter)}`);
     }
 
     if (currentSearch) {
-      fragments.push(`busqueda: ${currentSearch}`);
+      fragments.push(`búsqueda: ${currentSearch}`);
     }
 
     filterSummary.textContent = fragments.join(" | ");
@@ -341,11 +383,11 @@ export async function initUsuariosView(context) {
     createEquipoSelect.disabled = !requiresEquipo;
     if (!requiresEquipo) {
       createEquipoSelect.value = "";
-      createEquipoHelp.textContent = "ADMIN y SUPERVISOR no usan team asignado.";
+      createEquipoHelp.textContent = "Los roles Administrador y Supervisor no usan equipo asignado.";
       return;
     }
 
-    createEquipoHelp.textContent = "Obligatorio para JEFE_FAENA, MECANICO y OPERADOR.";
+    createEquipoHelp.textContent = "Obligatorio para Jefe de faena, Mecánico y Operador.";
   }
 
   function syncEditEquipoState() {
@@ -360,11 +402,11 @@ export async function initUsuariosView(context) {
     editEquipoSelect.disabled = !requiresEquipo;
     if (!requiresEquipo) {
       editEquipoSelect.value = "";
-      editEquipoHelp.textContent = "Este rol no usa team.";
+      editEquipoHelp.textContent = "Este rol no usa equipo.";
       return;
     }
 
-    editEquipoHelp.textContent = "Selecciona el team que usara esta cuenta.";
+    editEquipoHelp.textContent = "Selecciona el equipo que usará esta cuenta.";
   }
 
   function configureEditModal(user) {
@@ -384,16 +426,16 @@ export async function initUsuariosView(context) {
       configureRoleSelectForSession(editRoleSelect);
       editCaption.textContent =
         user.rol === "ADMIN"
-          ? "Estas editando una cuenta ADMIN. El sistema protege que no te quedes sin administradores activos."
+          ? "Estás editando una cuenta de administrador. El sistema evita que te quedes sin administradores activos."
           : sessionRole === "SUPERVISOR"
-            ? "Puedes cambiar rol, team, estado y usar Clave para restablecer contrasena en usuarios no-admin."
-            : "Puedes cambiar rol, team, estado y contrasena.";
+            ? "Puedes cambiar rol, equipo y estado, y usar Clave para restablecer la contraseña de usuarios que no son administradores."
+            : "Puedes cambiar rol, equipo, estado y contraseña.";
     } else {
       editRoleGroup.classList.add("hidden");
       editPasswordGroup.classList.add("hidden");
       editRoleSelect.disabled = true;
       editCaption.textContent =
-        "Como supervisor puedes ajustar nombre, correo, team, estado y usar restablecimiento de clave para usuarios no-admin.";
+        "Como supervisor puedes ajustar nombre, correo, equipo y estado, y restablecer la clave de usuarios que no son administradores.";
     }
 
     syncEditEquipoState();
@@ -405,8 +447,8 @@ export async function initUsuariosView(context) {
     passwordUserName.value = `${user.nombre} (${user.email})`;
     passwordCaption.textContent =
       sessionRole === "ADMIN"
-        ? "Define una nueva contrasena temporal. El usuario podrá iniciar con ella de inmediato."
-        : "Como supervisor puedes restablecer la clave de usuarios no-admin.";
+        ? "Define una nueva contraseña temporal. El usuario podrá iniciar sesión con ella de inmediato."
+        : "Como supervisor puedes restablecer la clave de usuarios que no son administradores.";
   }
 
   function getCreatePayload() {
@@ -426,16 +468,16 @@ export async function initUsuariosView(context) {
     }
 
     if (!payload.email) {
-      throw new Error("Debes ingresar un email valido");
+      throw new Error("Debes ingresar un email válido");
     }
 
     if (!payload.password) {
-      throw new Error("Debes ingresar una contrasena inicial");
+      throw new Error("Debes ingresar una contraseña inicial");
     }
 
     if (roleNeedsEquipo(rol)) {
       if (!equipoId) {
-        throw new Error("Este rol requiere team asignado");
+        throw new Error("Este rol requiere un equipo asignado");
       }
       payload.equipo_id = Number(equipoId);
     } else {
@@ -466,7 +508,7 @@ export async function initUsuariosView(context) {
     }
 
     if (!payload.email) {
-      throw new Error("Debes ingresar un email valido");
+      throw new Error("Debes ingresar un email válido");
     }
 
     if (canManageUsers) {
@@ -479,7 +521,7 @@ export async function initUsuariosView(context) {
 
     if (roleNeedsEquipo(effectiveRole)) {
       if (!equipoId) {
-        throw new Error("Este rol requiere team asignado");
+        throw new Error("Este rol requiere un equipo asignado");
       }
       payload.equipo_id = Number(equipoId);
     } else {
@@ -503,7 +545,7 @@ export async function initUsuariosView(context) {
     const query = new URLSearchParams();
     query.set("estado", currentFilter);
     if (currentSearch) {
-      query.set("q", currentSearch);
+      query.set("q", terminoBusqueda(currentSearch));
     }
     if (currentRoleFilter) {
       query.set("rol", currentRoleFilter);
@@ -620,10 +662,10 @@ export async function initUsuariosView(context) {
       const password = String(passwordValue.value || "");
       const passwordRepeat = String(passwordConfirm.value || "");
       if (!password.trim()) {
-        throw new Error("Debes ingresar una nueva contrasena");
+        throw new Error("Debes ingresar una nueva contraseña");
       }
       if (password !== passwordRepeat) {
-        throw new Error("La confirmación de contrasena no coincide");
+        throw new Error("La confirmación de la contraseña no coincide");
       }
 
       await context.apiRequest(`/api/usuarios/${passwordTargetUser.id}/reset-password`, {
@@ -632,7 +674,7 @@ export async function initUsuariosView(context) {
       });
 
       closePasswordModal();
-      context.showToast("Contrasena restablecida correctamente");
+      context.showToast("Contraseña restablecida correctamente");
     } catch (error) {
       context.showToast(error.message, true);
     }
@@ -734,11 +776,22 @@ export async function initUsuariosView(context) {
 
     if (action === "toggle") {
       const nextState = !user.activo;
-      const confirmMessage = nextState
-        ? `Activar a ${user.nombre} y permitir inicio de sesión?`
-        : `Desactivar a ${user.nombre}? Seguira visible pero no podrá iniciar sesión.`;
+      const confirmado = await confirmar(
+        nextState
+          ? {
+              titulo: `¿Activar a ${user.nombre}?`,
+              mensaje: "Podrá volver a iniciar sesión.",
+              aceptar: "Activar",
+            }
+          : {
+              titulo: `¿Desactivar a ${user.nombre}?`,
+              mensaje: "Seguirá visible, pero no podrá iniciar sesión.",
+              aceptar: "Desactivar",
+              peligro: true,
+            }
+      );
 
-      if (!window.confirm(confirmMessage)) {
+      if (!confirmado) {
         return;
       }
 
@@ -759,7 +812,12 @@ export async function initUsuariosView(context) {
     }
 
     if (action === "archive") {
-      if (!window.confirm(`Archivar a ${user.nombre}? Quedará fuera de la operación y no podrá iniciar sesión.`)) {
+      if (!(await confirmar({
+        titulo: `¿Archivar a ${user.nombre}?`,
+        mensaje: "Quedará fuera de la operación y no podrá iniciar sesión.",
+        aceptar: "Archivar",
+        peligro: true,
+      }))) {
         return;
       }
 

@@ -15,6 +15,7 @@ const notificacionesService = require("./notificacionesService");
 const { buildProductoKey } = require("../utils/productoKey");
 const { detectarAtipicos, MINIMO_DATOS_PARA_ATIPICOS } = require("../utils/estadistica");
 const logger = require("../utils/logger");
+const { formatChileDateKey } = require("../utils/dateTime");
 
 // Historial de un ano: suficiente para que la mediana tenga sentido sin cargar
 // el total de solicitudes que existan en el portal.
@@ -46,7 +47,8 @@ async function evaluarPedido({ nombreItem, cantidad }) {
   desde.setMonth(desde.getMonth() - MESES_DE_HISTORIA);
 
   const solicitudes = await solicitudesService.listSolicitudesForExport(ACTOR_GLOBAL, {
-    fechaDesde: desde.toISOString().slice(0, 10),
+    // Fecha de Chile: en UTC, despues de las 21:00 ya seria "manana".
+    fechaDesde: formatChileDateKey(desde),
   });
 
   const historico = [];

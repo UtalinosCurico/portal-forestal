@@ -12,6 +12,19 @@ const { verificarNoPisar } = require("../utils/concurrencia");
 const { getChileDayBounds } = require("../utils/dateTime");
 const { buildHistoryPdf } = require("../utils/simplePdf");
 const {
+  etiquetaEstadoSolicitud,
+  resumenProductos,
+  actualizarResumenGuardado,
+  recortarConElipsis,
+  contarProductos,
+  detalleProductoActualizado,
+  detalleProductoAgregado,
+  detalleProductoEliminado,
+  detalleSolicitudActualizada,
+  detalleEstadoAjustado,
+  detalleSolicitudReutilizada,
+} = require("../utils/textosSolicitud");
+const {
   getOperationalPool,
   loadEquiposMap,
   loadUsersMap,
@@ -51,23 +64,14 @@ function getRoleLabel(role) {
     ADMIN: "Administrador",
     SUPERVISOR: "Supervisor",
     JEFE_FAENA: "Jefe de faena",
-    MECANICO: "Mecanico",
+    MECANICO: "Mecánico",
     OPERADOR: "Operador",
   };
   return labels[normalized] || normalized || "Usuario";
 }
 
 function getSolicitudStatusLabel(status) {
-  const normalized = String(status || "").trim().toUpperCase();
-  const labels = {
-    PENDIENTE: "Pendiente",
-    EN_REVISION: "En gestión",
-    APROBADO: "Aprobada",
-    EN_DESPACHO: "En despacho",
-    ENTREGADO: "Entregada",
-    RECHAZADO: "Rechazada",
-  };
-  return labels[normalized] || normalized || "Proceso";
+  return etiquetaEstadoSolicitud(status) || "Proceso";
 }
 
 function shouldNotifyManagement(actor) {
@@ -156,7 +160,7 @@ function normalizeFilters(actor, filters = {}) {
   if (filters.estado) {
     const estado = String(filters.estado).trim().toUpperCase();
     if (!VALID_STATUS.has(estado)) {
-      throw new HttpError(400, "estado invalido");
+      throw new HttpError(400, "estado inválido");
     }
     normalized.estado = estado;
   }
@@ -171,13 +175,13 @@ function normalizeFilters(actor, filters = {}) {
   } else if (["todas", "todos", "all", ""].includes(archivo)) {
     normalized.archivo = "todas";
   } else {
-    throw new HttpError(400, "archivo invalido");
+    throw new HttpError(400, "archivo inválido");
   }
 
   if (isGlobalRole(role) && (filters.equipoId || filters.equipo_id)) {
     const equipoId = Number(filters.equipoId || filters.equipo_id);
     if (!Number.isInteger(equipoId) || equipoId <= 0) {
-      throw new HttpError(400, "equipoId invalido");
+      throw new HttpError(400, "equipoId inválido");
     }
     normalized.equipoId = equipoId;
   }
@@ -187,7 +191,7 @@ function normalizeFilters(actor, filters = {}) {
       filters.usuarioId || filters.usuario_id || filters.solicitanteId || filters.solicitante_id
     );
     if (!Number.isInteger(usuarioId) || usuarioId <= 0) {
-      throw new HttpError(400, "usuarioId invalido");
+      throw new HttpError(400, "usuarioId inválido");
     }
     normalized.usuarioId = usuarioId;
   }
@@ -353,20 +357,20 @@ function normalizeSingleItem(payload = {}) {
     ? String(estadoItemRaw).trim().toUpperCase()
     : SOLICITUD_ITEM_STATUS.POR_GESTIONAR;
   if (!VALID_ITEM_STATUS.has(estadoItem)) {
-    throw new HttpError(400, "estado_item invalido");
+    throw new HttpError(400, "estado_item inválido");
   }
 
   if (encargadoId !== null && (!Number.isInteger(encargadoId) || encargadoId <= 0)) {
-    throw new HttpError(400, "encargado_id invalido");
+    throw new HttpError(400, "encargado_id inválido");
   }
   if (enviadoPorId !== null && (!Number.isInteger(enviadoPorId) || enviadoPorId <= 0)) {
-    throw new HttpError(400, "enviado_por_id invalido");
+    throw new HttpError(400, "enviado_por_id inválido");
   }
   if (
     recepcionadoPorId !== null &&
     (!Number.isInteger(recepcionadoPorId) || recepcionadoPorId <= 0)
   ) {
-    throw new HttpError(400, "recepcionado_por_id invalido");
+    throw new HttpError(400, "recepcionado_por_id inválido");
   }
 
   return {
@@ -428,13 +432,11 @@ function isSolicitudItemDuplicateRequestError(error) {
 function buildSolicitudSummary(items) {
   const totalItems = items.length;
   const totalUnidades = items.reduce((acc, item) => acc + Number(item.cantidad || 0), 0);
-  const firstItem = items[0]?.nombre_item || "Solicitud";
 
   return {
     totalItems,
     totalUnidades,
-    repuestoResumen:
-      totalItems === 1 ? firstItem : `${firstItem} y ${Math.max(totalItems - 1, 0)} item(s) más`,
+    repuestoResumen: resumenProductos(items[0]?.nombre_item, totalItems),
     cantidadResumen: totalUnidades,
   };
 }
@@ -907,7 +909,7 @@ async function assertEncargadoAllowed(actor, solicitud, encargadoId) {
   const contactos = await getContactosForSolicitud(actor, solicitud, { includeSelf: true });
   const encargado = contactos.find((item) => Number(item.id) === Number(encargadoId));
   if (!encargado) {
-    throw new HttpError(403, "No puedes asignar ese encargado a este item");
+    throw new HttpError(403, "No puedes asignar ese encargado a este producto");
   }
   return encargado;
 }
@@ -920,7 +922,7 @@ async function assertSenderAllowed(actor, solicitud, enviadoPorId) {
   const contactos = await getContactosForSolicitud(actor, solicitud, { includeSelf: true });
   const sender = contactos.find((item) => Number(item.id) === Number(enviadoPorId));
   if (!sender) {
-    throw new HttpError(403, "No puedes asignar ese remitente a este item");
+    throw new HttpError(403, "No puedes asignar ese remitente a este producto");
   }
   return sender;
 }
@@ -933,7 +935,7 @@ async function assertReceiverAllowed(actor, solicitud, recepcionadoPorId) {
   const contactos = await getContactosForSolicitud(actor, solicitud, { includeSelf: true });
   const receiver = contactos.find((item) => Number(item.id) === Number(recepcionadoPorId));
   if (!receiver) {
-    throw new HttpError(403, "No puedes asignar ese receptor a este item");
+    throw new HttpError(403, "No puedes asignar ese receptor a este producto");
   }
   return receiver;
 }
@@ -1174,7 +1176,11 @@ async function listSolicitudes(actor, filters = {}) {
     const items = itemsBySolicitudId.get(Number(row.id)) || [];
     const summary = items.length
       ? buildSolicitudSummary(items)
-      : { totalItems: row.repuesto ? 1 : 0, totalUnidades: Number(row.cantidad || 0), repuestoResumen: row.repuesto || "Solicitud" };
+      : {
+          totalItems: row.repuesto ? 1 : 0,
+          totalUnidades: Number(row.cantidad || 0),
+          repuestoResumen: actualizarResumenGuardado(row.repuesto) || "Solicitud",
+        };
     const itemStatusSummary = items.length
       ? buildItemStatusSummary(items)
       : buildItemStatusSummary(summary.totalItems ? [{ estado_item: SOLICITUD_ITEM_STATUS.POR_GESTIONAR }] : []);
@@ -1318,7 +1324,7 @@ async function loadSolicitudItemsForSummary(client, solicitudId) {
 async function refreshSolicitudSummary(client, solicitudId, options = {}) {
   const items = await loadSolicitudItemsForSummary(client, solicitudId);
   if (!items.length) {
-    throw new HttpError(409, "La solicitud debe mantener al menos un item");
+    throw new HttpError(409, "La solicitud debe mantener al menos un producto");
   }
 
   const currentSolicitudResult = await client.query(
@@ -1370,7 +1376,7 @@ async function refreshSolicitudSummary(client, solicitudId, options = {}) {
         Number(solicitudId),
         currentSolicitud.estado,
         nextStatus,
-        options.reason || "El estado general se ajusto según el avance de los productos",
+        detalleEstadoAjustado(options.reason, currentSolicitud.estado, nextStatus),
         Number(options.actorId),
         options.actorName,
       ]
@@ -1446,17 +1452,13 @@ async function reusePendingSolicitudForCreate(actor, solicitudId, payload, items
         reason: "La solicitud pendiente existente fue reutilizada para agregar nuevos productos",
       });
 
-      const detailParts = [
-        itemsToInsert.length
-          ? `Se agregaron ${itemsToInsert.length} item(s) nuevo(s) a la solicitud pendiente existente.`
-          : null,
-        skippedItems.length
-          ? `Se omitieron ${skippedItems.length} item(s) porque ya estaban registrados.`
-          : null,
-        commentChanged ? "Se anexó el comentario general recibido." : null,
-      ].filter(Boolean);
+      const detalleReutilizada = detalleSolicitudReutilizada({
+        agregados: itemsToInsert.length,
+        omitidos: skippedItems.length,
+        comentarioAnexado: commentChanged,
+      });
 
-      if (detailParts.length) {
+      if (detalleReutilizada) {
         await client.query(
           `
             INSERT INTO solicitud_historial
@@ -1467,7 +1469,7 @@ async function reusePendingSolicitudForCreate(actor, solicitudId, payload, items
             Number(solicitudId),
             current.estado,
             refreshResult.nextStatus || current.estado,
-            detailParts.join(" "),
+            detalleReutilizada,
             Number(actor.id),
             actorName,
           ]
@@ -1491,7 +1493,7 @@ async function reusePendingSolicitudForCreate(actor, solicitudId, payload, items
   for (const item of itemsToInsert) {
     await notifySolicitudItemForActor(actor, refreshedSolicitud, {
       itemNombre: item.nombre_item,
-      accion: "Agregado por reutilizacion",
+      accion: "Agregado por reutilización",
       estadoItem: item.estado_item || SOLICITUD_ITEM_STATUS.POR_GESTIONAR,
     });
   }
@@ -1510,7 +1512,7 @@ async function reusePendingSolicitudForCreate(actor, solicitudId, payload, items
 async function applyMassItemStatusUpdate(client, solicitudId, estadoItem, actorId) {
   const normalizedStatus = String(estadoItem || "").trim().toUpperCase();
   if (!VALID_ITEM_STATUS.has(normalizedStatus)) {
-    throw new HttpError(400, "estado_item invalido");
+    throw new HttpError(400, "estado_item inválido");
   }
 
   if (normalizedStatus === SOLICITUD_ITEM_STATUS.ENVIADO) {
@@ -1644,7 +1646,7 @@ async function createSolicitud(actor, payload) {
       [
         solicitudId,
         SOLICITUD_STATUS.PENDIENTE,
-        comentarioGeneral || `Solicitud creada con ${summary.totalItems} item(s)`,
+        comentarioGeneral || `Solicitud creada con ${contarProductos(summary.totalItems)}`,
         Number(actor.id),
         actorName,
       ]
@@ -1691,7 +1693,7 @@ async function updateSolicitud(actor, solicitudId, payload) {
     payload.nombre_item !== undefined;
 
   if (wantsItemsUpdate && !actorIsGlobal && current.estado !== SOLICITUD_STATUS.PENDIENTE) {
-    throw new HttpError(409, "Solo puedes editar el detalle base mientras la solicitud esta pendiente");
+    throw new HttpError(409, "Solo puedes editar el detalle base mientras la solicitud está pendiente");
   }
 
   if (!actorIsGlobal) {
@@ -1708,7 +1710,7 @@ async function updateSolicitud(actor, solicitudId, payload) {
       current.estado !== SOLICITUD_STATUS.EN_DESPACHO &&
       current.estado !== SOLICITUD_STATUS.ENTREGADO
     ) {
-      throw new HttpError(409, "Solo puedes confirmar la recepción cuando la solicitud este en despacho");
+      throw new HttpError(409, "Solo puedes confirmar la recepción cuando la solicitud esté en despacho");
     }
 
     if (
@@ -1718,6 +1720,24 @@ async function updateSolicitud(actor, solicitudId, payload) {
     ) {
       throw new HttpError(409, "Solo puedes actualizar comentarios en pendiente o al confirmar la recepción");
     }
+  }
+
+  const comentarioEnviado = payload.comentario !== undefined;
+  const comentarioAnterior = String(current.comentario ?? "").trim();
+  const comentarioNuevo = comentarioEnviado ? String(payload.comentario ?? "").trim() : comentarioAnterior;
+
+  // Mismo resguardo que el detalle de un producto (utils/concurrencia): si otra
+  // persona cambio el comentario general mientras esta pantalla estaba abierta,
+  // no se pisa. Sin `comentario_visto` (scripts, acciones encoladas sin
+  // conexion) se guarda como siempre.
+  if (comentarioEnviado) {
+    verificarNoPisar({
+      campo: "comentario",
+      etiqueta: "el comentario general",
+      visto: payload.comentario_visto,
+      almacenado: current.comentario,
+      nuevo: comentarioNuevo,
+    });
   }
 
   const updates = [];
@@ -1748,14 +1768,14 @@ async function updateSolicitud(actor, solicitudId, payload) {
     updates.push(`equipo = ${pushValue(params, payload.equipo ? String(payload.equipo) : null)}`);
   }
 
-  if (payload.comentario !== undefined) {
-    updates.push(`comentario = ${pushValue(params, payload.comentario ? String(payload.comentario) : null)}`);
+  if (comentarioEnviado) {
+    updates.push(`comentario = ${pushValue(params, comentarioNuevo || null)}`);
   }
 
   if (payload.equipo_id !== undefined || payload.equipoId !== undefined) {
     const equipoId = Number(payload.equipo_id || payload.equipoId || 0);
     if (!equipoId) {
-      throw new HttpError(400, "equipo_id invalido");
+      throw new HttpError(400, "equipo_id inválido");
     }
     const equipo = await ensureEquipoExists(equipoId);
     updates.push(`equipo_id = ${pushValue(params, equipoId)}`);
@@ -1773,10 +1793,13 @@ async function updateSolicitud(actor, solicitudId, payload) {
   if (payload.estado !== undefined) {
     estadoNuevo = String(payload.estado).trim().toUpperCase();
     if (!VALID_STATUS.has(estadoNuevo)) {
-      throw new HttpError(400, "Estado invalido");
+      throw new HttpError(400, "Estado inválido");
     }
     if (!actorIsGlobal && !canTransition(estadoActual, estadoNuevo)) {
-      throw new HttpError(409, `Transicion no permitida: ${estadoActual} -> ${estadoNuevo}`);
+      throw new HttpError(
+        409,
+        `Transición no permitida: ${etiquetaEstadoSolicitud(estadoActual)} → ${etiquetaEstadoSolicitud(estadoNuevo)}`
+      );
     }
 
     updates.push(`estado = ${pushValue(params, estadoNuevo)}`);
@@ -1856,12 +1879,14 @@ async function updateSolicitud(actor, solicitudId, payload) {
         action,
         estadoActual,
         estadoNuevo,
-        bulkStatusDetail ||
-          (payload.comentario
-          ? String(payload.comentario)
-          : items
-            ? "Detalle de solicitud actualizado"
-            : "Actualización de solicitud"),
+        detalleSolicitudActualizada({
+          detalleMasivo: bulkStatusDetail,
+          estado: { anterior: estadoActual, nuevo: estadoNuevo },
+          productosActualizados: Boolean(items),
+          comentario: comentarioEnviado
+            ? { anterior: comentarioAnterior, nuevo: comentarioNuevo }
+            : null,
+        }),
         Number(actor.id),
         actorName,
       ]
@@ -2003,31 +2028,43 @@ async function findSolicitudItemByClientRequestId(clientRequestId, client = null
 
 async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
   const actorRole = getActorRole(actor);
+  const actorName = actor.nombre || actor.name || "Sistema";
   const solicitud = await getSolicitudById(solicitudId, actor);
   if (!solicitud) {
     throw new HttpError(404, "Solicitud no encontrada");
   }
 
+  // Primero, que el producto exista: un id que no es de esta solicitud
+  // terminaba en un 500 ("Cannot read properties of null") en vez de un 404.
   const currentItem = await loadSolicitudItemRecord(solicitudId, itemId);
+  if (!currentItem) {
+    throw new HttpError(404, "Producto no encontrado en la solicitud");
+  }
+
+  const enviaDetalle = payload.comentario !== undefined || payload.detalle !== undefined;
+  const enviaComentarioGestion =
+    payload.comentario_gestion !== undefined || payload.comentarioGestion !== undefined;
 
   // Antes de tocar nada: si otra persona escribio en los comentarios mientras
   // esta pantalla estaba abierta, no se pisa su texto. Ver utils/concurrencia.
-  verificarNoPisar({
-    campo: "comentario",
-    etiqueta: "el detalle del producto",
-    visto: payload.comentario_visto,
-    almacenado: currentItem.comentario,
-    nuevo: payload.detalle ?? payload.comentario,
-  });
-  verificarNoPisar({
-    campo: "comentario_gestion",
-    etiqueta: "el comentario de gestion",
-    visto: payload.comentario_gestion_visto,
-    almacenado: currentItem.comentario_gestion,
-    nuevo: payload.comentario_gestion,
-  });
-  if (!currentItem) {
-    throw new HttpError(404, "Item no encontrado en la solicitud");
+  // Solo se revisa el campo que viene en el pedido: el que no viene no se toca.
+  if (enviaDetalle) {
+    verificarNoPisar({
+      campo: "comentario",
+      etiqueta: "el detalle del producto",
+      visto: payload.comentario_visto,
+      almacenado: currentItem.comentario,
+      nuevo: payload.detalle ?? payload.comentario,
+    });
+  }
+  if (enviaComentarioGestion) {
+    verificarNoPisar({
+      campo: "comentario_gestion",
+      etiqueta: "el comentario de gestión",
+      visto: payload.comentario_gestion_visto,
+      almacenado: currentItem.comentario_gestion,
+      nuevo: payload.comentario_gestion ?? payload.comentarioGestion,
+    });
   }
 
   const updates = [];
@@ -2038,40 +2075,34 @@ async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
   };
   const canEditBase = canEditItemBaseFields(actorRole, solicitud);
   const canManageTracking = isGlobalRole(actorRole);
-
   let estadoNuevo = currentItem.estado_item;
-  let encargado = null;
-  let sender = null;
-  let receiver = null;
-  let senderIdFromPayload;
-  let receiverIdFromPayload;
-  let nombreNuevo = currentItem.nombre_item;
-  let cantidadNueva = currentItem.cantidad;
-  let unidadMedidaNueva = currentItem.unidad_medida || "";
-  let codigoReferenciaNueva = currentItem.codigo_referencia || "";
-  let usuarioFinalNuevo = currentItem.usuario_final || "";
-  let detalleNuevo = currentItem.comentario || "";
+  let refreshResult = null;
+  // Valor final de cada campo que vino en el pedido. Con esto se arma el
+  // historial, que solo cuenta lo que cambio de verdad.
+  const cambios = {};
 
   if (payload.nombre_item !== undefined || payload.nombreItem !== undefined || payload.nombre !== undefined) {
     if (!canEditBase) {
       throw new HttpError(409, "No se pueden editar datos del producto en solicitudes cerradas");
     }
-    nombreNuevo = String(payload.nombre_item ?? payload.nombreItem ?? payload.nombre ?? "").trim();
+    const nombreNuevo = String(payload.nombre_item ?? payload.nombreItem ?? payload.nombre ?? "").trim();
     if (!nombreNuevo) {
-      throw new HttpError(400, "nombre_item invalido");
+      throw new HttpError(400, "nombre_item inválido");
     }
     updates.push(`nombre_item = ${push(nombreNuevo)}`);
+    cambios.nombre_item = nombreNuevo;
   }
 
   if (payload.cantidad !== undefined) {
     if (!canEditBase) {
       throw new HttpError(409, "No se pueden editar datos del producto en solicitudes cerradas");
     }
-    cantidadNueva = Number(payload.cantidad);
+    const cantidadNueva = Number(payload.cantidad);
     if (!Number.isInteger(cantidadNueva) || cantidadNueva <= 0) {
-      throw new HttpError(400, "cantidad invalida");
+      throw new HttpError(400, "cantidad inválida");
     }
     updates.push(`cantidad = ${push(cantidadNueva)}`);
+    cambios.cantidad = cantidadNueva;
   }
 
   if (
@@ -2083,13 +2114,14 @@ async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
     if (!canEditBase) {
       throw new HttpError(409, "No se pueden editar datos del producto en solicitudes cerradas");
     }
-    unidadMedidaNueva = String(
+    const unidadMedidaNueva = String(
       payload.unidad_medida ?? payload.unidadMedida ?? payload.talla ?? payload.unidad ?? ""
     ).trim();
     if (!unidadMedidaNueva) {
-      throw new HttpError(400, "unidad_medida invalida");
+      throw new HttpError(400, "unidad_medida inválida");
     }
     updates.push(`unidad_medida = ${push(unidadMedidaNueva)}`);
+    cambios.unidad_medida = unidadMedidaNueva;
   }
 
   if (
@@ -2100,66 +2132,77 @@ async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
     if (!canEditBase) {
       throw new HttpError(409, "No se pueden editar datos del producto en solicitudes cerradas");
     }
-    codigoReferenciaNueva = String(
+    const codigoReferenciaNueva = String(
       payload.codigo_referencia ?? payload.codigoReferencia ?? payload.codigo ?? ""
     ).trim();
     if (!codigoReferenciaNueva) {
-      throw new HttpError(400, "número de parte invalido");
+      throw new HttpError(400, "número de parte inválido");
     }
     updates.push(`codigo_referencia = ${push(codigoReferenciaNueva)}`);
+    cambios.codigo_referencia = codigoReferenciaNueva;
   }
 
   if (payload.usuario_final !== undefined || payload.usuarioFinal !== undefined) {
     if (!canEditBase) {
       throw new HttpError(409, "No se pueden editar datos del producto en solicitudes cerradas");
     }
-    usuarioFinalNuevo = String(payload.usuario_final ?? payload.usuarioFinal ?? "").trim();
+    const usuarioFinalNuevo = String(payload.usuario_final ?? payload.usuarioFinal ?? "").trim();
     if (!usuarioFinalNuevo) {
-      throw new HttpError(400, "usuario_final invalido");
+      throw new HttpError(400, "usuario_final inválido");
     }
     updates.push(`usuario_final = ${push(usuarioFinalNuevo)}`);
+    cambios.usuario_final = usuarioFinalNuevo;
   }
 
-  if (payload.comentario !== undefined || payload.detalle !== undefined) {
+  if (enviaDetalle) {
     if (!canEditBase) {
       throw new HttpError(409, "No se pueden editar datos del producto en solicitudes cerradas");
     }
-    detalleNuevo = String(payload.detalle ?? payload.comentario ?? "").trim();
-    if (!detalleNuevo) {
-      throw new HttpError(400, "detalle invalido");
-    }
-    updates.push(`comentario = ${push(detalleNuevo)}`);
+    // Un detalle vacio borra el que habia: es la forma de quitar uno que ya no
+    // corresponde. Antes se respondia "detalle invalido" y no habia manera.
+    const detalleNuevo = String(payload.detalle ?? payload.comentario ?? "").trim();
+    updates.push(`comentario = ${push(detalleNuevo || null)}`);
+    cambios.comentario = detalleNuevo;
   }
 
   if (payload.estado_item !== undefined || payload.estadoItem !== undefined) {
     if (!canManageTracking) {
-      throw new HttpError(403, "Solo ADMIN o SUPERVISOR pueden gestionar el estado por item");
+      throw new HttpError(403, "Solo ADMIN o SUPERVISOR pueden gestionar el estado por producto");
     }
     estadoNuevo = String(payload.estado_item ?? payload.estadoItem)
       .trim()
       .toUpperCase();
     if (!VALID_ITEM_STATUS.has(estadoNuevo)) {
-      throw new HttpError(400, "estado_item invalido");
+      throw new HttpError(400, "estado_item inválido");
     }
-    if (!canTransitionItemStatus(currentItem.estado_item, estadoNuevo)) {
-      throw new HttpError(409, "Cambio de estado de item no permitido");
+    // El formulario manda siempre el estado, aunque no se haya tocado. Repetir
+    // el que ya tiene no es una transicion: antes se rechazaba con 409 y no se
+    // podia guardar, por ejemplo, solo el comentario de gestion.
+    if (
+      estadoNuevo !== currentItem.estado_item &&
+      !canTransitionItemStatus(currentItem.estado_item, estadoNuevo)
+    ) {
+      throw new HttpError(409, "Cambio de estado del producto no permitido");
     }
     updates.push(`estado_item = ${push(estadoNuevo)}`);
+    cambios.estado_item = estadoNuevo;
   }
+  const estadoCambia = estadoNuevo !== currentItem.estado_item;
 
-  if (payload.comentario_gestion !== undefined || payload.comentarioGestion !== undefined) {
+  if (enviaComentarioGestion) {
     if (!canManageTracking) {
-      throw new HttpError(403, "Solo ADMIN o SUPERVISOR pueden gestionar comentarios por item");
+      throw new HttpError(403, "Solo ADMIN o SUPERVISOR pueden gestionar comentarios por producto");
     }
     const comentarioGestion = String(
       payload.comentario_gestion ?? payload.comentarioGestion ?? ""
     ).trim();
     updates.push(`comentario_gestion = ${push(comentarioGestion || null)}`);
+    cambios.comentario_gestion = comentarioGestion;
   }
 
   if (payload.encargado_id !== undefined || payload.encargadoId !== undefined) {
     if (!canManageTracking) {
-      throw new HttpError(403, "Solo ADMIN o SUPERVISOR pueden asignar encargado por item");
+      throw new HttpError(403, "Solo ADMIN o SUPERVISOR pueden asignar encargado por producto");
     }
     const encargadoRaw = payload.encargado_id ?? payload.encargadoId;
     const encargadoId =
@@ -2168,77 +2211,91 @@ async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
         : Number(encargadoRaw);
 
     if (encargadoId !== null && (!Number.isInteger(encargadoId) || encargadoId <= 0)) {
-      throw new HttpError(400, "encargado_id invalido");
+      throw new HttpError(400, "encargado_id inválido");
     }
 
-    encargado = await assertEncargadoAllowed(actor, solicitud, encargadoId);
+    const encargado = await assertEncargadoAllowed(actor, solicitud, encargadoId);
     updates.push(`encargado_id = ${push(encargadoId)}`);
+    cambios.encargado = { id: encargadoId, nombre: encargado?.nombre || null };
   }
 
   if (payload.enviado_por_id !== undefined || payload.enviadoPorId !== undefined) {
     if (!canManageTracking) {
-      throw new HttpError(403, "Solo ADMIN o SUPERVISOR pueden registrar quien envia el item");
+      throw new HttpError(403, "Solo ADMIN o SUPERVISOR pueden registrar quién envía el producto");
     }
     const senderRaw = payload.enviado_por_id ?? payload.enviadoPorId;
     const senderId =
       senderRaw === null || senderRaw === undefined || senderRaw === "" ? null : Number(senderRaw);
-    senderIdFromPayload = senderId;
 
     if (senderId !== null && (!Number.isInteger(senderId) || senderId <= 0)) {
-      throw new HttpError(400, "enviado_por_id invalido");
+      throw new HttpError(400, "enviado_por_id inválido");
     }
 
-    sender = await assertSenderAllowed(actor, solicitud, senderId);
+    const sender = await assertSenderAllowed(actor, solicitud, senderId);
     updates.push(`enviado_por_id = ${push(senderId)}`);
+    cambios.enviado_por = { id: senderId, nombre: sender?.nombre || null };
   }
 
   if (payload.recepcionado_por_id !== undefined || payload.recepcionadoPorId !== undefined) {
     if (!canManageTracking) {
-      throw new HttpError(403, "Solo ADMIN o SUPERVISOR pueden registrar quien recepciona el item");
+      throw new HttpError(403, "Solo ADMIN o SUPERVISOR pueden registrar quién recepciona el producto");
     }
     const receiverRaw = payload.recepcionado_por_id ?? payload.recepcionadoPorId;
     const receiverId =
       receiverRaw === null || receiverRaw === undefined || receiverRaw === ""
         ? null
         : Number(receiverRaw);
-    receiverIdFromPayload = receiverId;
 
     if (receiverId !== null && (!Number.isInteger(receiverId) || receiverId <= 0)) {
-      throw new HttpError(400, "recepcionado_por_id invalido");
+      throw new HttpError(400, "recepcionado_por_id inválido");
     }
 
-    receiver = await assertReceiverAllowed(actor, solicitud, receiverId);
+    const receiver = await assertReceiverAllowed(actor, solicitud, receiverId);
     updates.push(`recepcionado_por_id = ${push(receiverId)}`);
+    cambios.recepcionado_por = { id: receiverId, nombre: receiver?.nombre || null };
   }
 
+  // Al pasar a enviado o entregado sin indicar quien, queda registrado quien
+  // hizo el cambio.
   if (
     canManageTracking &&
-    (payload.estado_item !== undefined || payload.estadoItem !== undefined) &&
+    estadoCambia &&
     estadoNuevo === SOLICITUD_ITEM_STATUS.ENVIADO &&
     payload.enviado_por_id === undefined &&
     payload.enviadoPorId === undefined &&
     !currentItem.enviado_por_id
   ) {
-    sender = await assertSenderAllowed(actor, solicitud, Number(actor.id));
+    const sender = await assertSenderAllowed(actor, solicitud, Number(actor.id));
     updates.push(`enviado_por_id = ${push(Number(actor.id))}`);
-    senderIdFromPayload = Number(actor.id);
+    cambios.enviado_por = { id: Number(actor.id), nombre: sender?.nombre || actorName };
   }
 
   if (
     canManageTracking &&
-    (payload.estado_item !== undefined || payload.estadoItem !== undefined) &&
+    estadoCambia &&
     estadoNuevo === SOLICITUD_ITEM_STATUS.ENTREGADO &&
     payload.recepcionado_por_id === undefined &&
     payload.recepcionadoPorId === undefined &&
     !currentItem.recepcionado_por_id
   ) {
-    receiver = await assertReceiverAllowed(actor, solicitud, Number(actor.id));
+    const receiver = await assertReceiverAllowed(actor, solicitud, Number(actor.id));
     updates.push(`recepcionado_por_id = ${push(Number(actor.id))}`);
-    receiverIdFromPayload = Number(actor.id);
+    cambios.recepcionado_por = { id: Number(actor.id), nombre: receiver?.nombre || actorName };
   }
 
   if (!updates.length) {
-    throw new HttpError(400, "No se enviaron cambios para el item");
+    throw new HttpError(400, "No se enviaron cambios para el producto");
+  }
+
+  // Si todo lo que vino ya era lo guardado no hay cambio: no se escribe
+  // historial ni se avisa, y tampoco se mueve updated_at, que cuenta para los
+  // dias sin movimiento.
+  const historialDetalle = detalleProductoActualizado(currentItem, cambios);
+  if (!historialDetalle) {
+    return {
+      item: currentItem,
+      solicitud,
+    };
   }
 
   const pg = getOperationalPool();
@@ -2258,52 +2315,9 @@ async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
 
     refreshResult = await refreshSolicitudSummary(client, solicitudId, {
       actorId: actor.id,
-      actorName: actor.nombre || actor.name || "Sistema",
-      reason: "El estado general se ajusto según el avance de los productos",
+      actorName,
+      reason: "El estado general se ajustó según el avance de los productos",
     });
-
-    const historialDetalle = [
-      `Item: ${currentItem.nombre_item}${nombreNuevo !== currentItem.nombre_item ? ` -> ${nombreNuevo}` : ""}`,
-      payload.cantidad !== undefined ? `Cantidad: ${currentItem.cantidad} -> ${cantidadNueva}` : null,
-      payload.unidad_medida !== undefined ||
-      payload.unidadMedida !== undefined ||
-      payload.talla !== undefined ||
-      payload.unidad !== undefined
-        ? `Unidad/Talla: ${unidadMedidaNueva}`
-        : null,
-      payload.codigo_referencia !== undefined ||
-      payload.codigoReferencia !== undefined ||
-      payload.codigo !== undefined
-        ? `Número de parte: ${codigoReferenciaNueva}`
-        : null,
-      payload.usuario_final !== undefined || payload.usuarioFinal !== undefined
-        ? `Usuario final: ${usuarioFinalNuevo}`
-        : null,
-      payload.comentario !== undefined || payload.detalle !== undefined
-        ? `Detalle: ${detalleNuevo || "Sin detalle"}`
-        : null,
-      payload.estado_item !== undefined || payload.estadoItem !== undefined
-        ? `Estado: ${currentItem.estado_item} -> ${estadoNuevo}`
-        : null,
-      payload.encargado_id !== undefined || payload.encargadoId !== undefined
-        ? `Encargado: ${encargado?.nombre || "Sin encargado"}`
-        : null,
-      payload.enviado_por_id !== undefined || payload.enviadoPorId !== undefined
-        ? `Enviado por: ${sender?.nombre || "Sin registrar"}`
-        : senderIdFromPayload === Number(actor.id)
-          ? `Enviado por: ${sender?.nombre || actor.nombre || actor.name || "Sistema"}`
-        : null,
-      payload.recepcionado_por_id !== undefined || payload.recepcionadoPorId !== undefined
-        ? `Recepcionado por: ${receiver?.nombre || "Sin registrar"}`
-        : receiverIdFromPayload === Number(actor.id)
-          ? `Recepcionado por: ${receiver?.nombre || actor.nombre || actor.name || "Sistema"}`
-          : null,
-      payload.comentario_gestion !== undefined || payload.comentarioGestion !== undefined
-        ? `Comentario de gestión: ${String(payload.comentario_gestion ?? payload.comentarioGestion ?? "").trim() || "Sin comentario"}`
-        : null,
-    ]
-      .filter(Boolean)
-      .join(" | ");
 
     const historialAccion = isItemStatusReversion(currentItem.estado_item, estadoNuevo)
       ? "ESTADO_ITEM_REVERTIDO"
@@ -2321,7 +2335,7 @@ async function updateSolicitudItem(actor, solicitudId, itemId, payload = {}) {
         solicitud.estado,
         historialDetalle,
         Number(actor.id),
-        actor.nombre || actor.name || "Sistema",
+        actorName,
       ]
     );
 
@@ -2357,7 +2371,7 @@ async function createSolicitudItem(actor, solicitudId, payload = {}) {
   }
 
   if (solicitud.estado !== SOLICITUD_STATUS.PENDIENTE) {
-    throw new HttpError(409, "Solo puedes agregar items mientras la solicitud esta pendiente");
+    throw new HttpError(409, "Solo puedes agregar productos mientras la solicitud está pendiente");
   }
 
   const rawItem = normalizeSingleItem(payload);
@@ -2458,7 +2472,7 @@ async function createSolicitudItem(actor, solicitudId, payload = {}) {
     refreshResult = await refreshSolicitudSummary(client, solicitudId, {
       actorId: actor.id,
       actorName: actor.nombre || actor.name || "Sistema",
-      reason: "El estado general se ajusto tras agregar un producto",
+      reason: "El estado general se ajustó tras agregar un producto",
     });
     await client.query(
       `
@@ -2470,7 +2484,7 @@ async function createSolicitudItem(actor, solicitudId, payload = {}) {
         Number(solicitudId),
         solicitud.estado,
         solicitud.estado,
-        `Item agregado: ${item.nombre_item} (${item.cantidad})`,
+        detalleProductoAgregado(item),
         Number(actor.id),
         actor.nombre || actor.name || "Sistema",
       ]
@@ -2520,16 +2534,16 @@ async function deleteSolicitudItem(actor, solicitudId, itemId) {
   }
 
   if (solicitud.estado !== SOLICITUD_STATUS.PENDIENTE) {
-    throw new HttpError(409, "Solo puedes eliminar items mientras la solicitud esta pendiente");
+    throw new HttpError(409, "Solo puedes eliminar productos mientras la solicitud está pendiente");
   }
 
   const currentItem = await loadSolicitudItemRecord(solicitudId, itemId);
   if (!currentItem) {
-    throw new HttpError(404, "Item no encontrado en la solicitud");
+    throw new HttpError(404, "Producto no encontrado en la solicitud");
   }
 
   if ((solicitud.items || []).length <= 1) {
-    throw new HttpError(409, "La solicitud debe tener al menos un item");
+    throw new HttpError(409, "La solicitud debe tener al menos un producto");
   }
 
   const pg = getOperationalPool();
@@ -2544,7 +2558,7 @@ async function deleteSolicitudItem(actor, solicitudId, itemId) {
     refreshResult = await refreshSolicitudSummary(client, solicitudId, {
       actorId: actor.id,
       actorName: actor.nombre || actor.name || "Sistema",
-      reason: "El estado general se ajusto tras eliminar un producto",
+      reason: "El estado general se ajustó tras eliminar un producto",
     });
     await client.query(
       `
@@ -2556,7 +2570,7 @@ async function deleteSolicitudItem(actor, solicitudId, itemId) {
         Number(solicitudId),
         solicitud.estado,
         solicitud.estado,
-        `Item eliminado: ${currentItem.nombre_item}`,
+        detalleProductoEliminado(currentItem),
         Number(actor.id),
         actor.nombre || actor.name || "Sistema",
       ]
@@ -2605,7 +2619,7 @@ async function createSolicitudMessage(actor, solicitudId, payload = {}) {
 
   if (imagenData) {
     if (!imagenData.startsWith("data:image/")) {
-      throw new HttpError(400, "Solo se permiten imagenes en formato data URL");
+      throw new HttpError(400, "Solo se permiten imágenes en formato data URL");
     }
     if (imagenData.length > IMAGE_DATA_LIMIT) {
       throw new HttpError(400, "La imagen es demasiado grande");
@@ -2661,7 +2675,7 @@ async function createSolicitudMessage(actor, solicitudId, payload = {}) {
       Number(solicitudId),
       solicitud.estado,
       solicitud.estado,
-      mensaje ? `Mensaje interno: ${mensaje.slice(0, 120)}` : "Imagen adjunta enviada",
+      mensaje ? `Mensaje interno: ${recortarConElipsis(mensaje, 120)}` : "Imagen adjunta enviada",
       Number(actor.id),
       actor.nombre || actor.name || "Sistema",
     ]
@@ -2852,6 +2866,7 @@ async function listPendingItems(actor, filters = {}) {
     solicitud_id: Number(row.solicitud_id),
     cantidad: Number(row.cantidad),
     equipo_id: row.equipo_id != null ? Number(row.equipo_id) : null,
+    solicitud_resumen: actualizarResumenGuardado(row.solicitud_resumen),
     solicitud_equipo:
       (row.equipo_id != null ? equiposMap.get(Number(row.equipo_id)) : null) ||
       row.solicitud_equipo ||

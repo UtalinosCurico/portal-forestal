@@ -1,3 +1,4 @@
+import { confirmar } from "./dialogo.js";
 // ── Contador animado para quick strip ────────────────────────────────────────
 function animateCount(el, target) {
   const from = parseInt(el.textContent) || 0;
@@ -55,8 +56,8 @@ const ITEM_STATUS_LABELS = {
 };
 
 const ITEM_STATUS_OPTIONS = [
-  { key: "POR_GESTIONAR", label: "Por gestionar", hint: "Aun no se toma el item" },
-  { key: "GESTIONADO", label: "Gestionado", hint: "Ya esta siendo trabajado" },
+  { key: "POR_GESTIONAR", label: "Por gestionar", hint: "Aún no se toma el producto" },
+  { key: "GESTIONADO", label: "Gestionado", hint: "Ya se está trabajando" },
   { key: "ENVIADO", label: "Enviado", hint: "Salio hacia faena" },
   { key: "ENTREGADO", label: "Entregado", hint: "Producto recibido" },
   {
@@ -239,6 +240,9 @@ function formatHistoryActionLabel(action) {
   const value = String(action || "EVENTO").trim();
   const map = {
     SOLICITUD_CREADA: "Solicitud creada",
+    CREADA: "Solicitud creada",
+    ESTADO_ACTUALIZADO: "Estado actualizado",
+    SOLICITUD_REUTILIZADA: "Productos agregados a la solicitud",
     SOLICITUD_ACTUALIZADA: "Solicitud actualizada",
     SOLICITUD_ELIMINADA: "Solicitud eliminada",
     ESTADO_AUTO_POR_PRODUCTOS: "Estado ajustado por productos",
@@ -261,11 +265,72 @@ function formatHistoryActionLabel(action) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function renderHistoryDetail(detail) {
+// Estados tal como se leen en el historial. ENTREGADO es "Entregado" para un
+// producto y "Entregada" para la solicitud.
+const ESTADOS_HISTORIAL_ITEM = {
+  POR_GESTIONAR: "Por gestionar",
+  GESTIONADO: "Gestionado",
+  ENVIADO: "Enviado",
+  ENTREGADO: "Entregado",
+  NO_APLICA: "No aplica",
+  RESUELTO_FAENA: "Resuelto en faena",
+};
+const ESTADOS_HISTORIAL_SOLICITUD = {
+  PENDIENTE: "Pendiente",
+  EN_REVISION: "En gestión",
+  APROBADO: "Aprobada",
+  EN_DESPACHO: "En despacho",
+  ENTREGADO: "Entregada",
+  RECHAZADO: "Rechazada",
+};
+
+/**
+ * Deja legible una parte del detalle guardado en el historial. Los registros
+ * antiguos traen codigos ("POR_GESTIONAR -> ENVIADO"), "Item:" y campos que no
+ * cambiaron ("Cantidad: 2 -> 2", "Encargado: Sin encargado"); se arreglan al
+ * mostrarlos para que tambien lo viejo se lea bien.
+ * Devuelve null si la parte no aporta nada.
+ */
+function humanizarParteHistorial(parte, accion) {
+  let texto = String(parte || "")
+    .trim()
+    .replace(/^Item agregado:/, "Producto agregado:")
+    .replace(/^Item eliminado:/, "Producto eliminado:")
+    .replace(/^Item:/, "Producto:")
+    .replace(/\s*->\s*/g, " → ");
+  const separador = texto.indexOf(":");
+  if (separador < 0) {
+    return texto || null;
+  }
+  const etiqueta = texto.slice(0, separador).trim();
+  const valorOriginal = texto.slice(separador + 1).trim();
+  let valor = valorOriginal;
+  if (/^(Sin registrar|Sin encargado|Sin comentario|Sin detalle)$/i.test(valor)) {
+    return null;
+  }
+  if (/estado|transici/i.test(etiqueta)) {
+    const mapa = /^(ITEM_|ESTADO_ITEM)/.test(String(accion || ""))
+      ? { ...ESTADOS_HISTORIAL_SOLICITUD, ...ESTADOS_HISTORIAL_ITEM }
+      : { ...ESTADOS_HISTORIAL_ITEM, ...ESTADOS_HISTORIAL_SOLICITUD };
+    valor = valor.replace(/\b[A-Z][A-Z_]+\b/g, (codigo) => mapa[codigo] || codigo);
+  }
+  const lados = valor.split(" → ");
+  if (lados.length === 2 && lados[0].trim() === lados[1].trim()) {
+    return null;
+  }
+  // Si no hubo que traducir nada se devuelve tal cual (un "10:30" en texto
+  // libre no debe quedar "10: 30").
+  return valor === valorOriginal ? texto : `${etiqueta}: ${valor}`;
+}
+
+function renderHistoryDetail(detail, accion = "") {
   const parts = String(detail || "Sin detalle")
     .split("|")
-    .map((part) => part.trim())
+    .map((part) => humanizarParteHistorial(part, accion))
     .filter(Boolean);
+  if (!parts.length) {
+    return "";
+  }
 
   if (parts.length <= 1) {
     return `<p>${escaparTexto(parts[0] || "Sin detalle")}</p>`;
@@ -293,7 +358,7 @@ function renderHistory(historial = [], formatDate) {
               <strong>${formatHistoryActionLabel(item.accion)}</strong>
               <span class="mini-chip">${formatDate(item.created_at)}</span>
             </div>
-            ${renderHistoryDetail(item.detalle)}
+            ${renderHistoryDetail(item.detalle, item.accion)}
             <span>${escaparTexto(item.actor_name || "Sistema")}</span>
           </div>
         </article>
@@ -426,7 +491,7 @@ function renderDeliveryAssistant(solicitud, options = {}) {
     title = "Solicitud lista para cierre";
     text = `Todos los productos ya están enviados. Quedan ${pendingDelivery} por recepcionar. Puedes entregarlos uno a uno o cerrar toda la solicitud.`;
   } else if (pendingDispatch > 0 || pendingDelivery > 0) {
-    text = `Aun faltan ${pendingDispatch} producto(s) por despachar y ${pendingDelivery} por entregar. Puedes seguir uno a uno desde cada producto o usar una acción masiva.`;
+    text = `Faltan ${cantidadProductos(pendingDispatch)} por despachar y ${pendingDelivery} por entregar. Puedes avanzar uno a uno desde cada producto o usar una acción para toda la solicitud.`;
   }
 
   const actions = [];
@@ -451,7 +516,7 @@ function renderDeliveryAssistant(solicitud, options = {}) {
   }
 
   const itemsHint = !allDelivered
-    ? `<p class="muted-text delivery-hint">Para gestionar uno a uno, ve a la pestana <button class="inline-tab-link" data-switch-tab="items" type="button">Productos</button>.</p>`
+    ? `<p class="muted-text delivery-hint">Para gestionar uno a uno, ve a la pestaña <button class="inline-tab-link" data-switch-tab="items" type="button">Productos</button>.</p>`
     : "";
 
   return `
@@ -473,14 +538,14 @@ function buildBulkStatusWarning(solicitud, targetStatus) {
   if (targetStatus === "EN_DESPACHO") {
     const remaining = Math.max(summary.totalTrackable - (summary.enviados + summary.entregados), 0);
     if (remaining > 0) {
-      return `Esta acción marcara ${remaining} producto(s) pendiente(s) como enviados. Deseas continuar?`;
+      return `Esta acción marcará ${cantidadProductos(remaining, "pendiente")} como ${remaining === 1 ? "enviado" : "enviados"}. ¿Deseas continuar?`;
     }
   }
 
   if (targetStatus === "ENTREGADO") {
     const remaining = Math.max(summary.totalTrackable - summary.entregados, 0);
     if (remaining > 0) {
-      return `Esta acción marcara ${remaining} producto(s) pendiente(s) como entregados y cerrara toda la solicitud. Deseas continuar?`;
+      return `Esta acción marcará ${cantidadProductos(remaining, "pendiente")} como ${remaining === 1 ? "entregado" : "entregados"} y cerrará toda la solicitud. ¿Deseas continuar?`;
     }
   }
 
@@ -510,7 +575,7 @@ function getSolicitudPrimaryAction(item, role) {
 
   return {
     label: status === "ENTREGADO" ? "Ver detalle" : "Ver estado",
-    hint: status === "PENDIENTE" ? "Todavia esta en espera" : "Revisa su avance completo",
+    hint: status === "PENDIENTE" ? "Todavía está en espera" : "Revisa su avance completo",
     emphasis: false,
   };
 }
@@ -653,6 +718,20 @@ function renderStatusSnapshot(item, formatDate) {
   return `Creada ${formatDate(item.created_at)}`;
 }
 
+/** "1 producto" / "3 productos" (con adjetivo opcional: "2 productos pendientes"). */
+function cantidadProductos(cantidad, adjetivo = "") {
+  const n = Number(cantidad) || 0;
+  const sustantivo = n === 1 ? "producto" : "productos";
+  const extra = adjetivo ? ` ${n === 1 ? adjetivo : `${adjetivo}s`}` : "";
+  return `${n.toLocaleString("es-CL")} ${sustantivo}${extra}`;
+}
+
+/** "3 productos · 12 unidades" para la bandeja. */
+function resumenCantidades(item = {}) {
+  const unidades = Number(item.total_unidades || item.cantidad || 0);
+  return `${cantidadProductos(item.total_items || 1)} · ${unidades.toLocaleString("es-CL")} ${unidades === 1 ? "unidad" : "unidades"}`;
+}
+
 function renderRows(rows, tableBody, mobileList, formatDate, role) {
   if (!rows.length) {
     tableBody.innerHTML = "<tr><td colspan='6'>Sin solicitudes registradas</td></tr>";
@@ -680,9 +759,7 @@ function renderRows(rows, tableBody, mobileList, formatDate, role) {
           </td>
           <td class="col-resumen">
             <strong>${escaparTexto(item.resumen_items || item.repuesto || "-")}</strong>
-            <div class="table-subline">${item.total_items || 1} prod. · ${
-              item.total_unidades || item.cantidad || 0
-            } uds</div>
+            <div class="table-subline">${resumenCantidades(item)}</div>
             ${itemStatusSnapshot ? `<div class="table-subline item-flow-inline">${itemStatusSnapshot}</div>` : ""}
           </td>
           <td class="col-estado">
@@ -725,7 +802,7 @@ function renderRows(rows, tableBody, mobileList, formatDate, role) {
             </div>
             <p class="solicitud-mobile-summary">${escaparTexto(item.resumen_items || item.repuesto || "-")}</p>
             <div class="solicitud-mobile-meta">
-              <span>${item.total_items || 1} prod. · ${item.total_unidades || item.cantidad || 0} uds</span>
+              <span>${resumenCantidades(item)}</span>
               <span>${renderStatusSnapshot(item, formatDate)}</span>
             </div>
             <div class="solicitud-mobile-urgency">${urgencyBadge}</div>
@@ -767,6 +844,46 @@ function escaparAtributo(valor) {
  */
 function escaparTexto(valor) {
   return escaparAtributo(valor);
+}
+
+// Los roles viajan como codigo (JEFE_FAENA...): a la vista va su nombre.
+const ETIQUETA_ROL = {
+  ADMIN: "Administrador",
+  SUPERVISOR: "Supervisor",
+  JEFE_FAENA: "Jefe de faena",
+  MECANICO: "Mecánico",
+  OPERADOR: "Operador",
+};
+
+/** "Nombre · Rol · Equipo", ya escapado para meterlo en el HTML. */
+function etiquetaContacto(contacto = {}) {
+  return [contacto.nombre, ETIQUETA_ROL[contacto.rol] || contacto.rol, contacto.equipo_nombre]
+    .filter(Boolean)
+    .map(escaparTexto)
+    .join(" · ");
+}
+
+/**
+ * Opciones de una lista de personas. Si la persona ya asignada no esta entre
+ * los contactos (por ejemplo, quien edita: el servidor no se incluye a si
+ * mismo, o alguien de otro equipo), se agrega igual. Antes quedaba fuera, la
+ * lista mostraba "Sin registrar" y al guardar se borraba la asignacion.
+ */
+function opcionesPersona(contactos, textoVacio, idActual, nombreActual) {
+  const id = Number(idActual) || 0;
+  const opciones = [`<option value="">${escaparTexto(textoVacio)}</option>`];
+  if (id && !contactos.some((contacto) => Number(contacto.id) === id)) {
+    opciones.push(
+      `<option value="${id}" selected>${escaparTexto(nombreActual || `Usuario #${id}`)}</option>`
+    );
+  }
+  contactos.forEach((contacto) => {
+    const seleccionado = Number(contacto.id) === id ? " selected" : "";
+    opciones.push(
+      `<option value="${escaparAtributo(contacto.id)}"${seleccionado}>${etiquetaContacto(contacto)}</option>`
+    );
+  });
+  return opciones.join("");
 }
 
 /** Solo se muestran imagenes embebidas; el servidor ya exige data:image/. */
@@ -965,8 +1082,7 @@ function parseItemsFromContainer(container) {
     const usuarioFinal = row.querySelector(".solicitud-item-final-user")?.value?.trim() || "";
     const comentario = row.querySelector(".solicitud-item-detail")?.value?.trim() || "";
     const estadoItem = row.querySelector(".solicitud-item-status")?.value || undefined;
-    const comentarioGestion =
-      row.querySelector(".solicitud-item-management-comment")?.value?.trim() || undefined;
+    const comentarioGestion = undefined;
     const encargadoIdRaw = row.querySelector(".solicitud-item-owner")?.value;
 
     return {
@@ -1585,41 +1701,19 @@ export async function initSolicitudesView(context) {
   function populateItemModalOptions(item = {}) {
     itemStatusInput.innerHTML = renderItemStatusOptions(item.estado_item || "POR_GESTIONAR");
 
-    itemOwnerInput.innerHTML = [
-      "<option value=''>Sin encargado</option>",
-      ...currentContactOptions.map(
-        (contacto) =>
-          `<option value="${contacto.id}" ${
-            Number(contacto.id) === Number(item.encargado_id) ? "selected" : ""
-          }>${escaparTexto(contacto.nombre)} - ${contacto.rol}${
-            contacto.equipo_nombre ? ` - ${escaparTexto(contacto.equipo_nombre)}` : ""
-          }</option>`
-      ),
-    ].join("");
-
-    itemSenderInput.innerHTML = [
-      "<option value=''>Sin registrar</option>",
-      ...currentContactOptions.map(
-        (contacto) =>
-          `<option value="${contacto.id}" ${
-            Number(contacto.id) === Number(item.enviado_por_id) ? "selected" : ""
-          }>${escaparTexto(contacto.nombre)} - ${contacto.rol}${
-            contacto.equipo_nombre ? ` - ${escaparTexto(contacto.equipo_nombre)}` : ""
-          }</option>`
-      ),
-    ].join("");
-
-    itemReceiverInput.innerHTML = [
-      "<option value=''>Sin registrar</option>",
-      ...currentContactOptions.map(
-        (contacto) =>
-          `<option value="${contacto.id}" ${
-            Number(contacto.id) === Number(item.recepcionado_por_id) ? "selected" : ""
-          }>${escaparTexto(contacto.nombre)} - ${contacto.rol}${
-            contacto.equipo_nombre ? ` - ${escaparTexto(contacto.equipo_nombre)}` : ""
-          }</option>`
-      ),
-    ].join("");
+    itemOwnerInput.innerHTML = opcionesPersona(
+      currentContactOptions, "Sin encargado", item.encargado_id, item.encargado_nombre
+    );
+    itemSenderInput.innerHTML = opcionesPersona(
+      currentContactOptions, "Sin registrar", item.enviado_por_id, item.enviado_por_nombre
+    );
+    itemReceiverInput.innerHTML = opcionesPersona(
+      currentContactOptions, "Sin registrar", item.recepcionado_por_id, item.recepcionado_por_nombre
+    );
+    // Lo asignado al abrir: al guardar solo se manda lo que cambio.
+    itemOwnerInput.dataset.original = itemOwnerInput.value;
+    itemSenderInput.dataset.original = itemSenderInput.value;
+    itemReceiverInput.dataset.original = itemReceiverInput.value;
   }
 
   function fillItemModal(item = null) {
@@ -2000,9 +2094,7 @@ export async function initSolicitudesView(context) {
       "<option value=''>Elige destinatario para notificar</option>",
       ...contactos.map(
         (contacto) =>
-          `<option value="${contacto.id}">${escaparTexto(contacto.nombre)} - ${contacto.rol}${
-            contacto.equipo_nombre ? ` - ${escaparTexto(contacto.equipo_nombre)}` : ""
-          }</option>`
+          `<option value="${escaparAtributo(contacto.id)}">${etiquetaContacto(contacto)}</option>`
       ),
     ].join("");
   }
@@ -2038,6 +2130,25 @@ export async function initSolicitudesView(context) {
     }
   }
 
+  // Comentario general tal como estaba al abrir la solicitud (o el texto que
+  // la persona ya acepto reemplazar tras un aviso de conflicto).
+  let comentarioGeneralVisto = null;
+
+  function esConflictoDeTexto(error) {
+    return error?.status === 409 && typeof error?.details?.texto_actual === "string";
+  }
+
+  // Otra persona guardo un texto distinto mientras se editaba: se muestra lo
+  // que dice ahora y se pregunta. Lo escrito sigue en la caja en ambos casos.
+  function confirmarSobrescritura(error) {
+    return confirmar({
+      titulo: "Otra persona cambió este texto",
+      mensaje: `Mientras editabas se guardó esto:\n\n"${error.details.texto_actual}"\n\n¿Quieres reemplazarlo con lo que escribiste?`,
+      aceptar: "Reemplazar con lo mío",
+      cancelar: "Revisar primero",
+    });
+  }
+
   function fillDetailModal(solicitud, options = {}) {
     const preserveChat = options.preserveChat === true;
     currentSolicitud = solicitud;
@@ -2060,6 +2171,7 @@ export async function initSolicitudesView(context) {
     detailSolicitante.value = solicitud.solicitante_name || solicitud.solicitante || "-";
     detailStatus.value = solicitud.estado || "PENDIENTE";
     detailComentario.value = solicitud.comentario || "";
+    comentarioGeneralVisto = null;
     detailStepper.innerHTML = renderSolicitudStepper(solicitud.estado);
     progressSummary.innerHTML = renderProgressSummary(solicitud.items || []);
     deliveryAssistant.innerHTML = renderDeliveryAssistant(solicitud, {
@@ -2271,6 +2383,9 @@ export async function initSolicitudesView(context) {
 
     if (detailComentario.value.trim() !== String(currentSolicitud.comentario || "").trim()) {
       payload.comentario = detailComentario.value.trim();
+      // Lo que habia cuando se abrio: si otra persona lo cambio entretanto,
+      // el servidor avisa en vez de borrarlo.
+      payload.comentario_visto = comentarioGeneralVisto ?? String(currentSolicitud.comentario || "");
     }
 
     if (canManage && detailStatus.value !== currentSolicitud.estado) {
@@ -2282,7 +2397,11 @@ export async function initSolicitudesView(context) {
         ? buildBulkStatusWarning(currentSolicitud, payload.estado)
         : "";
     if (bulkWarning) {
-      const confirmed = window.confirm(bulkWarning);
+      const confirmed = await confirmar({
+        titulo: "Confirma el cambio de estado",
+        mensaje: bulkWarning,
+        aceptar: "Sí, continuar",
+      });
       if (!confirmed) {
         return;
       }
@@ -2315,18 +2434,22 @@ export async function initSolicitudesView(context) {
       return;
     }
 
-    const comentario =
-      detailComentario.value.trim() ||
-      (targetStatus === "ENTREGADO"
-        ? "Cierre completo de la solicitud"
-        : "Despacho completo de la solicitud");
+    // Solo viaja el comentario si la persona escribio uno nuevo. Antes, con
+    // la caja vacia, se guardaba "Cierre completo de la solicitud" como
+    // comentario general.
+    const comentarioEscrito = detailComentario.value.trim();
+    const cuerpo = { estado: targetStatus };
+    if (comentarioEscrito && comentarioEscrito !== String(currentSolicitud.comentario || "").trim()) {
+      cuerpo.comentario = comentarioEscrito;
+      cuerpo.comentario_visto = comentarioGeneralVisto ?? String(currentSolicitud.comentario || "");
+    }
 
     if (!navigator.onLine) {
       await enqueueAction({
         url: `/api/solicitudes/${currentSolicitud.id}`,
         method: "PUT",
-        body: { estado: targetStatus, comentario },
-        description: `Estado → ${targetStatus} en solicitud #${currentSolicitud.folio || currentSolicitud.id}`,
+        body: cuerpo,
+        description: `Cambiar a ${getStatusLabel(targetStatus)} la solicitud #${currentSolicitud.folio || currentSolicitud.id}`,
       });
       context.showToast("Sin conexión — se enviará al reconectarse");
       return;
@@ -2334,7 +2457,7 @@ export async function initSolicitudesView(context) {
 
     await context.apiRequest(`/api/solicitudes/${currentSolicitud.id}`, {
       method: "PUT",
-      body: { estado: targetStatus, comentario },
+      body: cuerpo,
     });
 
     await Promise.all([loadSolicitudes({ showLoading: false }), loadSolicitudDetail(currentSolicitud.id)]);
@@ -2406,24 +2529,41 @@ export async function initSolicitudesView(context) {
       if (usuarioFinal) {
         payload.usuario_final = usuarioFinal;
       }
-      if (detalle) {
+      // Al editar se manda el detalle solo si cambio, aunque quede vacio: asi
+      // se puede borrar. Antes un detalle vacio no se mandaba y volvia el
+      // texto anterior.
+      const detalleVisto = String(itemCommentInput.dataset.visto ?? "").trim();
+      if (currentItemEditor.isNew ? Boolean(detalle) : detalle !== detalleVisto) {
         payload.comentario = detalle;
+        if (!currentItemEditor.isNew) {
+          payload.comentario_visto = itemCommentInput.dataset.visto ?? "";
+        }
       }
     }
 
     if (currentItemEditor.canManageItem) {
       payload.estado_item = itemStatusInput.value || "POR_GESTIONAR";
-      payload.comentario_gestion = itemManagementCommentInput.value.trim();
-      payload.encargado_id = itemOwnerInput.value ? Number(itemOwnerInput.value) : null;
-      payload.enviado_por_id = itemSenderInput.value ? Number(itemSenderInput.value) : null;
-      payload.recepcionado_por_id = itemReceiverInput.value ? Number(itemReceiverInput.value) : null;
-    }
 
-    // Lo que el modal mostro al abrirse. Solo se manda al editar: en un
-    // producto nuevo no hay nada de otra persona que se pueda pisar.
-    if (!currentItemEditor.isNew) {
-      payload.comentario_visto = itemCommentInput.dataset.visto ?? "";
-      payload.comentario_gestion_visto = itemManagementCommentInput.dataset.visto ?? "";
+      const gestion = itemManagementCommentInput.value.trim();
+      const gestionVista = String(itemManagementCommentInput.dataset.visto ?? "").trim();
+      if (currentItemEditor.isNew ? Boolean(gestion) : gestion !== gestionVista) {
+        payload.comentario_gestion = gestion;
+        if (!currentItemEditor.isNew) {
+          payload.comentario_gestion_visto = itemManagementCommentInput.dataset.visto ?? "";
+        }
+      }
+
+      // Las personas solo se mandan si cambiaron: un guardado que no las toca
+      // no puede borrarlas.
+      [
+        ["encargado_id", itemOwnerInput],
+        ["enviado_por_id", itemSenderInput],
+        ["recepcionado_por_id", itemReceiverInput],
+      ].forEach(([campo, select]) => {
+        if (currentItemEditor.isNew || select.value !== (select.dataset.original ?? "")) {
+          payload[campo] = select.value ? Number(select.value) : null;
+        }
+      });
     }
 
     if (currentItemEditor.isNew) {
@@ -2465,7 +2605,12 @@ export async function initSolicitudesView(context) {
       return;
     }
 
-    const confirmed = window.confirm("Desea eliminar este item de la solicitud?");
+    const confirmed = await confirmar({
+      titulo: "¿Eliminar este producto?",
+      mensaje: "Se quitará de la solicitud. Esta acción no se puede deshacer.",
+      aceptar: "Eliminar",
+      peligro: true,
+    });
     if (!confirmed) {
       return;
     }
@@ -2624,6 +2769,19 @@ export async function initSolicitudesView(context) {
       itemSaveBtn.disabled = true;
       await saveSolicitudItemFromModal();
     } catch (error) {
+      if (esConflictoDeTexto(error)) {
+        const input =
+          error.details.campo === "comentario_gestion" ? itemManagementCommentInput : itemCommentInput;
+        if (await confirmarSobrescritura(error)) {
+          input.dataset.visto = error.details.texto_actual;
+          try {
+            await saveSolicitudItemFromModal();
+          } catch (segundoError) {
+            context.showToast(segundoError.message, true);
+          }
+        }
+        return;
+      }
       context.showToast(error.message, true);
     } finally {
       itemSaveBtn.disabled = false;
@@ -2756,7 +2914,7 @@ export async function initSolicitudesView(context) {
     await openSolicitudDetailById(Number(button?.dataset.id || card?.dataset.id));
   });
 
-  detailStatusActions.addEventListener("click", (event) => {
+  detailStatusActions.addEventListener("click", async (event) => {
     const button = event.target.closest("[data-status-value]");
     if (!button || !canManage) {
       return;
@@ -2771,9 +2929,12 @@ export async function initSolicitudesView(context) {
     if (isReversion) {
       const currentLabel = getStatusLabel(currentStatus);
       const targetLabel = getStatusLabel(targetStatus);
-      const confirmed = window.confirm(
-        `Vas a revertir el estado de "${currentLabel}" a "${targetLabel}".\n\nEsto puede afectar el seguimiento de ítems. ¿Estás seguro?`
-      );
+      const confirmed = await confirmar({
+        titulo: "¿Revertir el estado?",
+        mensaje: `La solicitud pasará de "${currentLabel}" a "${targetLabel}". Esto puede afectar el seguimiento de los productos.`,
+        aceptar: "Revertir",
+        peligro: true,
+      });
       if (!confirmed) return;
     }
 
@@ -2864,7 +3025,7 @@ export async function initSolicitudesView(context) {
     if (!btn || !canManage) return;
     const targetStatus = btn.dataset.bulkStatus;
     const warning = buildBulkStatusWarning(currentSolicitud, targetStatus);
-    if (warning && !window.confirm(warning)) return;
+    if (warning && !(await confirmar({ titulo: "Confirma el cambio de estado", mensaje: warning, aceptar: "Sí, continuar" }))) return;
     try {
       btn.disabled = true;
       await executeBulkSolicitudStatus(targetStatus);
@@ -2878,6 +3039,17 @@ export async function initSolicitudesView(context) {
     try {
       await saveSolicitudChanges();
     } catch (error) {
+      if (esConflictoDeTexto(error)) {
+        if (await confirmarSobrescritura(error)) {
+          comentarioGeneralVisto = error.details.texto_actual;
+          try {
+            await saveSolicitudChanges();
+          } catch (segundoError) {
+            context.showToast(segundoError.message, true);
+          }
+        }
+        return;
+      }
       context.showToast(error.message, true);
     }
   });
@@ -2936,7 +3108,12 @@ export async function initSolicitudesView(context) {
       return;
     }
 
-    const confirmed = window.confirm(`Desea eliminar la solicitud #${currentSolicitud.id}?`);
+    const confirmed = await confirmar({
+      titulo: `¿Eliminar la solicitud #${currentSolicitud.id}?`,
+      mensaje: "Esta acción no se puede deshacer.",
+      aceptar: "Eliminar",
+      peligro: true,
+    });
     if (!confirmed) {
       return;
     }
@@ -3070,7 +3247,11 @@ export async function initSolicitudesView(context) {
       return;
     }
 
-    const confirmed = window.confirm("Desea quitar esta imagen del chat?");
+    const confirmed = await confirmar({
+      titulo: "¿Quitar esta imagen del chat?",
+      aceptar: "Quitar imagen",
+      peligro: true,
+    });
     if (!confirmed) {
       return;
     }
@@ -3291,12 +3472,12 @@ export async function initSolicitudesView(context) {
         const res = await context.apiRequest("/api/admin/repair-consistency", { method: "POST" });
         repairResult.classList.remove("hidden");
         if (res.repaired === 0) {
-          repairResult.innerHTML = `<span class="admin-tool-ok">✓ Todo consistente. ${res.checked} solicitudes revisadas.</span>`;
+          repairResult.innerHTML = `<span class="admin-tool-ok">Todo consistente. ${res.checked} solicitudes revisadas.</span>`;
         } else {
           const rows = res.details.map((d) =>
             `<div class="admin-tool-row">Solicitud #${d.id}: <em>${getStatusLabel(d.from)}</em> → <strong>${getStatusLabel(d.to)}</strong></div>`
           ).join("");
-          repairResult.innerHTML = `<span class="admin-tool-warn">⚠ ${res.repaired} solicitud(es) corregida(s) de ${res.checked}.</span>${rows}`;
+          repairResult.innerHTML = `<span class="admin-tool-warn">${res.repaired === 1 ? "1 solicitud corregida" : `${res.repaired} solicitudes corregidas`} de ${res.checked}.</span>${rows}`;
         }
       } catch (err) {
         context.showToast(err.message, true);

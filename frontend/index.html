@@ -1,5 +1,5 @@
 ﻿<!doctype html>
-<html lang="es">
+<html lang="es" data-app-version="__APP_VER__">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -18,96 +18,28 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" />
     <link rel="stylesheet" href="/tema.css?v=__APP_VER__" />
-    <script>window.__APP_VERSION__ = "__APP_VER__";</script>
   </head>
   <body>
     <section id="login-screen" class="login-screen">
-
-      <!-- Video background (fuera de la escena SVG — se muestra sobre ella cuando carga) -->
-      <video id="login-bg-video" class="login-video-bg" autoplay muted loop playsinline preload="auto" aria-hidden="true">
-        <source src="/assets/login-bg.mp4" type="video/mp4">
-      </video>
-      <div class="login-video-overlay" aria-hidden="true"></div>
-
-      <!-- Escena atmosférica SVG (se oculta si hay video) -->
-      <div class="ls-scene" aria-hidden="true">
-
-        <!-- Cielo nocturno animado -->
-        <div class="ls-sky"></div>
-
-        <!-- Estrellas (generadas por JS) -->
-        <div id="ls-stars" class="ls-stars"></div>
-
-        <!-- Luna creciente con halo -->
-        <div class="ls-moon">
-          <svg viewBox="0 0 110 110" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="55" cy="55" r="50" fill="rgba(200,245,225,0.10)"/>
-            <circle cx="55" cy="55" r="36" fill="rgba(215,248,232,0.42)"/>
-            <circle cx="55" cy="55" r="28" fill="rgba(228,252,240,0.72)"/>
-            <circle cx="71" cy="44" r="26" fill="#030d07"/>
-          </svg>
+      <!-- Sin video ni animaciones de fondo: el video pesaba 4 MB (lento con
+           mala senal en faena) y el paisaje animado dejaba un ciclo de
+           animacion corriendo para siempre en el computador. -->
+      <div class="login-shell">
+      <aside class="login-brand" aria-hidden="true">
+        <div class="login-brand-mark">
+          <img src="/assets/portal-logo.svg" alt="" class="login-brand-logo" />
+          <span>Portal de Solicitudes</span>
         </div>
-
-        <!-- Rayos de luz crepusculares -->
-        <div class="ls-rays" aria-hidden="true">
-          <div class="ls-ray ls-ray-1"></div>
-          <div class="ls-ray ls-ray-2"></div>
-          <div class="ls-ray ls-ray-3"></div>
-          <div class="ls-ray ls-ray-4"></div>
+        <div class="login-brand-copy">
+          <p class="login-brand-kicker">Portal operativo</p>
+          <h2>Los pedidos de faena, en un solo lugar.</h2>
+          <p>Solicita productos, sigue el despacho y confirma la recepción, incluso con poca señal.</p>
         </div>
-
-        <!-- Paisaje parallax — envuelto en ll-wrap para parallax de mouse sin conflicto -->
-        <div id="ll-wrap" class="ll-wrap">
-          <div id="login-landscape" class="login-landscape">
-            <div class="login-layer" id="ll-mtn-far">
-              <div class="ll-scroll">
-                <svg viewBox="0 0 2880 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice">
-                  <g id="ll-g-mtn-far"><path id="ll-path-mtn-far" fill="rgba(55,130,85,0.14)"/></g>
-                  <use href="#ll-g-mtn-far" transform="translate(1440,0)"/>
-                </svg>
-              </div>
-            </div>
-            <div class="login-layer" id="ll-mtn-mid">
-              <div class="ll-scroll">
-                <svg viewBox="0 0 2880 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice">
-                  <g id="ll-g-mtn-mid"><path id="ll-path-mtn-mid" fill="rgba(28,80,50,0.40)"/></g>
-                  <use href="#ll-g-mtn-mid" transform="translate(1440,0)"/>
-                </svg>
-              </div>
-            </div>
-            <div class="login-layer" id="ll-trees-far">
-              <div class="ll-scroll">
-                <svg viewBox="0 0 2880 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice">
-                  <g id="ll-g-trees-far"><path id="ll-path-trees-far" fill="rgba(10,38,22,0.82)"/></g>
-                  <use href="#ll-g-trees-far" transform="translate(1440,0)"/>
-                </svg>
-              </div>
-            </div>
-            <div class="login-layer" id="ll-trees-near">
-              <div class="ll-scroll">
-                <svg viewBox="0 0 2880 500" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice">
-                  <g id="ll-g-trees-near"><path id="ll-path-trees-near" fill="rgba(3,9,5,0.97)"/></g>
-                  <use href="#ll-g-trees-near" transform="translate(1440,0)"/>
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Bandas de niebla que derivan -->
-        <div class="ls-mist-wrap">
-          <div class="ls-mist ls-mist-1"></div>
-          <div class="ls-mist ls-mist-2"></div>
-          <div class="ls-mist ls-mist-3"></div>
-        </div>
-
-        <!-- Luciérnagas (generadas por JS) -->
-        <div id="ls-fireflies" class="ls-fireflies"></div>
-
-        <!-- Gradiente oscuro en la base -->
-        <div class="ls-ground-fog"></div>
-
-      </div><!-- /ls-scene -->
+        <svg class="login-brand-ridge" viewBox="0 0 640 170" preserveAspectRatio="xMidYMax slice" focusable="false">
+          <path class="login-ridge-far" d="M0 170 L0 82 C32 82 32 76 64 76 C96 76 96 95 128 95 C160 95 160 73 192 73 C224 73 224 90 256 90 C288 90 288 84 320 84 C352 84 352 72 384 72 C416 72 416 89 448 89 C480 89 480 71 512 71 C544 71 544 86 576 86 C608 86 608 73 640 73 L640 170 Z"/>
+          <path class="login-ridge-near" d="M0 170 L0 150 L-1 150 L10 103 L21 150 L29 150 L39 109 L49 150 L69 150 L78 99 L87 150 L96 150 L107 115 L118 150 L120 150 L128 112 L137 150 L149 150 L158 92 L166 150 L181 150 L190 97 L199 150 L211 150 L219 114 L227 150 L235 150 L244 96 L253 150 L265 150 L274 98 L284 150 L293 150 L303 92 L314 150 L322 150 L332 99 L341 150 L359 150 L368 94 L377 150 L389 150 L398 112 L408 150 L415 150 L425 111 L434 150 L435 150 L446 96 L456 150 L472 150 L481 90 L490 150 L501 150 L511 98 L521 150 L526 150 L538 91 L549 150 L559 150 L567 96 L575 150 L587 150 L599 97 L610 150 L620 150 L629 107 L638 150 L640 150 L640 170 Z"/>
+        </svg>
+      </aside>
 
       <!-- Tarjeta de acceso -->
       <div class="login-card">
@@ -139,10 +71,11 @@
           <button type="submit">Ingresar al portal</button>
           <p id="login-error" class="text-error hidden"></p>
           <small class="login-help">
-            Si un usuario olvida su contraseña, un ADMIN o SUPERVISOR puede restablecerla desde el módulo Usuarios.
+            ¿Olvidaste tu contraseña? Un administrador o supervisor puede restablecerla desde Usuarios.
           </small>
           <small class="login-version">v__APP_VER__</small>
         </form>
+      </div>
       </div>
 
     </section>
@@ -190,14 +123,14 @@
           DataScope
         </a>
         <button id="help-btn" class="help-btn" type="button">Cómo usar</button>
-        <button id="sidebar-install-btn" class="sidebar-install-btn hidden" type="button">📲 Instalar app</button>
+        <button id="sidebar-install-btn" class="sidebar-install-btn hidden" type="button"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg> Instalar app</button>
         <button id="logout-btn" class="logout-btn">Cerrar sesión</button>
       </aside>
       <button id="sidebar-overlay" class="sidebar-overlay hidden" type="button" aria-label="Cerrar menu"></button>
 
       <main class="main-content">
         <header class="topbar">
-          <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menu">☰</button>
+          <button class="menu-toggle" id="menu-toggle" type="button" aria-label="Abrir menú"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
           <div class="topbar-main">
             <div class="topbar-heading">
               <h3 id="page-title">Dashboard</h3>
@@ -218,17 +151,17 @@
                 Instalar app
               </button>
               <button id="novedades-btn" class="topbar-action topbar-novedades-btn" type="button" aria-label="Novedades del portal">
-                <span class="topbar-action-icon" aria-hidden="true">🚀</span>
+                <span class="topbar-action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6l-5 4H4a1 1 0 0 0-1 1Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></span>
                 <span class="topbar-action-label">Novedades</span>
                 <span id="novedades-badge" class="alert-badge hidden">0</span>
               </button>
               <button id="feedback-btn" class="topbar-action topbar-feedback-btn" type="button" aria-label="Enviar idea o reporte">
-                <span class="topbar-action-icon" aria-hidden="true">💡</span>
+                <span class="topbar-action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.2 1.1 2V16h5v-.2c0-.8.4-1.5 1.1-2A6 6 0 0 0 12 3Z"/></svg></span>
                 <span class="topbar-action-label">Feedback</span>
                 <span id="feedback-badge" class="alert-badge hidden">0</span>
               </button>
               <button id="alerts-btn" class="topbar-action topbar-alert-btn" type="button" aria-label="Alertas">
-                <span class="topbar-action-icon" aria-hidden="true">🔔</span>
+                <span class="topbar-action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span>
                 <span class="topbar-action-label">Alertas</span>
                 <span id="alerts-badge" class="alert-badge hidden">0</span>
               </button>
@@ -302,10 +235,10 @@
           </div>
           <div>
             <strong>PumAI</strong>
-            <p class="ai-drawer-subtitle">Tu asistente del portal 🐾</p>
+            <p class="ai-drawer-subtitle">Tu asistente del portal</p>
           </div>
         </div>
-        <button id="ai-assistant-close" class="icon-btn" type="button" aria-label="Cerrar PumAI">x</button>
+        <button id="ai-assistant-close" class="icon-btn icon-btn-close" type="button" aria-label="Cerrar PumAI"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
       </header>
       <div id="ai-assistant-messages" class="ai-messages" role="log" aria-live="polite"></div>
       <form id="ai-assistant-form" class="ai-composer" autocomplete="off">
@@ -317,7 +250,7 @@
           aria-label="Escribe tu pregunta al asistente"
         ></textarea>
         <button id="ai-assistant-send" class="ai-send-btn" type="submit" aria-label="Enviar">
-          &#9658;
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7Z"/></svg>
         </button>
       </form>
     </div>
@@ -331,7 +264,7 @@
             <h4>Novedades del portal</h4>
             <p class="muted-text">Últimas actualizaciones y mejoras.</p>
           </div>
-          <button id="novedades-close-btn" class="icon-btn" type="button">x</button>
+          <button id="novedades-close-btn" class="icon-btn icon-btn-close" type="button" aria-label="Cerrar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
         </header>
 
         <!-- Formulario publicar (solo ADMIN) -->
@@ -340,15 +273,15 @@
             <div class="novedades-tipo-row">
               <label class="feedback-tipo-opt">
                 <input type="radio" name="nov_tipo" value="feature" checked>
-                <span>🚀 Nueva función</span>
+                <span>Nueva función</span>
               </label>
               <label class="feedback-tipo-opt">
                 <input type="radio" name="nov_tipo" value="mejora">
-                <span>✨ Mejora</span>
+                <span>Mejora</span>
               </label>
               <label class="feedback-tipo-opt">
                 <input type="radio" name="nov_tipo" value="fix">
-                <span>🐛 Corrección</span>
+                <span>Corrección</span>
               </label>
             </div>
             <input id="novedades-titulo" class="form-input" type="text" placeholder="Título de la novedad" maxlength="120" required />
@@ -378,13 +311,13 @@
             <h4>Enviar idea o reporte</h4>
             <p class="muted-text">Tu opinión ayuda a mejorar el portal.</p>
           </div>
-          <button id="feedback-close-btn" class="icon-btn" type="button">x</button>
+          <button id="feedback-close-btn" class="icon-btn icon-btn-close" type="button" aria-label="Cerrar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
         </header>
 
         <!-- Tabs enviar / ver (ADMIN) -->
         <div id="feedback-tabs" class="feedback-tabs">
-          <button class="feedback-tab active" data-tab="send">✏️ Enviar</button>
-          <button class="feedback-tab admin-only hidden" data-tab="list">📋 Recibidos <span id="feedback-unread-chip" class="mini-chip hidden">0</span></button>
+          <button class="feedback-tab active" data-tab="send" type="button">Enviar</button>
+          <button class="feedback-tab admin-only hidden" data-tab="list" type="button">Recibidos <span id="feedback-unread-chip" class="mini-chip hidden">0</span></button>
         </div>
 
         <!-- Panel enviar -->
@@ -393,11 +326,11 @@
             <div class="feedback-tipo-row">
               <label class="feedback-tipo-opt">
                 <input type="radio" name="feedback_tipo" value="idea" checked />
-                <span>💡 Idea / Mejora</span>
+                <span>Idea o mejora</span>
               </label>
               <label class="feedback-tipo-opt">
                 <input type="radio" name="feedback_tipo" value="error" />
-                <span>🐛 Reportar error</span>
+                <span>Reportar un error</span>
               </label>
             </div>
             <label class="form-label" for="feedback-titulo">Título</label>
@@ -425,7 +358,7 @@
             <h4>Alertas y novedades</h4>
             <p class="muted-text">Mensajes y cambios recientes del portal.</p>
           </div>
-          <button id="alerts-close-btn" class="icon-btn" type="button">x</button>
+          <button id="alerts-close-btn" class="icon-btn icon-btn-close" type="button" aria-label="Cerrar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
         </header>
         <div class="section-head compact-head">
           <span id="alerts-status" class="mini-chip active">Sin cargar</span>
@@ -460,7 +393,7 @@
             <h4>Acciones pendientes</h4>
             <p class="muted-text">Se enviarán al reconectarse a internet.</p>
           </div>
-          <button id="offline-queue-close-btn" class="icon-btn" type="button">x</button>
+          <button id="offline-queue-close-btn" class="icon-btn icon-btn-close" type="button" aria-label="Cerrar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
         </header>
         <div id="offline-queue-list" class="offline-queue-list"></div>
       </section>

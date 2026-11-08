@@ -406,7 +406,7 @@ async function createEnvioNotification({
     equipoNombre ? `Equipo: ${equipoNombre}` : null,
     repuesto ? `Repuesto: ${repuesto}` : null,
     Number.isFinite(Number(cantidad)) ? `Cantidad: ${cantidad}` : null,
-    estadoVisual ? `Tracking: ${estadoVisual}` : null,
+    estadoVisual ? `Seguimiento: ${estadoVisual}` : null,
   ].filter(Boolean);
 
   const notifications = [];
@@ -414,7 +414,7 @@ async function createEnvioNotification({
   notifications.push(
     await insertNotification({
       tipo: "ENVIO_NUEVO",
-      titulo: "Nuevo envio hacia tu equipo",
+      titulo: "Nuevo envío hacia tu equipo",
       mensaje: parts.join(" | ") || "Se registró un nuevo envio",
       rolDestino: ROLES.JEFE_FAENA,
       equipoId,
@@ -436,7 +436,7 @@ async function createSolicitudMessageNotification({
   const preview = String(mensaje || "").trim();
   const body = preview
     ? `${remitenteNombre || "Nuevo mensaje"}: ${preview.slice(0, 140)}`
-    : `${remitenteNombre || "Nuevo mensaje"} envio una imagen o archivo de apoyo.`;
+    : `${remitenteNombre || "Nuevo mensaje"} envió una imagen o archivo de apoyo.`;
 
   const notifications = [];
 

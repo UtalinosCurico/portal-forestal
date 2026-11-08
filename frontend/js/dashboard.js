@@ -1,3 +1,27 @@
+// Todo texto que viene del servidor (lo escriben usuarios: productos,
+// mensajes, nombres) se escapa antes de meterlo en el HTML.
+function escaparTexto(valor) {
+  return String(valor ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+// Las alertas traen un tipo interno (SOLICITUD_NUEVA...): nunca se muestra
+// el codigo, sino su nombre.
+const TIPO_ALERTA = {
+  SOLICITUD_NUEVA: "Nueva solicitud",
+  SOLICITUD_ESTADO: "Cambio de estado",
+  SOLICITUD_ITEM: "Producto actualizado",
+  SOLICITUD_MENSAJE: "Mensaje nuevo",
+  SOLICITUD_PEDIDO_INUSUAL: "Pedido inusual",
+  FEEDBACK_NUEVO: "Feedback nuevo",
+  FALLO_CLIENTE: "Falla en el portal",
+  ENVIO_NUEVO: "Envío nuevo",
+};
+
 let estadoChart;
 let equipoChart;
 let tiempoChart;
@@ -32,7 +56,7 @@ function getStatusClass(status) {
 }
 
 function renderStatusBadge(status) {
-  return `<span class="${getStatusClass(status)}">${getStatusLabel(status)}</span>`;
+  return `<span class="${escaparTexto(getStatusClass(status))}">${escaparTexto(getStatusLabel(status))}</span>`;
 }
 
 function renderAlertsList(rows, formatDate, container) {
@@ -50,11 +74,11 @@ function renderAlertsList(rows, formatDate, container) {
       (row) => `
         <article class="alert-card">
           <div class="alert-card-top">
-            <strong>${row.tipo || "Novedad"}</strong>
-            <span>${formatDate(row.created_at)}</span>
+            <strong>${escaparTexto(row.titulo || TIPO_ALERTA[row.tipo] || "Novedad")}</strong>
+            <span>${escaparTexto(formatDate(row.created_at))}</span>
           </div>
-          <p>${row.mensaje || "-"}</p>
-          <div class="alert-card-meta">${row.nombre_equipo || "Sin equipo"}</div>
+          <p>${escaparTexto(row.mensaje || "-")}</p>
+          <div class="alert-card-meta">${escaparTexto(row.nombre_equipo || "Sin equipo")}</div>
         </article>
       `
     )
@@ -74,7 +98,7 @@ function getActionTypeLabel(type) {
     ITEM_ATRASADO: "Atrasado",
     ITEM_POR_GESTIONAR: "Gestionar",
   };
-  return labels[type] || "Accion";
+  return labels[type] || "Acción";
 }
 
 function renderMyActions(rows, container, countEl) {
@@ -96,19 +120,19 @@ function renderMyActions(rows, container, countEl) {
       const days = Number(row.dias_sin_movimiento || 0);
       const qty =
         row.cantidad !== null && row.cantidad !== undefined
-          ? `<span>${row.cantidad} ${row.unidad_medida || ""}</span>`
+          ? `<span>${escaparTexto(row.cantidad)} ${escaparTexto(row.unidad_medida || "")}</span>`
           : "";
-      const code = row.codigo_referencia ? `<span>${row.codigo_referencia}</span>` : "";
+      const code = row.codigo_referencia ? `<span>${escaparTexto(row.codigo_referencia)}</span>` : "";
       return `
-        <button class="my-action-card" data-open-solicitud="${row.solicitud_id}" type="button">
+        <button class="my-action-card" data-open-solicitud="${escaparTexto(row.solicitud_id)}" type="button">
           <div class="my-action-top">
             <span class="mini-chip">${getActionTypeLabel(row.tipo)}</span>
             <span class="urgencia-badge ${getUrgencyClass(days)}">${days} día${days !== 1 ? "s" : ""}</span>
           </div>
-          <strong>${row.titulo || "Accion pendiente"}</strong>
-          <p>${row.descripcion || `Solicitud #${row.solicitud_id}`}</p>
+          <strong>${escaparTexto(row.titulo || "Acción pendiente")}</strong>
+          <p>${escaparTexto(row.descripcion || `Solicitud #${row.solicitud_id}`)}</p>
           <div class="my-action-meta">
-            <span>${row.equipo || "Sin equipo"}</span>
+            <span>${escaparTexto(row.equipo || "Sin equipo")}</span>
             ${qty}
             ${code}
           </div>
@@ -136,14 +160,14 @@ function renderSolicitudesTable(rows, formatDate, bodyEl) {
     .map(
       (row) => `
         <tr>
-          <td>${row.id}</td>
-          <td>${row.equipo || "-"}</td>
-          <td>${row.repuesto || "-"}</td>
-          <td>${row.cantidad ?? "-"}</td>
+          <td>${escaparTexto(row.id)}</td>
+          <td>${escaparTexto(row.equipo || "-")}</td>
+          <td>${escaparTexto(row.repuesto || "-")}</td>
+          <td>${escaparTexto(row.cantidad ?? "-")}</td>
           <td>${renderStatusBadge(row.estado)}</td>
-          <td>${formatDate(row.created_at)}</td>
-          <td>${formatDate(row.dispatched_at)}</td>
-          <td>${formatDate(row.received_at)}</td>
+          <td>${escaparTexto(formatDate(row.created_at))}</td>
+          <td>${escaparTexto(formatDate(row.dispatched_at))}</td>
+          <td>${escaparTexto(formatDate(row.received_at))}</td>
         </tr>
       `
     )
@@ -331,7 +355,7 @@ function renderFilterSummary(filters, container, equipoSelect, formatDateOnly) {
   }
 
   container.innerHTML = chips.length
-    ? chips.map((chip) => `<span class="mini-chip">${chip}</span>`).join("")
+    ? chips.map((chip) => `<span class="mini-chip">${escaparTexto(chip)}</span>`).join("")
     : "<span class='mini-chip active'>Vista general activa</span>";
 }
 
@@ -474,7 +498,7 @@ export async function initDashboardView(context) {
     const equipos = payloadEquipos.data || [];
     equipoSelect.innerHTML = [
       "<option value=''>Todos</option>",
-      ...equipos.map((item) => `<option value='${item.id}'>${item.nombre_equipo}</option>`),
+      ...equipos.map((item) => `<option value='${escaparTexto(item.id)}'>${escaparTexto(item.nombre_equipo)}</option>`),
     ].join("");
   }
 

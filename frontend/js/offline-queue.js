@@ -73,13 +73,26 @@ export async function pendingCount() {
   });
 }
 
-// Envía todas las acciones pendientes en orden. Detiene al primer error.
-// Retorna cuántas se enviaron.
+// Rechazos que no se arreglan reintentando: datos que el servidor no acepta
+// (una solicitud que ya no existe, un texto en conflicto). 401, 408 y 429 si
+// pueden resolverse solos (sesion renovada, red, espera), igual que los 5xx y
+// los cortes de red, que no traen estado.
+function esRechazoDefinitivo(error) {
+  const estado = Number(error?.status);
+  return estado >= 400 && estado < 500 && ![401, 408, 429].includes(estado);
+}
+
+// Envia las acciones pendientes en orden. Ante un corte de red o un error
+// pasajero se detiene, para respetar el orden y reintentar despues. Antes
+// tambien se detenia ante un rechazo definitivo y esa accion bloqueaba para
+// siempre a todas las que venian detras: ahora se saca de la cola y se avisa
+// (evento fmn:queue-rejected) que no se pudo guardar.
+// Retorna cuantas se enviaron.
 export async function flushQueue(apiRequestFn) {
   const actions = await getPending();
   if (!actions.length) return 0;
-
   let sent = 0;
+  let rechazadas = 0;
   for (const action of actions) {
     try {
       await apiRequestFn(action.url, {
@@ -88,11 +101,20 @@ export async function flushQueue(apiRequestFn) {
       });
       await removeAction(action.id);
       sent++;
-    } catch {
-      break; // preservar orden — parar al primer fallo
+    } catch (error) {
+      if (esRechazoDefinitivo(error)) {
+        await removeAction(action.id);
+        rechazadas++;
+        window.dispatchEvent(
+          new CustomEvent("fmn:queue-rejected", {
+            detail: { description: action.description || "", mensaje: error?.message || "" },
+          })
+        );
+        continue;
+      }
+      break; // preservar orden: se reintenta todo desde aqui mas tarde
     }
   }
-
-  if (sent > 0) notifyChange();
+  if (sent > 0 || rechazadas > 0) notifyChange();
   return sent;
 }

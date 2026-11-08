@@ -1,12 +1,21 @@
 const NOVEDADES_LS_KEY = "fmn_novedades_seen_at";
 
 const NOV_TIPO_META = {
-  feature: { label: "🚀 Nueva función", cls: "feature" },
-  mejora:  { label: "✨ Mejora",        cls: "mejora"  },
-  fix:     { label: "🐛 Corrección",    cls: "fix"     },
+  feature: { label: "Nueva función", cls: "feature" },
+  mejora:  { label: "Mejora",        cls: "mejora"  },
+  fix:     { label: "Corrección",    cls: "fix"     },
 };
 
 let _ctx = null;
+
+function escaparTexto(valor) {
+  return String(valor ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
 
 const el = (id) => document.getElementById(id);
 
@@ -101,9 +110,9 @@ async function loadNovedades() {
         <div class="novedades-card-head">
           <span class="novedades-card-tipo ${meta.cls}">${meta.label}</span>
           ${isNew ? '<span class="mini-chip active" style="font-size:0.72rem">Nuevo</span>' : ""}
-          <span class="novedades-card-titulo">${n.titulo}</span>
+          <span class="novedades-card-titulo">${escaparTexto(n.titulo)}</span>
         </div>
-        ${n.descripcion ? `<p class="novedades-card-desc">${n.descripcion}</p>` : ""}
+        ${n.descripcion ? `<p class="novedades-card-desc">${escaparTexto(n.descripcion)}</p>` : ""}
         <div class="novedades-card-meta">
           <span>Publicado ${fecha}</span>
           ${isAdmin ? `<button class="action-btn secondary" style="font-size:0.78rem;min-height:28px;padding:0.15rem 0.6rem;color:#c62828" data-nov-delete="${n.id}">Eliminar</button>` : ""}

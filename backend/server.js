@@ -3,12 +3,14 @@ const fs = require("fs");
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const helmet = require("helmet");
 
+const { esProduccion } = require("./config/entorno");
+const { POWERBI_POR_EMPRESA } = require("./config/powerbiConfig");
 const { initDatabase } = require("./database/init");
 const { initUserStore } = require("./services/userStore");
 const { initOperationalStore } = require("./services/operationalPgStore");
 const { startStaleSolicitudesJob } = require("./services/staleSolicitudesJob");
-const testRoutes = require("./routes/test");
 const authRoutes = require("./routes/auth");
 const dashboardRoutes = require("./routes/dashboard");
 const solicitudesRoutes = require("./routes/solicitudes");
@@ -35,9 +37,64 @@ const REQUEST_BODY_LIMIT = "6mb";
 let appInstance = null;
 let appInitPromise = null;
 
+// Sitios que el portal puede mostrar dentro de un iframe: los informes de
+// Power BI (se leen de config/powerbiConfig.js, asi que si se cambia un enlace
+// alla la politica lo sigue sola) y el tutorial de "Como usar"
+// (frontend/views/como-usar.html), que esta alojado en guidde.
+function origenesPermitidosEnIframe() {
+  const origenes = new Set();
+  for (const informe of Object.values(POWERBI_POR_EMPRESA)) {
+    try {
+      origenes.add(new URL(informe.src).origin);
+    } catch {
+      // Un enlace mal escrito no debe tumbar el servidor; ese informe no carga.
+    }
+  }
+  origenes.add("https://embed.app.guidde.com");
+  return [...origenes];
+}
+
+// Encabezados de seguridad. El frontend lo entrega este mismo Express (/web y
+// los estaticos), asi que la politica cubre la pagina y la API por igual.
+// HSTS y nosniff quedan con los valores por defecto de helmet.
+function crearEncabezadosDeSeguridad() {
+  return helmet({
+    contentSecurityPolicy: {
+      // Solo las directivas de aca: sin las que helmet agrega por su cuenta.
+      useDefaults: false,
+      directives: {
+        defaultSrc: ["'self'"],
+        // Sin 'unsafe-inline': index.html no lleva scripts en linea (la version
+        // viaja en data-app-version). jsDelivr sirve Chart.js (js/dashboard.js).
+        scriptSrc: ["'self'", "https://cdn.jsdelivr.net"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+        imgSrc: ["'self'", "data:", "blob:"],
+        connectSrc: ["'self'"],
+        frameSrc: origenesPermitidosEnIframe(),
+        workerSrc: ["'self'"],
+        manifestSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        frameAncestors: ["'self'"],
+      },
+    },
+    // COEP exigiria que el iframe de Power BI y Google Fonts mandaran
+    // encabezados que no mandan: los dejaria en blanco.
+    crossOriginEmbedderPolicy: false,
+    frameguard: { action: "sameorigin" },
+    // No "no-referrer": Power BI y los enlaces externos necesitan el origen.
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+  });
+}
+
 function createApp() {
   const app = express();
 
+  // Primero que todo, para que tambien lleven los encabezados las respuestas
+  // de CORS, los errores y el 404.
+  app.use(crearEncabezadosDeSeguridad());
   app.use(cors());
   app.use(express.json({ limit: REQUEST_BODY_LIMIT }));
   app.use(bodyParser.urlencoded({ extended: true, limit: REQUEST_BODY_LIMIT }));
@@ -46,7 +103,6 @@ function createApp() {
   app.get("/", (req, res) => {
     res.send("Portal de Solicitudes funcionando");
   });
-  app.use("/api/test", testRoutes);
   app.use("/api/auth", authRoutes);
 
   // Endpoints protegidos con JWT y RBAC por ruta.
@@ -126,6 +182,11 @@ async function startServer(port = 3000) {
   return app.listen(port, () => {
     console.log(`Servidor ejecutandose en http://localhost:${port}`);
     console.log(`Portal web disponible en http://localhost:${port}/web`);
+    // Las cuentas de prueba solo existen para trabajar en local: en produccion
+    // sus credenciales no se anuncian en el log.
+    if (esProduccion()) {
+      return;
+    }
     console.log("Usuarios de prueba:");
     console.log("- ADMIN: admin@forestal.cl / Admin123!");
     console.log("- SUPERVISOR: supervisor@forestal.cl / Supervisor123!");

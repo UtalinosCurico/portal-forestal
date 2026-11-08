@@ -2293,3 +2293,1208 @@
     gap: 8px 16px;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   INICIO DE SESION
+   Panel de marca (tinta de la empresa) + formulario sobre blanco. Sin video
+   ni escena animada: cargaba 4 MB y dejaba animaciones corriendo siempre.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root .login-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  overflow: auto;
+  background:
+    radial-gradient(60% 50% at 100% 0%, rgba(var(--accent-rgb), 0.08), transparent 70%),
+    var(--fc-ground);
+}
+
+:root .login-shell {
+  width: min(980px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  overflow: hidden;
+  border-radius: 26px;
+  background: var(--fc-surface);
+  box-shadow:
+    0 30px 80px rgba(var(--ink-rgb), 0.16),
+    0 4px 14px rgba(var(--ink-rgb), 0.06);
+  animation: fc-rise 0.6s var(--fc-ease) both;
+}
+
+:root .login-brand {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+  min-height: 580px;
+  padding: 36px 36px 0;
+  overflow: hidden;
+  color: #fff;
+  background:
+    radial-gradient(110% 70% at 0% 0%, rgba(var(--accent-rgb), 0.45), transparent 62%),
+    var(--ink);
+}
+
+:root .login-brand-mark {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.98rem;
+  font-weight: 800;
+  letter-spacing: -0.005em;
+}
+
+:root .login-brand-logo {
+  width: 42px;
+  height: 42px;
+  padding: 6px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+:root .login-brand-kicker {
+  margin: 0 0 14px;
+  color: var(--on-ink);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+:root .login-brand-copy h2 {
+  margin: 0 0 14px;
+  color: #fff;
+  font-size: 2.05rem;
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  max-width: 14ch;
+}
+
+:root .login-brand-copy p:last-child {
+  margin: 0;
+  max-width: 34ch;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+:root .login-brand-ridge {
+  display: block;
+  width: calc(100% + 72px);
+  height: 170px;
+  margin: 0 -36px;
+}
+
+:root .login-ridge-far {
+  fill: rgba(var(--accent-rgb), 0.32);
+}
+
+:root .login-ridge-near {
+  fill: rgba(0, 0, 0, 0.32);
+}
+
+/* La tarjeta del formulario deja de ser "vidrio" sobre el video. */
+:root .login-card,
+:root .login-card:focus-within {
+  position: relative;
+  z-index: 1;
+  width: auto;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 48px 44px 32px;
+  border: 0;
+  border-radius: 0;
+  background: var(--fc-surface);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  animation: none;
+}
+
+/* El logo ya esta en el panel de marca. */
+:root .login-card .login-logo {
+  display: none;
+}
+
+:root .login-card h1 {
+  margin: 0;
+  color: var(--fc-text);
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-align: left;
+}
+
+:root .login-card > p {
+  margin: 6px 0 26px;
+  color: var(--fc-muted);
+  font-size: 0.95rem;
+  text-align: left;
+}
+
+:root .login-card form {
+  gap: 14px;
+}
+
+:root .lf-field input {
+  min-height: 56px;
+  border: 1px solid var(--fc-line);
+  border-radius: 12px;
+  background: var(--fc-surface);
+  color: var(--fc-text);
+  font-size: 1rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+:root .lf-field input:hover {
+  border-color: #d5dbe0;
+}
+
+:root .lf-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.14);
+}
+
+:root .lf-field > label {
+  color: var(--fc-muted);
+}
+
+:root .lf-field input:focus + label,
+:root .lf-field input:not(:placeholder-shown) + label {
+  color: var(--accent-deep);
+}
+
+:root .field-toggle-btn {
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  background: #f2f4f6;
+  color: var(--fc-text-2);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+:root .field-toggle-btn:hover {
+  background: #e7ebee;
+}
+
+:root .lf-has-action input {
+  padding-right: 92px;
+}
+
+:root .login-toggle-card {
+  min-height: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--fc-line);
+  border-radius: 12px;
+  background: #f8f9fa;
+}
+
+:root .login-toggle-card:hover {
+  background: var(--fc-hover);
+  border-color: #d5dbe0;
+}
+
+:root .login-toggle-card strong {
+  color: var(--fc-text);
+  font-size: 0.9rem;
+}
+
+:root .login-toggle-card small {
+  color: var(--fc-muted);
+  font-size: 0.8rem;
+}
+
+:root .login-card form > button[type="submit"] {
+  min-height: 52px;
+  margin-top: 4px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 800;
+  box-shadow: 0 8px 20px rgba(var(--accent-rgb), 0.28);
+  transition: background 0.15s, transform 0.15s var(--fc-ease), box-shadow 0.15s;
+}
+
+:root .login-card form > button[type="submit"]:hover {
+  background: var(--accent-deep);
+  transform: translateY(-1px);
+}
+
+:root .login-card form > button[type="submit"]:disabled {
+  opacity: 0.7;
+  transform: none;
+}
+
+:root #login-error {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--st-rechazada-bg);
+  color: var(--st-rechazada-fg);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+:root #login-error.hidden {
+  display: none;
+}
+
+:root .login-help {
+  margin-top: 6px;
+  color: var(--fc-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+:root .login-version {
+  margin-top: 2px;
+  color: #a3adb5;
+  text-align: left;
+}
+
+@media (max-width: 760px) {
+  :root .login-screen {
+    place-items: start center;
+    padding: 0;
+    background: var(--fc-surface);
+  }
+
+  :root .login-shell {
+    grid-template-columns: 1fr;
+    min-height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  :root .login-brand {
+    min-height: 0;
+    gap: 18px;
+    padding: calc(22px + env(safe-area-inset-top, 0px)) 22px 0;
+  }
+
+  :root .login-brand-copy h2 {
+    font-size: 1.45rem;
+    max-width: none;
+  }
+
+  :root .login-brand-copy p:last-child {
+    font-size: 0.9rem;
+  }
+
+  :root .login-brand-ridge {
+    width: calc(100% + 44px);
+    height: 84px;
+    margin: 0 -22px;
+  }
+
+  :root .login-card,
+  :root .login-card:focus-within {
+    justify-content: flex-start;
+    padding: 26px 22px calc(26px + env(safe-area-inset-bottom, 0px));
+  }
+
+  :root .login-card h1 {
+    font-size: 1.4rem;
+  }
+
+  :root .login-card > p {
+    margin-bottom: 20px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   VENTANAS EMERGENTES, BARRA SUPERIOR Y AVISOS
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Dialogo de confirmacion (js/dialogo.js, reemplaza window.confirm) ──── */
+
+:root .modal.dialogo {
+  z-index: 400;
+}
+
+:root .dialogo-caja {
+  width: min(420px, calc(100vw - 32px));
+  padding: 24px;
+  text-align: left;
+}
+
+:root .dialogo-icono {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 14px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+}
+
+:root .dialogo-icono.es-peligro {
+  background: var(--st-rechazada-bg);
+  color: var(--st-rechazada-fg);
+}
+
+:root .dialogo-titulo {
+  margin: 0;
+  color: var(--fc-text);
+  font-size: 1.12rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+:root .dialogo-mensaje {
+  margin: 8px 0 0;
+  color: var(--fc-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+:root .dialogo-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 22px;
+}
+
+:root .dialogo-acciones .action-btn {
+  width: auto;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+:root .dialogo-aceptar.es-peligro {
+  background: var(--st-rechazada-fg);
+  border-color: var(--st-rechazada-fg);
+  color: #fff;
+}
+
+:root .dialogo-aceptar.es-peligro:hover {
+  filter: brightness(0.92);
+}
+
+@media (max-width: 540px) {
+  :root .dialogo-acciones {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  :root .dialogo-acciones .action-btn {
+    width: 100%;
+    min-height: 46px;
+    padding: 0 10px;
+
+    white-space: normal;
+  }
+}
+
+/* ── Barra superior ─────────────────────────────────────────────────────── */
+
+:root .topbar-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--fc-line);
+  border-radius: 12px;
+  background: var(--fc-surface);
+  color: var(--fc-text-2);
+  font-size: 0.86rem;
+  font-weight: 700;
+  box-shadow: none;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+:root .topbar-action:hover {
+  background: var(--fc-hover);
+  border-color: #d5dbe0;
+  color: var(--fc-text);
+}
+
+:root .topbar-action-icon {
+  display: inline-grid;
+  place-items: center;
+  font-size: 0;
+  line-height: 0;
+}
+
+:root .topbar-action-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+:root .alert-badge {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #d92d20;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 20px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 0 0 2px var(--fc-surface);
+}
+
+/* Sin "display" aca: el boton solo aparece cuando la barra lateral se
+   esconde (900 px o menos), y eso lo decide style.css. */
+:root .menu-toggle {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--fc-line);
+  border-radius: 12px;
+  background: var(--fc-surface);
+  color: var(--fc-text);
+  font-size: 0;
+  box-shadow: none;
+}
+
+:root .sidebar-install-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+:root .sidebar-install-btn.hidden {
+  display: none;
+}
+
+/* Busqueda global con lupa dibujada (sin emoji ni imagen externa). */
+:root .global-search input {
+  min-height: 42px;
+  padding-left: 40px;
+  border: 1px solid var(--fc-line);
+  border-radius: 12px;
+  background: var(--fc-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a949c' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 14px center / 17px 17px;
+  color: var(--fc-text);
+  box-shadow: none;
+}
+
+:root .global-search input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.12);
+}
+
+:root .global-search-results {
+  padding: 6px;
+  border: 1px solid var(--fc-line);
+  border-radius: 14px;
+  background: var(--fc-surface);
+  box-shadow: 0 18px 40px rgba(var(--ink-rgb), 0.14);
+}
+
+:root .global-search-item {
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--fc-text);
+  box-shadow: none;
+}
+
+:root .global-search-item:hover,
+:root .global-search-item:focus-visible {
+  background: var(--fc-hover);
+}
+
+:root .global-search-empty {
+  color: var(--fc-muted);
+}
+
+/* ── Hojas emergentes (Novedades, Feedback, Alertas, Pendientes) ────────── */
+
+:root .novedades-modal-sheet,
+:root .feedback-modal-sheet,
+:root .alerts-modal-sheet,
+:root .offline-queue-sheet {
+  padding: 22px 24px 24px;
+  background: var(--fc-surface);
+}
+
+:root .novedades-modal-sheet .modal-header,
+:root .feedback-modal-sheet .modal-header,
+:root .alerts-modal-sheet .modal-header,
+:root .offline-queue-sheet .modal-header {
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+:root .novedades-modal-sheet .modal-header .muted-text,
+:root .feedback-modal-sheet .modal-header .muted-text,
+:root .alerts-modal-sheet .modal-header .muted-text,
+:root .offline-queue-sheet .modal-header .muted-text {
+  margin: 4px 0 0;
+  font-size: 0.86rem;
+}
+
+/* Novedades */
+:root .novedades-list {
+  display: grid;
+  gap: 10px;
+}
+
+:root .novedades-card {
+  padding: 14px 16px;
+  border: 1px solid var(--fc-line);
+  border-radius: 14px;
+  background: var(--fc-surface);
+  box-shadow: none;
+}
+
+:root .novedades-card-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+:root .novedades-card-tipo {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+:root .novedades-card-tipo.feature { background: var(--accent-soft); color: var(--accent-deep); }
+:root .novedades-card-tipo.mejora { background: var(--st-gestion-bg); color: var(--st-gestion-fg); }
+:root .novedades-card-tipo.fix { background: var(--st-pendiente-bg); color: var(--st-pendiente-fg); }
+
+:root .novedades-card-titulo {
+  color: var(--fc-text);
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+:root .novedades-card-desc {
+  margin: 8px 0 0;
+  color: var(--fc-text-2);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+:root .novedades-card-meta {
+  margin-top: 8px;
+  color: var(--fc-muted);
+  font-size: 0.76rem;
+}
+
+:root .novedades-add-btn {
+  width: 100%;
+  margin-top: 12px;
+}
+
+/* Opciones tipo (Feedback y Novedades): tarjetas seleccionables. */
+:root .feedback-tipo-row,
+:root .novedades-tipo-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+:root .feedback-tipo-opt {
+  position: relative;
+  flex: 1 1 140px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--fc-line);
+  border-radius: 12px;
+  background: var(--fc-surface);
+  color: var(--fc-text-2);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+:root .feedback-tipo-opt:hover {
+  background: var(--fc-hover);
+}
+
+:root .feedback-tipo-opt input {
+  accent-color: var(--accent);
+  margin: 0;
+}
+
+:root .feedback-tipo-opt:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+}
+
+/* Pestanas Enviar / Recibidos */
+:root .feedback-tabs {
+  display: inline-flex;
+  gap: 2px;
+  margin-bottom: 16px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #f2f4f6;
+}
+
+:root .feedback-tab {
+  min-height: 36px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--fc-muted);
+  font-size: 0.86rem;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+:root .feedback-tab.hidden {
+  display: none;
+}
+
+:root .feedback-tab.active {
+  background: var(--fc-surface);
+  color: var(--fc-text);
+  box-shadow: 0 1px 2px rgba(16, 24, 20, 0.1);
+}
+
+:root #feedback-form,
+:root .novedades-form {
+  display: grid;
+  gap: 10px;
+}
+
+:root .form-label {
+  margin-top: 4px;
+  color: var(--fc-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+:root .form-input,
+:root .feedback-textarea {
+  width: 100%;
+  border: 1px solid var(--fc-line);
+  border-radius: 12px;
+  background: var(--fc-surface);
+  color: var(--fc-text);
+}
+
+:root .form-input:focus,
+:root .feedback-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.12);
+}
+
+:root .feedback-submit-btn {
+  min-height: 46px;
+  margin-top: 6px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800;
+}
+
+:root .feedback-submit-btn:hover {
+  background: var(--accent-deep);
+}
+
+:root .form-error,
+:root .form-error-msg {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--st-rechazada-bg);
+  color: var(--st-rechazada-fg);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+:root .form-error.hidden,
+:root .form-error-msg.hidden {
+  display: none;
+}
+
+/* Feedback recibido (solo ADMIN) */
+:root .feedback-list {
+  display: grid;
+  gap: 10px;
+}
+
+:root .feedback-card {
+  padding: 14px 16px;
+  border: 1px solid var(--fc-line);
+  border-radius: 14px;
+  background: var(--fc-surface);
+}
+
+:root .feedback-card.leido {
+  background: #f8f9fa;
+}
+
+:root .feedback-card.leido .feedback-card-titulo {
+  color: var(--fc-text-2);
+  font-weight: 700;
+}
+
+:root .feedback-card-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+:root .feedback-card-tipo {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+:root .feedback-card-tipo.idea { background: var(--accent-soft); color: var(--accent-deep); }
+:root .feedback-card-tipo.error { background: var(--st-rechazada-bg); color: var(--st-rechazada-fg); }
+
+:root .feedback-card-titulo {
+  color: var(--fc-text);
+  font-size: 0.93rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+:root .feedback-card-desc {
+  margin: 8px 0;
+  color: var(--fc-text-2);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+:root .feedback-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  color: var(--fc-muted);
+  font-size: 0.76rem;
+}
+
+:root .feedback-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+:root .feedback-card-actions .action-btn {
+  width: auto;
+  min-height: 34px !important;
+  padding: 0 12px !important;
+  border-radius: 9px;
+  font-size: 0.8rem !important;
+}
+
+:root .feedback-card-actions [data-fb-delete] {
+  color: var(--st-rechazada-fg) !important;
+}
+
+/* Alertas */
+:root .alerts-modal-sheet .compact-head {
+  margin-bottom: 12px;
+}
+
+:root .push-settings-card {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--fc-line);
+  border-radius: 14px;
+  background: #f8f9fa;
+}
+
+:root .push-settings-copy strong {
+  color: var(--fc-text);
+  font-size: 0.9rem;
+}
+
+:root .push-settings-copy .muted-text {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+}
+
+:root .push-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+:root .push-settings-actions .action-btn {
+  width: auto;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font-size: 0.84rem;
+}
+
+:root .alert-feed {
+  display: grid;
+  gap: 8px;
+}
+
+:root .alerts-modal-sheet .alert-card {
+  position: relative;
+  padding: 12px 14px;
+  border: 1px solid var(--fc-line);
+  border-radius: 14px;
+  background: var(--fc-surface);
+  box-shadow: none;
+}
+
+:root .alerts-modal-sheet .alert-card-unread {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+
+/* Sin leer: punto de color junto al titulo, no un borde lateral. */
+:root .alerts-modal-sheet .alert-card-unread .alert-card-top strong::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  vertical-align: 1px;
+}
+
+:root .alerts-modal-sheet .alert-card-urgent {
+  border-color: transparent;
+  background: var(--st-rechazada-bg);
+}
+
+:root .alerts-modal-sheet .alert-card-urgent .alert-card-top strong::before {
+  background: var(--st-rechazada-fg);
+}
+
+:root .alert-card-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+:root .alert-card-top strong {
+  color: var(--fc-text);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+:root .alert-card-top span {
+  flex: none;
+  color: var(--fc-muted);
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+}
+
+:root .alert-card p {
+  margin: 4px 0 0;
+  color: var(--fc-text-2);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+:root .alert-card-meta {
+  color: var(--fc-muted);
+  font-size: 0.76rem;
+}
+
+:root .alert-card-actions .table-btn {
+  min-height: 32px;
+  border-radius: 9px;
+  font-size: 0.78rem;
+}
+
+/* Cola sin conexion */
+:root .offline-queue-list {
+  display: grid;
+  gap: 8px;
+}
+
+:root .offline-queue-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--fc-line);
+  border-radius: 12px;
+  background: var(--fc-surface);
+}
+
+:root .offline-queue-item-desc {
+  color: var(--fc-text);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+/* ── PumAI ──────────────────────────────────────────────────────────────── */
+
+:root .ai-fab {
+  border: 0;
+  background: var(--ink);
+  color: #fff;
+  box-shadow: 0 12px 28px rgba(var(--ink-rgb), 0.28);
+}
+
+:root .ai-fab:hover {
+  background: var(--ink-2);
+}
+
+:root .ai-drawer {
+  border: 1px solid var(--fc-line);
+  border-radius: 20px;
+  background: var(--fc-surface);
+  box-shadow: 0 30px 70px rgba(var(--ink-rgb), 0.22);
+  overflow: hidden;
+}
+
+:root .ai-drawer-head {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--fc-line-2);
+  background: var(--fc-surface);
+}
+
+:root .ai-drawer-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+}
+
+:root .ai-drawer-head strong {
+  color: var(--fc-text);
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+:root .ai-drawer-subtitle {
+  margin: 0;
+  color: var(--fc-muted);
+  font-size: 0.78rem;
+}
+
+:root .ai-messages {
+  background: #f4f5f7;
+}
+
+:root .ai-msg {
+  max-width: 88%;
+  padding: 10px 13px;
+  border: 0;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  box-shadow: 0 1px 1px rgba(16, 24, 20, 0.05);
+}
+
+:root .ai-msg p {
+  margin: 0;
+}
+
+:root .ai-msg p + p,
+:root .ai-msg ul,
+:root .ai-msg ol {
+  margin-top: 6px;
+}
+
+:root .ai-msg-theirs {
+  background: var(--fc-surface);
+  color: var(--fc-text);
+  border-bottom-left-radius: 6px;
+}
+
+:root .ai-msg-mine {
+  background: var(--accent);
+  color: #fff;
+  border-bottom-right-radius: 6px;
+}
+
+:root .ai-composer {
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--fc-line-2);
+  background: var(--fc-surface);
+}
+
+:root .ai-input {
+  border: 1px solid var(--fc-line);
+  border-radius: 12px;
+  background: var(--fc-surface);
+  color: var(--fc-text);
+}
+
+:root .ai-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.12);
+}
+
+:root .ai-send-btn {
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+}
+
+:root .ai-send-btn:hover {
+  background: var(--accent-deep);
+}
+
+:root .ai-typing span {
+  background: #a3adb5;
+}
+
+/* ── Avisos breves y franjas ────────────────────────────────────────────── */
+
+:root .toast {
+  border: 0;
+  border-radius: 14px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  box-shadow: 0 16px 36px rgba(var(--ink-rgb), 0.3);
+}
+
+:root .toast.error {
+  background: var(--st-rechazada-fg);
+}
+
+:root .install-banner {
+  border: 1px solid var(--fc-line);
+  border-radius: 16px;
+  background: var(--fc-surface);
+  color: var(--fc-text);
+  box-shadow: 0 16px 36px rgba(var(--ink-rgb), 0.16);
+}
+
+:root .install-banner-dismiss {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #f2f4f6;
+  color: var(--fc-text-2);
+  box-shadow: none;
+}
+
+:root .offline-banner {
+  background: var(--st-pendiente-bg);
+  color: var(--st-pendiente-fg);
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  :root .menu-toggle {
+    display: inline-grid;
+  }
+}
+
+/* Entre 681 y 1100 px el encabezado ocupaba tres filas (titulo, botones y
+   busqueda). Sin el subtitulo, titulo y botones caben en una y la busqueda
+   queda debajo. */
+@media (min-width: 681px) and (max-width: 1100px) {
+  :root .topbar-heading p {
+    display: none;
+  }
+
+  :root .topbar-main {
+    align-items: center;
+    row-gap: 12px;
+  }
+}
+
+@media (max-width: 680px) {
+  :root .novedades-modal-sheet,
+  :root .feedback-modal-sheet,
+  :root .alerts-modal-sheet,
+  :root .offline-queue-sheet {
+    padding: 14px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* En el celular los botones de la barra quedan solo con icono. */
+  :root .topbar-action .topbar-action-label {
+    display: none;
+  }
+
+  :root .topbar-action:not(#install-app-btn) {
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+    padding: 0;
+    justify-content: center;
+    position: relative;
+    border-radius: 12px;
+  }
+
+  :root .topbar-action .alert-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+  }
+}
+
+/* "26 productos pendientes" no se parte en dos lineas. */
+:root .pending-inline-title-wrap .mini-chip {
+  white-space: nowrap;
+}
+
+/* Manilla de la hoja de alertas: centrada arriba, no junto al titulo. */
+:root .alerts-modal-sheet .modal-header {
+  position: relative;
+}
+
+:root .alerts-modal-handle {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+}

@@ -35,7 +35,7 @@ test("bloquea cuando otra persona escribio mientras el formulario estaba abierto
       assert.equal(error.statusCode, 409);
       assert.equal(error.details.texto_actual, "OPERADOR: falta la marca, es la roja grande");
       assert.equal(error.details.texto_que_intentabas, "ADMIN: ya lo pedi");
-      assert.match(error.message, /Otra persona escribio/);
+      assert.match(error.message, /Otra persona escribió/);
       return true;
     }
   );

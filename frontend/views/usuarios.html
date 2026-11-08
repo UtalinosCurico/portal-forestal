@@ -1,8 +1,8 @@
 <div class="view-grid">
   <section id="usuarios-storage-warning" class="card full storage-warning hidden">
-    <h4>Proteccion de persistencia activa</h4>
+    <h4>Protección de persistencia activa</h4>
     <p id="usuarios-storage-warning-text" class="muted-text">
-      Este entorno esta en modo lectura para usuarios hasta que exista una base persistente.
+      Este entorno está en modo lectura para usuarios hasta que exista una base persistente.
     </p>
   </section>
 
@@ -11,7 +11,7 @@
       <div>
         <h4>Alta de usuarios</h4>
         <p class="muted-text">
-          La creación queda en popup para no recargar la pantalla ni mezclarla con el listado.
+          La creación se hace en una ventana emergente para no recargar la pantalla ni mezclarla con el listado.
         </p>
       </div>
       <div class="actions-inline wrap-actions">
@@ -31,16 +31,16 @@
           id="usuarios-search-input"
           class="search-box"
           type="search"
-          placeholder="Buscar por nombre, email, rol o team"
+          placeholder="Buscar por nombre, email, rol o equipo"
           autocomplete="off"
         />
         <select id="usuarios-role-filter" class="users-role-filter">
           <option value="">Todos los roles</option>
-          <option value="ADMIN">ADMIN</option>
-          <option value="SUPERVISOR">SUPERVISOR</option>
-          <option value="JEFE_FAENA">JEFE_FAENA</option>
-          <option value="MECANICO">MECANICO</option>
-          <option value="OPERADOR">OPERADOR</option>
+          <option value="ADMIN">Administrador</option>
+          <option value="SUPERVISOR">Supervisor</option>
+          <option value="JEFE_FAENA">Jefe de faena</option>
+          <option value="MECANICO">Mecánico</option>
+          <option value="OPERADOR">Operador</option>
         </select>
         <div id="usuarios-filter-group" class="filter-chip-group" role="tablist" aria-label="Filtros de usuarios">
           <button class="filter-chip active" type="button" data-estado="activos">Activos</button>
@@ -60,7 +60,7 @@
             <th>Nombre</th>
             <th>Email</th>
             <th>Rol</th>
-            <th>Team</th>
+            <th>Equipo</th>
             <th>Estado</th>
             <th>Fecha creación</th>
             <th>Acción</th>
@@ -77,9 +77,9 @@
       <header class="modal-header">
         <div>
           <h4>Editar usuario</h4>
-          <p id="usuarios-edit-caption" class="muted-text">Actualiza datos operativos y team.</p>
+          <p id="usuarios-edit-caption" class="muted-text">Actualiza datos operativos y equipo.</p>
         </div>
-        <button id="edit-user-close" class="icon-btn" type="button">x</button>
+        <button id="edit-user-close" class="icon-btn" type="button" aria-label="Cerrar">x</button>
       </header>
 
       <form id="usuarios-edit-form" class="form-grid cols-2" autocomplete="off">
@@ -101,21 +101,21 @@
           />
         </div>
         <div id="edit-user-password-group">
-          <label for="edit-user-password">Nueva contrasena (opcional)</label>
+          <label for="edit-user-password">Nueva contraseña (opcional)</label>
           <input id="edit-user-password" name="user_password" type="password" autocomplete="new-password" />
         </div>
         <div id="edit-user-rol-group">
           <label for="edit-user-rol">Rol</label>
           <select id="edit-user-rol" name="rol" required>
-            <option value="ADMIN">ADMIN</option>
-            <option value="SUPERVISOR">SUPERVISOR</option>
-            <option value="JEFE_FAENA">JEFE_FAENA</option>
-            <option value="MECANICO">MECANICO</option>
-            <option value="OPERADOR">OPERADOR</option>
+            <option value="ADMIN">Administrador</option>
+            <option value="SUPERVISOR">Supervisor</option>
+            <option value="JEFE_FAENA">Jefe de faena</option>
+            <option value="MECANICO">Mecánico</option>
+            <option value="OPERADOR">Operador</option>
           </select>
         </div>
         <div>
-          <label for="edit-user-equipo">Team</label>
+          <label for="edit-user-equipo">Equipo</label>
           <select id="edit-user-equipo" name="equipo_id"></select>
           <p id="edit-user-equipo-help" class="form-hint"></p>
         </div>
@@ -124,7 +124,7 @@
             <input id="edit-user-activo" name="activo" type="checkbox" checked />
             <span>
               <strong>Usuario activo</strong>
-              <small>Si lo desactivas deja de iniciar sesión, pero sigue visible.</small>
+              <small>Si lo desactivas, no podrá iniciar sesión, pero seguirá visible.</small>
             </span>
           </label>
         </div>
@@ -143,11 +143,11 @@
         <div>
           <h4>Crear usuario</h4>
           <p class="muted-text">
-            ADMIN y SUPERVISOR pueden crear cuentas nuevas. Los roles de faena deben quedar asignados
-            a un team.
+            Los administradores y supervisores pueden crear cuentas nuevas. Los roles de faena deben
+            quedar asignados a un equipo.
           </p>
         </div>
-        <button id="usuarios-create-close" class="icon-btn" type="button">x</button>
+        <button id="usuarios-create-close" class="icon-btn" type="button" aria-label="Cerrar">x</button>
       </header>
 
       <form id="usuarios-create-form" class="form-grid cols-3" autocomplete="off">
@@ -171,7 +171,7 @@
           />
         </div>
         <div>
-          <label for="user-password">Contrasena</label>
+          <label for="user-password">Contraseña</label>
           <input
             id="user-password"
             name="user_password"
@@ -183,15 +183,15 @@
         <div>
           <label for="user-rol">Rol</label>
           <select id="user-rol" name="rol" required>
-            <option value="ADMIN">ADMIN</option>
-            <option value="SUPERVISOR">SUPERVISOR</option>
-            <option value="JEFE_FAENA">JEFE_FAENA</option>
-            <option value="MECANICO">MECANICO</option>
-            <option value="OPERADOR">OPERADOR</option>
+            <option value="ADMIN">Administrador</option>
+            <option value="SUPERVISOR">Supervisor</option>
+            <option value="JEFE_FAENA">Jefe de faena</option>
+            <option value="MECANICO">Mecánico</option>
+            <option value="OPERADOR">Operador</option>
           </select>
         </div>
         <div>
-          <label for="user-equipo">Team</label>
+          <label for="user-equipo">Equipo</label>
           <select id="user-equipo" name="equipo_id"></select>
           <p id="user-equipo-help" class="form-hint"></p>
         </div>
@@ -200,7 +200,7 @@
             <input id="user-activo" name="activo" type="checkbox" checked />
             <span>
               <strong>Usuario activo</strong>
-              <small>Si se crea activo puede iniciar sesión de inmediato.</small>
+              <small>Si se crea activo, puede iniciar sesión de inmediato.</small>
             </span>
           </label>
         </div>
@@ -218,10 +218,10 @@
     <section class="modal-content modal-compact">
       <header class="modal-header">
         <div>
-          <h4>Restablecer contrasena</h4>
-          <p id="usuarios-password-caption" class="muted-text">Define una nueva contrasena temporal.</p>
+          <h4>Restablecer contraseña</h4>
+          <p id="usuarios-password-caption" class="muted-text">Define una nueva contraseña temporal.</p>
         </div>
-        <button id="password-user-close" class="icon-btn" type="button">x</button>
+        <button id="password-user-close" class="icon-btn" type="button" aria-label="Cerrar">x</button>
       </header>
 
       <form id="usuarios-password-form" class="form-grid cols-2" autocomplete="off">
@@ -231,7 +231,7 @@
           <input id="password-user-name" type="text" disabled />
         </div>
         <div>
-          <label for="password-user-value">Nueva contrasena</label>
+          <label for="password-user-value">Nueva contraseña</label>
           <input
             id="password-user-value"
             name="password"
@@ -241,7 +241,7 @@
           />
         </div>
         <div>
-          <label for="password-user-confirm">Confirmar contrasena</label>
+          <label for="password-user-confirm">Confirmar contraseña</label>
           <input
             id="password-user-confirm"
             name="password_confirm"
@@ -251,7 +251,7 @@
           />
         </div>
         <div class="full actions-inline wrap-actions">
-          <button class="action-btn" type="submit">Guardar nueva contrasena</button>
+          <button class="action-btn" type="submit">Guardar nueva contraseña</button>
           <button id="password-user-cancel" class="action-btn secondary" type="button">Cancelar</button>
         </div>
       </form>

@@ -1,163 +1,6 @@
-const ASSET_VERSION = window.__APP_VERSION__ || "dev";
-
-// ── Login landscape ───────────────────────────────────────────────────────────
-(function initLoginLandscape() {
-  const container = document.getElementById("login-landscape");
-  if (!container) return;
-
-  const W = 1440, H = 500;
-
-  // Seeded PRNG (LCG) — siempre genera el mismo paisaje
-  let _seed = 317;
-  function rng() {
-    _seed = (_seed * 1664525 + 1013904223) & 0x7fffffff;
-    return _seed / 0x7fffffff;
-  }
-
-  // Cordillera suave con curvas bezier
-  function mountainPath(baseY, variance, segments) {
-    const step = W / segments;
-    const pts = [];
-    for (let i = 0; i <= segments; i++) {
-      pts.push({ x: i * step, y: baseY - rng() * variance });
-    }
-    let d = `M0 ${H} L0 ${pts[0].y}`;
-    for (let i = 1; i < pts.length; i++) {
-      const cpx = (pts[i - 1].x + pts[i].x) / 2;
-      d += ` C${cpx} ${pts[i - 1].y} ${cpx} ${pts[i].y} ${pts[i].x} ${pts[i].y}`;
-    }
-    return d + ` L${W} ${H} Z`;
-  }
-
-  // Silueta de pinos — triángulos irregulares a lo largo del ancho
-  function treesPath(groundY, maxH, count) {
-    const spacing = W / count;
-    let d = `M0 ${H} L0 ${groundY}`;
-    for (let i = 0; i < count; i++) {
-      const cx = spacing * i + spacing * (0.3 + rng() * 0.4);
-      const h  = maxH * (0.55 + rng() * 0.45);
-      const hw = spacing * (0.22 + rng() * 0.18);
-      d += ` L${cx - hw} ${groundY}`;
-      d += ` L${cx} ${groundY - h}`;
-      d += ` L${cx + hw} ${groundY}`;
-    }
-    return d + ` L${W} ${H} Z`;
-  }
-
-  document.getElementById("ll-path-mtn-far").setAttribute("d",    mountainPath(260, 90,  7));
-  document.getElementById("ll-path-mtn-mid").setAttribute("d",    mountainPath(320, 65, 10));
-  document.getElementById("ll-path-trees-far").setAttribute("d",  treesPath(380, 80, 20));
-  document.getElementById("ll-path-trees-near").setAttribute("d", treesPath(430, 110, 13));
-
-  // Slide-in escalonado
-  const layers = container.querySelectorAll(".login-layer");
-  layers.forEach((layer, i) => {
-    setTimeout(() => layer.classList.add("animate-in"), 80 + i * 220);
-  });
-
-  // Arrancar parallax + bamboleo una vez que terminó el slide-in
-  const lastDelay = 80 + (layers.length - 1) * 220 + 1350; // último slide + duración transición
-  setTimeout(() => {
-    container.classList.add("droning");
-    // activar scroll en cada capa con pequeño escalonado para que no arranquen sincronizadas
-    layers.forEach((layer, i) => {
-      setTimeout(() => {
-        layer.querySelector(".ll-scroll").style.animationPlayState = "running";
-      }, i * 120);
-    });
-  }, lastDelay);
-})();
-
-// ── Login video background ────────────────────────────────────────────────────
-(function initLoginVideo() {
-  const screen = document.querySelector(".login-screen");
-  const video  = document.getElementById("login-bg-video");
-  if (!screen || !video) return;
-
-  // Fade-in cuando el video arranca; paisaje SVG queda como fallback si falla
-  video.addEventListener("playing", () => {
-    screen.classList.add("has-video");
-  }, { once: true });
-
-  video.addEventListener("error", () => {
-    video.remove();
-  });
-})();
-
-// ── Login atmosphere: estrellas + luciérnagas ────────────────────────────────
-(function initLoginAtmosphere() {
-  // ── Estrellas ──
-  const starsEl = document.getElementById("ls-stars");
-  if (starsEl) {
-    let s = 42;
-    const rng = () => { s = (s * 1664525 + 1013904223) & 0x7fffffff; return s / 0x7fffffff; };
-    for (let i = 0; i < 55; i++) {
-      const el = document.createElement("div");
-      el.className = "ls-star";
-      const sz = rng() < 0.12 ? (1.8 + rng() * 1.4) : (0.7 + rng() * 1.1);
-      el.style.cssText = [
-        `left:${rng() * 100}%`,
-        `top:${rng() * 62}%`,
-        `width:${sz}px`,
-        `height:${sz}px`,
-        `--st-dur:${2.2 + rng() * 4.5}s`,
-        `--st-del:${-(rng() * 6).toFixed(2)}s`,
-        `--st-lo:${(0.15 + rng() * 0.45).toFixed(2)}`,
-      ].join(";");
-      starsEl.appendChild(el);
-    }
-  }
-
-  // ── Luciérnagas ──
-  const ffEl = document.getElementById("ls-fireflies");
-  if (ffEl) {
-    let s2 = 137;
-    const rng2 = () => { s2 = (s2 * 1664525 + 1013904223) & 0x7fffffff; return s2 / 0x7fffffff; };
-    for (let i = 0; i < 18; i++) {
-      const el = document.createElement("div");
-      el.className = "ls-ff";
-      const dx = ((rng2() * 70) - 35).toFixed(1);
-      const dy = (-(28 + rng2() * 62)).toFixed(1);
-      el.style.cssText = [
-        `left:${(5 + rng2() * 90).toFixed(1)}%`,
-        `bottom:${(6 + rng2() * 48).toFixed(1)}%`,
-        `--ffd:${(5 + rng2() * 9).toFixed(1)}s`,
-        `--ffdel:${-(rng2() * 14).toFixed(2)}s`,
-        `--ffdx:${dx}px`,
-        `--ffdy:${dy}px`,
-      ].join(";");
-      ffEl.appendChild(el);
-    }
-  }
-})();
-
-// ── Login mouse parallax ──────────────────────────────────────────────────────
-(function initLoginMouseParallax() {
-  const screen = document.querySelector(".login-screen");
-  // Solo en dispositivos con cursor fino (desktop)
-  if (!screen || !window.matchMedia("(pointer: fine)").matches) return;
-
-  const wrap  = document.getElementById("ll-wrap");
-  const moon  = document.querySelector(".ls-moon");
-  const stars = document.querySelector(".ls-stars");
-  if (!wrap) return;
-
-  let tx = 0, ty = 0, cx = 0, cy = 0;
-
-  screen.addEventListener("mousemove", (e) => {
-    tx = (e.clientX / screen.clientWidth  - 0.5) * 2; // -1 → 1
-    ty = (e.clientY / screen.clientHeight - 0.5) * 2;
-  }, { passive: true });
-
-  (function tick() {
-    cx += (tx - cx) * 0.055;
-    cy += (ty - cy) * 0.055;
-    wrap.style.transform  = `translate(${(cx * -11).toFixed(2)}px, ${(cy * -5).toFixed(2)}px)`;
-    if (moon)  moon.style.transform  = `translate(${(cx * -7).toFixed(2)}px, ${(cy * -3.5).toFixed(2)}px)`;
-    if (stars) stars.style.transform = `translate(${(cx * -3).toFixed(2)}px, ${(cy * -1.5).toFixed(2)}px)`;
-    requestAnimationFrame(tick);
-  })();
-})();
+// La version viaja como atributo del <html> y no en un <script> en linea: asi
+// la politica de seguridad (CSP) puede prohibir todo script en linea.
+const ASSET_VERSION = document.documentElement.dataset.appVersion || "dev";
 
 // ── Button ripple ────────────────────────────────────────────────────────────
 document.addEventListener("pointerdown", (e) => {
@@ -316,7 +159,7 @@ const VIEWS = {
   "como-usar": {
     file: `/views/como-usar.html?v=${ASSET_VERSION}`,
     title: "Cómo usar",
-    subtitle: "Guia del portal y apoyo para capacitacion",
+    subtitle: "Guía del portal y apoyo para capacitación",
     roles: ["ADMIN", "SUPERVISOR", "JEFE_FAENA", "MECANICO", "OPERADOR"],
   },
 };
@@ -550,7 +393,7 @@ function renderGlobalSearchResults(payload = {}) {
   globalSearchResults.innerHTML = rows
     .map(
       (row) => `
-        <button class="global-search-item" data-search-type="${row.tipo}" data-search-id="${row.id}" type="button">
+        <button class="global-search-item" data-search-type="${escapeHtml(row.tipo)}" data-search-id="${escapeHtml(row.id)}" type="button">
           <span class="mini-chip">${typeLabel[row.tipo] || "Resultado"}</span>
           <strong>${escapeHtml(row.titulo)}</strong>
           <small>${escapeHtml(row.descripcion || "")}</small>
@@ -1102,7 +945,7 @@ function formatDate(dateText) {
   if (diffMin < 1)  return "hace un momento";
   if (diffMin < 60) return `hace ${diffMin} min`;
   if (diffHrs < 2)  return "hace 1 hora";
-  if (diffHrs < 24) return `hace ${diffHrs}h`;
+  if (diffHrs < 24) return `hace ${diffHrs} horas`;
   if (diffDays === 1) {
     const time = formatChileParts(date, true).split(" ").pop();
     return `ayer ${time}`;
@@ -1204,11 +1047,16 @@ async function apiRequest(path, options = {}, requiresAuth = true) {
     }
 
     if (!response.ok) {
-      throw new Error(
+      const error = new Error(
         payload.mensaje ||
         (typeof payload.error === "string" ? payload.error : payload.error?.message) ||
-        "Error de API"
+        "No se pudo completar la acción. Inténtalo de nuevo."
       );
+      // El estado y el detalle viajan con el error: por ejemplo, un 409 trae
+      // el texto que otra persona guardo, para mostrarlo en vez de perderlo.
+      error.status = response.status;
+      error.details = payload.details || null;
+      throw error;
     }
 
     return payload;
@@ -1216,7 +1064,15 @@ async function apiRequest(path, options = {}, requiresAuth = true) {
 }
 
 function updateUserBadge() {
-  userBadge.textContent = `${getUserName()} (${getUserRole()})`;
+  const etiquetasRol = {
+    ADMIN: "Administrador",
+    SUPERVISOR: "Supervisor",
+    JEFE_FAENA: "Jefe de faena",
+    MECANICO: "Mecánico",
+    OPERADOR: "Operador",
+  };
+  const rol = getUserRole();
+  userBadge.textContent = `${getUserName()} · ${etiquetasRol[rol] || rol || ""}`;
 }
 
 function stopRealtimeAlerts() {
@@ -1304,16 +1160,16 @@ function renderAlertsFeed() {
     });
 
     alertsStatus.textContent =
-      unreadCount > 0 ? `${unreadCount} sin leer · resumen móvil` : "Todo al día";
+      unreadCount > 0 ? `${unreadCount} sin leer` : "Todo al día";
 
     alertsList.innerHTML = grouped
       .map((group) => {
         const unread = group.unreadCount > 0;
         const subtitle = group.urgentCount > 0
-          ? `${group.urgentCount} importante(s)`
+          ? `${group.urgentCount} ${group.urgentCount === 1 ? "importante" : "importantes"}`
           : unread
             ? `${group.unreadCount} sin leer`
-            : `${group.total} movimiento(s)`;
+            : `${group.total} ${group.total === 1 ? "movimiento" : "movimientos"}`;
         const title = group.referenciaId
           ? `Solicitud #${group.referenciaId}`
           : escapeHtml(group.latest.titulo || group.latest.tipo || "Alerta");
@@ -2017,11 +1873,11 @@ function showInstallBanner() {
 
   const isIOS = isIOSDevice();
   banner.innerHTML = isIOS
-    ? `<span class="install-banner-text">📲 Instala el portal como app — toca <strong>Compartir</strong> y luego <strong>Añadir a inicio</strong></span>
-       <button class="install-banner-dismiss" aria-label="Cerrar">✕</button>`
-    : `<span class="install-banner-text">📲 Instala el portal como app en tu dispositivo</span>
+    ? `<span class="install-banner-text">Instala el portal como app: toca <strong>Compartir</strong> y luego <strong>Añadir a inicio</strong></span>
+       <button class="install-banner-dismiss" aria-label="Cerrar"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>`
+    : `<span class="install-banner-text">Instala el portal como app en tu dispositivo</span>
        <button class="install-banner-install btn">Instalar</button>
-       <button class="install-banner-dismiss" aria-label="Cerrar">✕</button>`;
+       <button class="install-banner-dismiss" aria-label="Cerrar"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>`;
 
   banner.querySelector(".install-banner-dismiss").addEventListener("click", () => {
     banner.remove();
@@ -2089,7 +1945,7 @@ function showIconRefreshNotice() {
       agregarlo desde Safari con <strong>Compartir → Añadir a inicio</strong>.
       <button type="button" class="install-banner-never">No volver a mostrar</button>
     </span>
-    <button class="install-banner-dismiss" aria-label="Cerrar por ahora">✕</button>
+    <button class="install-banner-dismiss" aria-label="Cerrar por ahora"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
   `;
 
   // La ✕ solo lo cierra por ahora: al volver a abrir la app reaparece, porque
@@ -2171,7 +2027,7 @@ function registerPWA() {
     state.deferredInstallPrompt = null;
     updateInstallButtonVisibility();
     hideInstallBanner();
-    showToast("La app quedo instalada en este dispositivo.");
+    showToast("La app quedó instalada en este dispositivo.");
   });
 }
 
@@ -2266,7 +2122,7 @@ function updatePushControls() {
   }
 
   if (!configured) {
-    pushStatusText.textContent = "El servidor todavia no tiene configuradas las llaves push para enviar avisos al celular.";
+    pushStatusText.textContent = "El servidor todavía no tiene configuradas las llaves para enviar avisos al celular.";
     setPushChip("Servidor sin push", "danger");
     if (pushEnableBtn) pushEnableBtn.disabled = true;
     if (pushTestBtn) pushTestBtn.disabled = true;
@@ -2287,8 +2143,8 @@ function updatePushControls() {
     const deviceCount = Number(serverStatus.subscriptionCount || 0);
     pushStatusText.textContent =
       deviceCount > 1
-        ? `Este usuario tiene ${deviceCount} dispositivos suscritos. Puedes probar este celular o desactivarlo si ya no lo usaras.`
-        : "Este celular ya esta vinculado y debería recibir avisos del portal.";
+        ? `Este usuario tiene ${deviceCount} dispositivos suscritos. Puedes probar este celular o desactivarlo si ya no lo usarás.`
+        : "Este celular ya está vinculado y debería recibir avisos del portal.";
     setPushChip("Activo en este celular", "active");
     if (pushEnableBtn) pushEnableBtn.disabled = state.pushBusy;
     if (pushTestBtn) pushTestBtn.disabled = state.pushBusy;
@@ -2298,8 +2154,8 @@ function updatePushControls() {
 
   if (permission === "granted") {
     pushStatusText.textContent = subscribed
-      ? "Otro dispositivo del usuario ya esta suscrito, pero este celular aun no queda vinculado. Activalo para registrar este equipo."
-      : "El permiso ya fue otorgado, pero este celular aun no queda vinculado en el portal. Activalo para terminar la suscripcion.";
+      ? "Otro dispositivo del usuario ya está suscrito, pero este celular aún no queda vinculado. Actívalo para registrar este equipo."
+      : "El permiso ya fue otorgado, pero este celular aún no queda vinculado en el portal. Actívalo para terminar la suscripción.";
     setPushChip(subscribed ? "Otro equipo activo" : "Falta vincular", "warning");
     if (pushEnableBtn) pushEnableBtn.disabled = state.pushBusy;
     if (pushTestBtn) pushTestBtn.disabled = true;
@@ -2411,7 +2267,7 @@ async function syncPushSubscription({ prompt = false } = {}) {
 
   const { publicKey } = await apiRequest("/api/push/vapid-public-key");
   if (!publicKey) {
-    throw new Error("El servidor todavia no tiene configuradas las notificaciones push.");
+    throw new Error("El servidor todavía no tiene configuradas las notificaciones.");
   }
 
   const serverKey = urlBase64ToUint8Array(publicKey);
@@ -2481,7 +2337,7 @@ async function handleDisablePush() {
     const subscription = await sw.pushManager.getSubscription();
     if (!subscription) {
       await refreshPushStatus({ silent: true });
-      showToast("Este celular ya no tenía una suscripcion activa.");
+      showToast("Este celular ya no tenía una suscripción activa.");
       return;
     }
 
@@ -2831,10 +2687,11 @@ async function openOfflineQueueModal() {
       return;
     }
     offlineQueueList.innerHTML = actions.map((a) => {
-      const fecha = new Date(a.timestamp).toLocaleString("es-CL", { dateStyle: "short", timeStyle: "short" });
+      const marca = Number(a.timestamp);
+      const fecha = Number.isFinite(marca) && marca > 0 ? formatDate(new Date(marca).toISOString()) : "";
       return `<div class="offline-queue-item">
         <div class="offline-queue-item-info">
-          <span class="offline-queue-item-desc">${a.description || a.url}</span>
+          <span class="offline-queue-item-desc">${escapeHtml(a.description || a.url)}</span>
           <span class="offline-queue-item-meta">${a.method} · ${fecha}</span>
         </div>
         <button class="action-btn secondary offline-queue-cancel" data-id="${a.id}" style="font-size:0.78rem;min-height:28px;padding:0.15rem 0.7rem;color:#c62828">Cancelar</button>
@@ -2873,10 +2730,10 @@ function registerOfflineDetection() {
       n = await pendingCount();
     } catch { /* IndexedDB no disponible */ }
     if (n > 0) {
-      banner.innerHTML = `📡 Sin conexión — <u style="cursor:pointer">${n} acción${n !== 1 ? "es" : ""} pendiente${n !== 1 ? "s" : ""}</u>`;
+      banner.innerHTML = `Sin conexión: <u style="cursor:pointer">${n} acción${n !== 1 ? "es" : ""} pendiente${n !== 1 ? "s" : ""}</u>`;
       banner.onclick = openOfflineQueueModal;
     } else {
-      banner.textContent = "📡 Sin conexión — mostrando datos guardados";
+      banner.textContent = "Sin conexión: se muestran los datos guardados";
       banner.onclick = null;
     }
     banner.classList.remove("hidden");
@@ -2902,6 +2759,15 @@ function registerOfflineDetection() {
   window.addEventListener("online", handleOnline);
   window.addEventListener("offline", updateBanner);
   window.addEventListener("fmn:queue-changed", updateBanner);
+  // Una accion guardada sin senal que el servidor rechazo para siempre: se
+  // avisa cual fue, para que la persona la vuelva a hacer si corresponde.
+  window.addEventListener("fmn:queue-rejected", (event) => {
+    const { description = "", mensaje = "" } = event.detail || {};
+    showToast(
+      `No se pudo enviar ${description ? `"${description}"` : "una acción pendiente"}${mensaje ? `: ${mensaje}` : "."}`,
+      true
+    );
+  });
   if (!navigator.onLine) updateBanner();
 }
 

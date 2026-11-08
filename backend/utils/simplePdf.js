@@ -1,3 +1,6 @@
+const { formatChileDateTime } = require("./dateTime");
+const { etiquetaAccionHistorial, etiquetaEstadoSolicitud } = require("./textosSolicitud");
+
 function sanitizeText(value) {
   return String(value ?? "")
     .normalize("NFD")
@@ -143,11 +146,15 @@ function buildHistoryPdf({ solicitud, historial = [], generatedAt }) {
     lines.push("Sin historial registrado.");
   } else {
     historial.forEach((item) => {
-      lines.push(`Fecha: ${item.created_at || "-"}`);
-      lines.push(`Acción: ${item.accion || "EVENTO"}`);
+      lines.push(`Fecha: ${item.created_at ? formatChileDateTime(item.created_at) || "-" : "-"}`);
+      lines.push(`Acción: ${etiquetaAccionHistorial(item.accion)}`);
       lines.push(`Actor: ${item.actor_name || "Sistema"}`);
       if (item.estado_anterior || item.estado_nuevo) {
-        lines.push(`Cambio: ${item.estado_anterior || "-"} -> ${item.estado_nuevo || "-"}`);
+        lines.push(
+          `Cambio: ${item.estado_anterior ? etiquetaEstadoSolicitud(item.estado_anterior) : "-"} -> ${
+            item.estado_nuevo ? etiquetaEstadoSolicitud(item.estado_nuevo) : "-"
+          }`
+        );
       }
       wrapText(`Detalle: ${item.detalle || "Sin detalle"}`, 94).forEach((line) => lines.push(line));
       lines.push("");

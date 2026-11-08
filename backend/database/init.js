@@ -322,6 +322,28 @@ async function createTables() {
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // Intentos fallidos de inicio de sesion, espejo de la tabla en PostgreSQL
+  // (ver services/loginIntentosService.js). creado_en queda en UTC con el
+  // formato de CURRENT_TIMESTAMP, el mismo que devuelve datetime('now').
+  await run(`
+    CREATE TABLE IF NOT EXISTS login_intentos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      clave TEXT NOT NULL,
+      creado_en TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await run(`
+    CREATE INDEX IF NOT EXISTS idx_login_intentos_clave_creado
+    ON login_intentos (clave, creado_en)
+  `);
+
+  // Para la limpieza de lo que pasa de un dia, que filtra solo por fecha.
+  await run(`
+    CREATE INDEX IF NOT EXISTS idx_login_intentos_creado
+    ON login_intentos (creado_en)
+  `);
 }
 
 async function migrateUsuariosSchema() {

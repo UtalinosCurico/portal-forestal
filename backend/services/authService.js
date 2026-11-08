@@ -5,6 +5,13 @@ const { JWT_SECRET, JWT_EXPIRES_IN } = require("../config/jwtConfig");
 const { HttpError } = require("../utils/httpError");
 const { normalizeEmail, validateEmail } = require("../utils/validators");
 const { findUserByEmail, findUserById } = require("./userStore");
+const loginIntentos = require("./loginIntentosService");
+
+// Hash bcrypt de una cadena aleatoria que nadie conoce (costo 10, el mismo de
+// las contrasenas reales). Cuando el correo no existe se compara contra este:
+// asi el rechazo tarda lo mismo que con una contrasena equivocada y el tiempo
+// de respuesta no delata que correos estan registrados.
+const HASH_FICTICIO = "$2a$10$LHnls0sbWyps2zjECHFmRel/zk0wWjAis6N9.PcVVd.qArKpf0LZG";
 
 function normalizeBoolean(value) {
   return value === true || value === 1 || value === "1";
@@ -51,7 +58,7 @@ function createToken(user) {
   );
 }
 
-async function login(email, password) {
+async function login(email, password, { ip = "" } = {}) {
   const normalizedEmail = normalizeEmail(email);
   if (!normalizedEmail || !password) {
     throw new HttpError(400, "Email y contrasena son obligatorios");
@@ -61,20 +68,31 @@ async function login(email, password) {
     throw new HttpError(400, "Email invalido");
   }
 
+  // Freno a la fuerza bruta: se revisa antes de buscar al usuario y de mirar
+  // la contrasena, asi quien esta bloqueado no puede seguir probando.
+  const intento = { email: normalizedEmail, ip };
+  await loginIntentos.verificarIntentos(intento);
+
   const user = await findUserByEmail(normalizedEmail);
+  const cuentaHabilitada =
+    Boolean(user) &&
+    normalizeBoolean(user.activo) &&
+    !normalizeBoolean(user.archivado) &&
+    Boolean(user.password_hash);
 
-  if (!user || !normalizeBoolean(user.activo) || normalizeBoolean(user.archivado)) {
+  // Siempre se corre un bcrypt, aunque la cuenta no exista o este inactiva:
+  // si no, ese rechazo saldria al instante y delataria que el correo no esta.
+  const isValidPassword = await bcrypt.compare(
+    password,
+    cuentaHabilitada ? user.password_hash : HASH_FICTICIO
+  );
+
+  if (!cuentaHabilitada || !isValidPassword) {
+    await loginIntentos.registrarFallo(intento);
     throw new HttpError(401, "Credenciales invalidas");
   }
 
-  if (!user.password_hash) {
-    throw new HttpError(401, "Credenciales invalidas");
-  }
-
-  const isValidPassword = await bcrypt.compare(password, user.password_hash);
-  if (!isValidPassword) {
-    throw new HttpError(401, "Credenciales invalidas");
-  }
+  await loginIntentos.registrarExito(intento);
 
   return {
     token: createToken(user),

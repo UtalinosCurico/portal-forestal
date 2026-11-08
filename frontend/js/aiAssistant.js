@@ -1,7 +1,7 @@
 // ── Asistente IA flotante (PumAI) ───────────────────────────────────────────
 
 const AI_WELCOME =
-  "¡Hola! 🐾 Soy PumAI, tu asistente del portal. Puedo ayudarte con dudas sobre solicitudes, estados, roles y cómo usar el sistema. ¿En qué te ayudo?";
+  "¡Hola! Soy PumAI, tu asistente del portal. Puedo ayudarte con dudas sobre solicitudes, estados, roles y cómo usar el sistema. ¿En qué te ayudo?";
 
 // Convierte markdown básico a HTML seguro
 function renderMarkdown(raw) {
@@ -144,11 +144,11 @@ export function initAiAssistant(context) {
       const raw = err?.message || "";
       let msg;
       if (raw.includes("ANTHROPIC_API_KEY") || raw.includes("no configurado")) {
-        msg = "PumAI no está activado aún. El administrador debe configurar la clave de API en el servidor. 🔧";
+        msg = "PumAI no está activado aún. El administrador debe configurar la clave de API en el servidor.";
       } else if (raw.includes("credit") || raw.includes("billing") || raw.includes("quota") || raw.includes("insufficient")) {
-        msg = "Sin créditos en la cuenta de IA. El administrador debe agregar saldo en console.anthropic.com. 💳";
+        msg = "Sin créditos en la cuenta de IA. El administrador debe agregar saldo en console.anthropic.com.";
       } else if (raw.includes("invalid") || raw.includes("auth") || raw.includes("401")) {
-        msg = "La clave de API no es válida. El administrador debe verificarla en Vercel. 🔑";
+        msg = "La clave de API no es válida. El administrador debe verificarla en Vercel.";
       } else if (
         raw.includes("falla temporal") ||
         raw.includes("servicio de IA") ||
@@ -157,9 +157,9 @@ export function initAiAssistant(context) {
         raw.includes("529") ||
         raw.includes("500")
       ) {
-        msg = "Anthropic está con problemas momentáneos. Espera unos segundos y vuelve a intentar. 🐾";
+        msg = "Anthropic está con problemas momentáneos. Espera unos segundos y vuelve a intentar.";
       } else {
-        msg = `Error: ${raw || "no pude conectarme"}. Intenta de nuevo. 🐾`;
+        msg = `Error: ${raw || "no pude conectarme"}. Intenta de nuevo.`;
       }
       appendMessage("assistant", msg);
     } finally {

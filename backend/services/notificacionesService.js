@@ -7,6 +7,7 @@ const { isOperationalPgEnabled } = require("./operationalPgStore");
 const pgService = require("./notificacionesPgService");
 const pushService = require("./pushService");
 const empresasService = require("./empresasService");
+const { etiquetaEstadoProducto, etiquetaEstadoSolicitud } = require("../utils/textosSolicitud");
 
 const notificationBus = new EventEmitter();
 notificationBus.setMaxListeners(100);
@@ -85,7 +86,7 @@ function buildSolicitudItemMessage({ equipoNombre, itemNombre, accion, estadoIte
     equipoNombre ? `Equipo: ${equipoNombre}` : null,
     itemNombre ? `Item: ${itemNombre}` : null,
     accion ? `Acción: ${accion}` : null,
-    estadoItem ? `Estado: ${estadoItem}` : null,
+    estadoItem ? `Estado: ${etiquetaEstadoProducto(estadoItem)}` : null,
   ].filter(Boolean);
 
   return parts.join(" | ") || "Hubo cambios en un producto de la solicitud";
@@ -109,7 +110,7 @@ function buildSolicitudStatusMessage({ equipoNombre, repuesto, estado }) {
   const parts = [
     equipoNombre ? `Equipo: ${equipoNombre}` : null,
     repuesto ? `Repuesto: ${repuesto}` : null,
-    estado ? `Estado: ${estado}` : null,
+    estado ? `Estado: ${etiquetaEstadoSolicitud(estado)}` : null,
   ].filter(Boolean);
 
   return parts.join(" | ") || "La solicitud cambio de estado";
@@ -512,12 +513,12 @@ async function createEnvioNotification({
     equipoNombre ? `Equipo: ${equipoNombre}` : null,
     repuesto ? `Repuesto: ${repuesto}` : null,
     Number.isFinite(Number(cantidad)) ? `Cantidad: ${cantidad}` : null,
-    estadoVisual ? `Tracking: ${estadoVisual}` : null,
+    estadoVisual ? `Seguimiento: ${estadoVisual}` : null,
   ].filter(Boolean);
 
   const envioNotification = await insertNotification({
     tipo: "ENVIO_NUEVO",
-    titulo: "Nuevo envio hacia tu equipo",
+    titulo: "Nuevo envío hacia tu equipo",
     mensaje: parts.join(" | ") || "Se registró un nuevo envio",
     rolDestino: ROLES.JEFE_FAENA,
     equipoId,
@@ -551,7 +552,7 @@ async function createSolicitudMessageNotification({
   const preview = String(mensaje || "").trim();
   const body = preview
     ? `${remitenteNombre || "Nuevo mensaje"}: ${preview.slice(0, 140)}`
-    : `${remitenteNombre || "Nuevo mensaje"} envio una imagen o archivo de apoyo.`;
+    : `${remitenteNombre || "Nuevo mensaje"} envió una imagen o archivo de apoyo.`;
 
   const messageNotification = await insertNotification({
     tipo: "SOLICITUD_MENSAJE",

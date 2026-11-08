@@ -57,8 +57,8 @@ function verificarNoPisar({ campo, etiqueta, visto, almacenado, nuevo }) {
 
   throw new HttpError(
     409,
-    `Otra persona escribio en ${etiqueta} mientras editabas. ` +
-      "Tu texto no se guardo para no borrar el suyo. Revisa lo que dice ahora y vuelve a escribir.",
+    `Otra persona escribió en ${etiqueta} mientras editabas. ` +
+      "Tu texto no se guardó para no borrar el suyo. Revisa lo que dice ahora y vuelve a escribir.",
     { campo, texto_actual: almacenadoLimpio, texto_que_intentabas: normalizar(nuevo) }
   );
 }
